@@ -2,10 +2,10 @@
 type: concept
 title: "SSC 2026이 간·장기 기능 이상에 대해 말하는 것"
 tags: [sepsis, liver, hepatic-dysfunction, cirrhosis, biliary, hepatotoxicity, organ-dysfunction, evidence-gap]
-related: [prescott-2026-ssc-sepsis-guidelines, sepsis-and-septic-shock-definitions, sepsis-hemodynamic-resuscitation, sepsis-antimicrobial-timing, sepsis-nutrition, icu-liver-cause-evidence-map, hypoxic-hepatitis, congestive-hepatopathy, cholestatic-injury-workup, isolated-hyperbilirubinemia, dili-diagnosis-and-causality, viral-hepatitis-testing, herbal-dietary-supplement-injury, acetaminophen]
-sources: ["ssc-2026-sepsis-guidelines.pdf"]
+related: [prescott-2026-ssc-sepsis-guidelines, sepsis-and-septic-shock-definitions, sepsis-hemodynamic-resuscitation, sepsis-antimicrobial-timing, sepsis-nutrition, icu-liver-cause-evidence-map, hypoxic-hepatitis, congestive-hepatopathy, cholestatic-injury-workup, isolated-hyperbilirubinemia, dili-diagnosis-and-causality, viral-hepatitis-testing, herbal-dietary-supplement-injury, acetaminophen, critical-illness-cholestatic-dysfunction, icu-acquired-liver-injury-classification, hypoxic-hepatitis-icu-epidemiology-prognosis, jenniskens-2016-cholestatic-dysfunction-sepsis, horvatits-2019-liver-injury-critical-illness, xu-2025-liver-injury-in-sepsis, waseem-2018-acute-liver-injury-shock-nationwide, fuhrmann-2011-hypoxic-hepatitis-icu-mortality]
+sources: ["ssc-2026-sepsis-guidelines.pdf", "jenniskens-2016-cholestatic-dysfunction-sepsis.pdf", "horvatits-2019-liver-injury-critical-illness.pdf", "xu-2025-liver-injury-in-sepsis.pdf", "waseem-2018-acute-liver-injury-shock-nationwide.pdf", "fuhrmann-2011-hypoxic-hepatitis-mortality-icu.pdf"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # SSC 2026이 간·장기 기능 이상에 대해 말하는 것
@@ -50,7 +50,7 @@ updated: 2026-10-16
 
 ## 근거 공백
 아래 항목은 SSC 2026 본문에 근거가 없습니다(위 검색어로 확인).
-- 패혈증 관련 간 기능 이상의 정의, SOFA 간 항목(빌리루빈) 기준.
+- 패혈증 관련 간 기능 이상의 정의, SOFA 간 항목(빌리루빈) 기준 (SSC 2026에는 없음; Jenniskens 2016 p.9, Xu 2025 p.2 참고).
 - 빌리루빈, 황달(jaundice), 담즙정체(cholestasis), 패혈증 유발 담즙정체.
 - 아미노전이효소(ALT, AST) 상승, 저산소성 간염(hypoxic hepatitis, shock liver).
 - 울혈성 간병증(congestive hepatopathy)과 우심부전.
@@ -60,3 +60,12 @@ updated: 2026-10-16
 - 간부전 환자의 약물 용량 조정.
 - 특정 약물(항진균제 제외)의 간독성, 생약 간손상.
 - 이 공백들은 [[icu-liver-cause-evidence-map]]에서 다른 원문의 근거와 함께 모읍니다.
+
+## 다른 원문이 채운 부분
+SSC 2026의 공백 중 일부는 이번에 추가된 원문에 근거가 있습니다.
+- 패혈증 간 손상(SILI)은 저산소성 간염, 패혈증 담즙정체, 이차 경화성 담관염으로 나뉩니다(Xu 2025 p.2). [[critical-illness-cholestatic-dysfunction]] [[icu-acquired-liver-injury-classification]]
+- 담즙정체의 실무 기준은 총빌리루빈 >2 mg/dL이며(Horvatits 2019 p.2), 담즙정체는 패혈성 쇼크의 33%에서 보입니다(Horvatits 2019 p.3).
+- 다른 원문(Waseem NIS 2018)은 패혈증 관련 담즙정체를 ICU 황달로도 불리는 중환자 빌리루빈 상승으로 설명하고, 그람음성 감염, 항생제, 양압 환기, 대수술을 악화 요인으로 듭니다(Waseem NIS 2018 p.1-2). 진단 수치 기준은 없습니다.
+- SOFA 간 항목 빌리루빈 구간은 <1.2 : 0, 1.2-1.9 : 1, 2.0-5.9 : 2, 6.0-11.9 : 3, >12.0 mg/dl : 4이며 매일 24시간 최악값을 씁니다(Jenniskens 2016 p.9).
+- 간 기능 이상·부전을 동반한 패혈증의 사망률은 54-68%입니다(Xu 2025 p.2).
+- 패혈성 쇼크가 있는 층에서 HH의 사망률비가 7.27로 가장 컸습니다(Fuhrmann 2011 p.5). [[hypoxic-hepatitis-icu-epidemiology-prognosis]]

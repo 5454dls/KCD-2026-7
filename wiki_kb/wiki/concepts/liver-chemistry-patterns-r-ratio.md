@@ -2,10 +2,10 @@
 type: concept
 title: "간 검사 이상 패턴과 R 비"
 tags: [간세포형, 담즙정체형, 혼합형, R비, 패턴분류]
-related: [kwo-2017-acg-abnormal-liver-chemistries, hepatocellular-injury-workup, cholestatic-injury-workup, isolated-hyperbilirubinemia, normal-alt-and-uln, dili-phenotypes-and-latency, dili-diagnosis-and-causality, aminotransferases-alt-ast, icu-liver-cause-evidence-map]
-sources: ["kwo-2017-acg-abnormal-liver-chemistries.pdf"]
+related: [kwo-2017-acg-abnormal-liver-chemistries, hepatocellular-injury-workup, cholestatic-injury-workup, isolated-hyperbilirubinemia, normal-alt-and-uln, dili-phenotypes-and-latency, dili-diagnosis-and-causality, aminotransferases-alt-ast, dili-case-definition-thresholds, dili-case-definition-disagreements, aithal-2011-dili-case-definition, icu-liver-cause-evidence-map]
+sources: ["kwo-2017-acg-abnormal-liver-chemistries.pdf", "aithal-2011-dili-case-definition.pdf"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # 간 검사 이상 패턴과 R 비
@@ -24,6 +24,9 @@ updated: 2026-10-16
 - R >5는 간세포형, R <2는 담즙정체형, R 2-5는 혼합형으로 정의합니다 (ACG 2017 p.11).
 - 원문은 R 비가 최근 손상 패턴 판정에 쓰이며 약물 유발 간손상(DILI)에 적용될 수 있다고 소개하고, ACG DILI 지침(Chalasani 2014)을 인용합니다 (ACG 2017 p.11, p.17). [[dili-phenotypes-and-latency]]
 - R 비 계산에는 ALT만 쓰며, 원문은 AST로 대체하는 방법을 언급하지 않습니다 (ACG 2017 p.11).
+- Aithal 2011은 R ≥5 간세포형, 2 < R < 5 혼합형, R ≤2 담즙정체형으로 경계값을 포함 부등호로 씁니다(Aithal 2011 p.3). ACG의 >5, <2와 경계값에서만 다릅니다. [[dili-case-definition-disagreements]]
+- Aithal 2011은 ALT가 없으면 AST로 대체할 수 있다고 명시하고, ALT와 ALP는 같은 혈청 검체여야 합니다(Aithal 2011 p.3).
+- Aithal 2011은 패턴을 DILI 기준을 충족한 가장 이른 검사로 정하고, 패턴이 시간에 따라 바뀔 수 있으므로 처음 확인된 패턴을 기록하도록 합니다(Aithal 2011 p.3). [[dili-case-definition-thresholds]]
 
 ## 패턴이 평가를 어떻게 이끄는가
 - 간 검사 이상의 크기와 AST:ALT 비가 평가 방향을 정하며, 패턴은 이상이 간세포 손상(AST·ALT 상승)인지, 담즙정체 손상(ALP 상승)인지, 혼합형인지를 시사합니다 (ACG 2017 p.11).
@@ -47,7 +50,7 @@ updated: 2026-10-16
 - AST만 단독으로 높으면 근육·심장 원인(횡문근융해, 심근 손상)을 먼저 배제합니다 (ACG 2017 p.3, p.9).
 
 ## 근거 공백
-- R 비를 어느 시점의 검사로 계산할지(첫 이상, 최고치 등)와 시간에 따라 패턴이 바뀔 때의 처리는 원문에 없습니다.
-- ALT 대신 AST를 쓰는 변형 R 비, ALP 대신 GGT를 쓰는 방법은 다루지 않습니다.
+- R 비를 어느 시점의 검사로 계산할지는 ACG에 없으나, DILI 맥락에서 Aithal 2011로 부분 해소되었습니다: 기준을 충족한 가장 이른 검사로 정하고 처음 확인된 패턴을 기록합니다(Aithal 2011 p.3). DILI 밖의 ICU 간 검사 이상에서 쓸 시점 규칙은 여전히 없습니다.
+- ALT 대신 AST를 쓰는 변형 R 비는 Aithal 2011로 부분 해소되었습니다: ALT가 없을 때 AST 사용(Aithal 2011 p.3). ALP 대신 GGT를 쓰는 방법은 여전히 공백입니다.
 - 패턴별 각 원인의 사전확률이나 ICU 환자에서의 진단 정확도 자료는 없습니다.
 - 여러 원인이 겹치는 ICU 환자에서 패턴 해석이 어떻게 달라지는지는 다루지 않습니다.

@@ -2,10 +2,10 @@
 type: entity
 title: Acetaminophen (APAP)
 tags: [drug, DILI, direct-hepatotoxin, ALF]
-related: [n-acetylcysteine, dili-phenotypes-and-latency, dili-management-and-rechallenge, hypoxic-hepatitis, viral-hepatitis-testing, aasld-dili-guidance]
-sources: ["aasld-dili-practice-guidance.pdf"]
+related: [n-acetylcysteine, dili-phenotypes-and-latency, dili-management-and-rechallenge, hypoxic-hepatitis, viral-hepatitis-testing, aasld-dili-guidance, easl-2017-acute-liver-failure, acute-liver-failure, kings-college-criteria, henrion-2007-hypoxic-hepatitis-clinician, hypoxic-vs-other-acute-hepatocellular-injury]
+sources: ["aasld-dili-practice-guidance.pdf", "easl-2017-acute-liver-failure.pdf", "henrion-2007-hypoxic-hepatitis-clinician.pdf"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # Acetaminophen (APAP)
@@ -52,3 +52,16 @@ Table 10 (AASLD DILI p.20):
 - ALF 징후(응고장애, 뇌병증)가 있으면 중환자실에서 면밀히 감시하고 간이식 센터 의뢰를 빨리 고려합니다(AASLD DILI p.20).
 - 예후 점수로 King's College Hospital 기준, MELD, Acute Liver Failure Study Group 지수가 있고, 예후는 뇌병증, 응고장애, 산증 정도와 관련됩니다(AASLD DILI p.19). 중환자 치료 개선으로 이식률이 8%로 낮아졌습니다(AASLD DILI p.19).
 - 특이체질형 DILI 환자의 경도~중등도 통증에는 APAP를 하루 최대 2 g 분할로 권고합니다(AASLD DILI p.18).
+
+## EASL ALF 2017
+- Paracetamol 과다복용(POD) 간독성은 대개 >10,000 IU/L의 극단적 아미노전이효소 상승과 정상 빌리루빈이 특징이며, 초기에 대사성 산증, 젖산 상승, 저혈당, 급성 신손상이 생길 수 있습니다(EASL ALF 2017 p.6). [[acute-liver-failure]]
+- 입원 시 모든 환자에서 독성 선별검사와 혈청 paracetamol 농도를 측정하지만, 간부전 시점에는 대개 검출되지 않아 병력과 검사 양상으로 판단하는 경우가 많습니다(EASL ALF 2017 p.6, p.8).
+- 응고장애와 효소 상승이 이미 있으면 NAC를 줍니다(근거 II-2, 권고 1) (EASL ALF 2017 p.8).
+- 여러 날에 걸친 분할 섭취(staggered)는 단일 섭취보다 다장기 부전이 잦고 예후가 나쁩니다(EASL ALF 2017 p.8).
+- 금식, 과음, phenytoin 같은 약물은 글루타티온 저장 감소로 민감도를 높입니다(EASL ALF 2017 p.6).
+- NAC는 POD 후 15시간 이내에 주면 간손상 진행을 줄이고, 48시간까지도 장기 기능 이상에 이득이 있었으며, 사용은 최대 5일로 제한하는 것이 권장됩니다(EASL ALF 2017 p.11). [[n-acetylcysteine]]
+- 응급 이식 기준을 충족한 POD 환자도 현대 중환자 치료로 20-40%가 생존한다는 보고가 있습니다(EASL ALF 2017 p.6). 이식 기준은 [[kings-college-criteria]].
+- 빌리루빈은 paracetamol 원인 ALF에서 예후 가치가 없습니다(EASL ALF 2017 p.23).
+
+## 저산소성 간염과의 감별
+- acetaminophen 간염은 생화학 양상이 HH와 비슷하므로 혈중 농도 측정이 유용할 수 있고, 고령·전신 상태 불량 환자에서 HH 진단 전 배제해야 합니다(Henrion 2007 p.1-2). [[hypoxic-hepatitis]] [[hypoxic-vs-other-acute-hepatocellular-injury]]

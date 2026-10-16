@@ -2,10 +2,10 @@
 type: entity
 title: 젖산탈수소효소 (Lactate dehydrogenase, LDH)
 tags: [ldh, laboratory-test, hypoxic-hepatitis]
-related: [hypoxic-hepatitis, hypoxic-vs-other-acute-hepatocellular-injury, waseem-chen-hypoxic-hepatitis-review]
-sources: ["hypoxic-hepatitis-review.pdf"]
+related: [hypoxic-hepatitis, hypoxic-vs-other-acute-hepatocellular-injury, waseem-chen-hypoxic-hepatitis-review, henrion-2007-hypoxic-hepatitis-clinician, fuhrmann-2011-hypoxic-hepatitis-icu-mortality]
+sources: ["hypoxic-hepatitis-review.pdf", "henrion-2007-hypoxic-hepatitis-clinician.pdf", "fuhrmann-2011-hypoxic-hepatitis-mortality-icu.pdf"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # 젖산탈수소효소 (LDH)
@@ -19,3 +19,4 @@ updated: 2026-10-16
 ## 근거 공백
 - ALT/LDH 비나 LDH 절단값은 이 원문에 제시되지 않습니다.
 - 용혈 등 간 외 LDH 상승 원인과의 구분은 다루지 않습니다.
+- Henrion 2007은 LDH 상승을 HH의 생화학 특징으로 들지만 수치는 없고(Henrion 2007 p.1), Fuhrmann 2011은 LDH를 보고하지 않습니다(Fuhrmann 2011 p.4). ALT/LDH 비는 HH 원문 세 편(HH review, Henrion 2007, Fuhrmann 2011) 모두 없습니다.

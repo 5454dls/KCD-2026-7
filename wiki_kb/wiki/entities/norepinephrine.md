@@ -2,10 +2,10 @@
 type: entity
 title: "Norepinephrine (노르에피네프린)"
 tags: [vasopressor, catecholamine, septic-shock]
-related: [prescott-2026-ssc-sepsis-guidelines, sepsis-hemodynamic-resuscitation, vasopressin]
-sources: ["ssc-2026-sepsis-guidelines.pdf"]
+related: [prescott-2026-ssc-sepsis-guidelines, sepsis-hemodynamic-resuscitation, vasopressin, fuhrmann-2011-hypoxic-hepatitis-icu-mortality, hypoxic-hepatitis, hypoxic-hepatitis-icu-epidemiology-prognosis]
+sources: ["ssc-2026-sepsis-guidelines.pdf", "fuhrmann-2011-hypoxic-hepatitis-mortality-icu.pdf"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # Norepinephrine (노르에피네프린)
@@ -27,5 +27,9 @@ updated: 2026-10-16
 - vasopressin은 norepinephrine 중앙값 0.3 μg/kg/min (IQR 0.2-0.5)에서, epinephrine은 중앙값 0.8 μg/kg/min (IQR 0.5-1.0)에서 추가합니다 (SSC 2026 p.37).
 - 스테로이드 시작 시점은 norepinephrine < 0.2 μg/kg/min 34%, 0.2-0.3 μg/kg/min 38%, > 0.3 μg/kg/min 28%였습니다 (SSC 2026 p.46).
 
+## 간 관련 (Fuhrmann 2011)
+- HH 입실은 ICU 입실 시 norepinephrine 용량 중앙값이 0.42 µg/kg/min으로 비HH(0.18)보다 높았습니다(Fuhrmann 2011 p.3). [[hypoxic-hepatitis]]
+- 카테콜아민은 간혈관을 수축시키고 장간막 혈류를 돌리지만, 승압제가 HH를 악화시키는지는 밝혀지지 않았습니다(Fuhrmann 2011 p.6). 승압제 치료 환자에서 HH는 독립 사망 인자였습니다(RR 4.91)(Fuhrmann 2011 p.4). [[hypoxic-hepatitis-icu-epidemiology-prognosis]]
+
 ## 근거 공백
-- 간 혈류나 간 기능에 대한 norepinephrine의 영향은 원문에 없습니다.
+- 간 혈류나 간 기능에 대한 norepinephrine의 영향은 SSC 2026에 없고, Fuhrmann 2011도 승압제가 HH를 악화시키는지는 밝혀지지 않았다고 합니다(Fuhrmann 2011 p.6).

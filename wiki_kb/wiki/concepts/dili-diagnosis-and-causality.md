@@ -2,10 +2,10 @@
 type: concept
 title: DILI 진단 기준과 인과성 평가
 tags: [DILI, diagnosis, R-ratio, causality, RUCAM, RECAM, exclusion]
-related: [aasld-dili-guidance, rucam, recam, livertox, dili-phenotypes-and-latency, dili-management-and-rechallenge, herbal-dietary-supplement-injury, liver-chemistry-patterns-r-ratio, normal-alt-and-uln, hepatocellular-injury-workup, cholestatic-injury-workup, viral-hepatitis-testing, hypoxic-hepatitis, isolated-hyperbilirubinemia, sepsis-liver-and-organ-dysfunction, icu-liver-cause-evidence-map]
-sources: ["aasld-dili-practice-guidance.pdf"]
+related: [aasld-dili-guidance, rucam, recam, livertox, dili-phenotypes-and-latency, dili-management-and-rechallenge, herbal-dietary-supplement-injury, liver-chemistry-patterns-r-ratio, normal-alt-and-uln, hepatocellular-injury-workup, cholestatic-injury-workup, viral-hepatitis-testing, hypoxic-hepatitis, isolated-hyperbilirubinemia, sepsis-liver-and-organ-dysfunction, dili-case-definition-thresholds, dili-case-definition-disagreements, aithal-2011-dili-case-definition, acute-liver-failure, easl-2017-acute-liver-failure, horvatits-2019-liver-injury-critical-illness, jenniskens-2016-cholestatic-dysfunction-sepsis, critical-illness-cholestatic-dysfunction, icu-liver-cause-evidence-map]
+sources: ["aasld-dili-practice-guidance.pdf", "aithal-2011-dili-case-definition.pdf", "easl-2017-acute-liver-failure.pdf", "horvatits-2019-liver-injury-critical-illness.pdf", "jenniskens-2016-cholestatic-dysfunction-sepsis.pdf"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # DILI 진단 기준과 인과성 평가
@@ -28,6 +28,8 @@ updated: 2026-10-16
 
 - DILI가 이보다 낮은 이상치로 나타날 수도 있지만, 일반 인구의 최대 20%는 NAFLD, 알코올 등 흔한 원인으로 간 생화학 검사가 경미하게 올라 있습니다(AASLD DILI p.5). ULN 개념은 [[normal-alt-and-uln]] 참고.
 - 아미노전이효소 참고 범위는 검사실마다 다를 수 있고, 기저 간질환이 있으면 기저치가 이미 높을 수 있습니다(AASLD DILI p.21).
+- 국제 합의(Aithal 2011)는 ALT ≥5×ULN, ALP ≥2×ULN, 또는 ALT ≥3×ULN과 빌리루빈 >2×ULN 중 하나를 기준으로 하며, 반복 측정 대신 사건 중 최고치로 판정합니다(Aithal 2011 p.2). 비교는 [[dili-case-definition-disagreements]], 세부는 [[dili-case-definition-thresholds]].
+- Aithal 2011은 빌리루빈 단독 상승과 GGT 단독 상승을 DILI로 인정하지 않습니다(Aithal 2011 p.3).
 
 ## R 값과 손상 패턴
 
@@ -63,6 +65,10 @@ Figure 1의 감별 목록(AASLD DILI p.8):
 - R ≤ 2 (담즙정체형): 총담관결석(도플러 초음파), 원발 담즙성 담관염(AMA, 간생검), 담도 협착(예: 원발 경화성 담관염; 담관조영), 췌담도 종양(CT 또는 MRI), 악성 침윤(예: 림프종; LDH, 영상), TPN 담즙정체(병력), 골질환(ALP isoenzymes).
 - 그림 설명에 따르면 밑줄 친 검사는 대부분의 사례에서 해야 하며, 일부 질환은 비전형적으로 나타날 수 있습니다(AASLD DILI p.8).
 - 증상이 지속되거나, dechallenge 후 기대만큼 호전되지 않거나, AIH가 의심되거나, 비전형적이면 간생검을 고려합니다(AASLD DILI p.8).
+- Aithal 2011도 바이러스 혈청(A, B, C형, CMV, EBV), HEV, 담도 폐쇄, 저산소 손상 배제를 요구하고, 지속되는 담즙정체에서는 HSV를 고려합니다(Aithal 2011 p.5).
+- EASL ALF 2017은 비 paracetamol DILI에 의한 ALF를 배제 진단으로 보고, 6개월 이내 모든 약물·비타민·한약을 기록하며, 토착형 HEV가 DILI로 오진될 수 있다고 경고합니다(EASL ALF 2017 p.7-8). [[acute-liver-failure]]
+- 서방형 niacin, cocaine, methamphetamine은 저관류로 간 허혈을 일으켜 약물 원인처럼 보일 수 있습니다(EASL ALF 2017 p.7).
+- ICU의 DILI 발생률 자료는 없고, HLI와 중증 질환 담즙정체 같은 더 흔한 원인을 먼저 배제해야 합니다(Horvatits 2019 p.6). 거의 모든 항생제에 담즙정체성 기능 이상이 보고되어 있고, 마취제·진정제도 ICU에서 흔한 담즙정체 관련 약물군입니다(Jenniskens 2016 p.8). [[critical-illness-cholestatic-dysfunction]]
 
 ## 보조 정보: signature, dechallenge, LiverTox
 
@@ -89,6 +95,8 @@ Figure 1의 감별 목록(AASLD DILI p.8):
 - DILIN 전문가 의견 범주(Table 6): definite > 95%, highly likely 75-95%, probable 50-74%, possible 25-49%, unlikely < 25%, 그리고 핵심 자료가 없는 insufficient data입니다(AASLD DILI p.13).
 - 전문가 의견은 비전형 사례, 중단된 노출, 조직 소견 같은 미묘한 단서를 반영할 수 있고 RUCAM만큼 유용하다고 보고되었지만, 일상 진료에서는 거의 이용할 수 없습니다(AASLD DILI p.13-14).
 - WHO-Uppsala 같은 일반적 인과성 모델은 간 특이성이 없어 쓰이지 않습니다(AASLD DILI p.13).
+- Aithal 2011은 RUCAM을 쓰고, 여러 약물이 의심되면 약물마다 따로 적용하며, 둘 이상이 possible 이상이면 전문가가 signature 패턴과 문헌으로 순위를 매기도록 합니다(Aithal 2011 p.4).
+- RUCAM의 "decrease"는 ULN 초과 정점에서 최소 50% 하락으로 해석하고, DILI 발현 시점은 첫 기준 충족 검사일입니다(Aithal 2011 p.4).
 
 ## 인과성 평가의 한계
 
@@ -107,6 +115,7 @@ Figure 1의 감별 목록(AASLD DILI p.8):
 - 담즙정체형(R ≤ 2)이면 Figure 1에 따라 총담관결석 확인을 위한 초음파와 TPN 병력을 먼저 확인합니다(AASLD DILI p.8 기반). [[cholestatic-injury-workup]] 참고.
 - 바이러스 간염 표지자와 간 영상은 모든 의심 DILI에서 권고되므로, 이것이 비어 있으면 DILI 판단의 확신이 낮다고 표시합니다(AASLD DILI p.7 기반). [[viral-hepatitis-testing]] 참고.
 - 약물을 여러 개 동시에 쓰는 경우 RUCAM·RECAM의 한계를 원문이 명시하므로, 점수만으로 단정하지 않고 시간 경과와 dechallenge를 함께 봅니다(AASLD DILI p.13-14 기반).
+- Aithal 2011 Table 1은 간 검사 이상과 같은 시기의 허혈·저혈압, 심한 저산소혈증, 울혈성 심부전, 패혈증을 기록하도록 하므로, DILI 판단 전에 이 경쟁 원인 존재 여부를 확인하는 근거가 됩니다(Aithal 2011 p.8).
 
 ## 근거 공백
 
@@ -114,4 +123,4 @@ Figure 1의 감별 목록(AASLD DILI p.8):
 - 수십 가지 약물을 동시에 쓰는 ICU 상황에서 의심 약물을 고르는 방법은 제시하지 않으며, RECAM은 단일 약물용입니다(AASLD DILI p.13).
 - 허혈, 패혈증, TPN 담즙정체는 감별 목록에 이름과 평가 방법(병력, 심초음파)만 있고, DILI와 구별하는 수치 기준(예: 아미노전이효소 하강 속도)은 없습니다(AASLD DILI p.7-8).
 - 용혈이나 빌리루빈 단독 상승의 감별은 다루지 않습니다. [[isolated-hyperbilirubinemia]] 참고.
-- 패혈증 관련 담즙정체는 별도 항목으로 다루지 않습니다. [[sepsis-liver-and-organ-dysfunction]] 참고.
+- 패혈증 관련 담즙정체는 AASLD에서 별도 항목으로 다루지 않습니다. 다른 원문의 기준은 [[critical-illness-cholestatic-dysfunction]], [[sepsis-liver-and-organ-dysfunction]] 참고.

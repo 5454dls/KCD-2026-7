@@ -2,10 +2,10 @@
 type: concept
 title: "담즙정체형 손상(ALP 상승) 평가"
 tags: [담즙정체형, ALP, GGT, 초음파, 담도폐쇄, PBC, PSC, 패혈증, TPN]
-related: [kwo-2017-acg-abnormal-liver-chemistries, liver-chemistry-patterns-r-ratio, isolated-hyperbilirubinemia, gamma-glutamyl-transferase, sepsis-liver-and-organ-dysfunction, dili-diagnosis-and-causality, congestive-hepatopathy, icu-liver-cause-evidence-map]
-sources: ["kwo-2017-acg-abnormal-liver-chemistries.pdf"]
+related: [kwo-2017-acg-abnormal-liver-chemistries, liver-chemistry-patterns-r-ratio, isolated-hyperbilirubinemia, gamma-glutamyl-transferase, sepsis-liver-and-organ-dysfunction, dili-diagnosis-and-causality, congestive-hepatopathy, critical-illness-cholestatic-dysfunction, sc-cip-sclerosing-cholangitis-critically-ill, parenteral-nutrition-icu-cholestasis, icu-cholestasis-definition-disagreements, jenniskens-2016-cholestatic-dysfunction-sepsis, horvatits-2019-liver-injury-critical-illness, icu-liver-cause-evidence-map]
+sources: ["kwo-2017-acg-abnormal-liver-chemistries.pdf", "jenniskens-2016-cholestatic-dysfunction-sepsis.pdf", "horvatits-2019-liver-injury-critical-illness.pdf"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # 담즙정체형 손상(ALP 상승) 평가
@@ -35,6 +35,8 @@ updated: 2026-10-16
 - 가임기 여성은 임신성 간내 담즙정체 평가를 위해 임신 검사를 합니다 (ACG 2017 p.15).
 - 사르코이드증, 비정형 진균 감염, 악성종양 같은 침윤성 질환도 ALP를 올리고 간내 담즙정체를 일으킬 수 있습니다 (ACG 2017 p.15).
 - 황달과 복통이 있으면 담석과 염증성 장질환을 포함한 간담도질환 병력을 확인합니다 (ACG 2017 p.10).
+- 지속 담즙정체에서 초음파 총담관 >7 mm이면 간외 담즙정체로 보고 CT 또는 MRI/MRCP로 진행하며, 진단 정확도는 양성·악성 질환에서 각각 83%/91%(CT), 98%/98%(MRCP)입니다(Horvatits 2019 p.4).
+- 원인 불명의 지속 황달은 ERC로 SC-CIP를 배제할 수 있습니다(Horvatits 2019 p.4). [[sc-cip-sclerosing-cholangitis-critically-ill]]
 - 우상복부 압통과 Murphy 징후 양성은 담낭염을 포함한 간담도질환을 시사할 수 있습니다 (ACG 2017 p.11).
 
 ## Figure 4 알고리즘
@@ -55,6 +57,10 @@ updated: 2026-10-16
 - Table 5의 간담도 원인: 담관 폐쇄(총담관결석, 악성 폐쇄, 담관 흡충), 담관 협착, 담관소실증(ductopenia), AIDS 담관병증, PBC·PSC, 약물·DILI, 침윤성 질환(사르코이드, 육아종성 간염, 결핵, 아밀로이드, 전이암, 림프종), 간농양, 간세포암, 바이러스 간염, 간경변, 소실성 담관 증후군, 허혈성 담관병증(ischemic cholangiopathy), 양성 재발성 담즙정체, 알코올 간질환, 임신성 간내 담즙정체, 양성 수술 후 황달, ICU 황달 또는 다인성 황달, TPN, 간이식 거부, 급성 알코올 간염, 겸상적혈구 간 위기, 패혈증, 울혈성 심부전, HLH (ACG 2017 p.13).
 - Table 5의 비간 원인: 골질환(골연화증, Paget병, 원발성 골악성종양, 골전이), 갑상선기능항진증, 부갑상선기능항진증, 임신 3기, 만성 신부전, 림프종, 간외 악성종양, 울혈성 심부전, 소아 성장, 감염, 염증, 지방 식사 후 ALP 유입, 혈액형 O·B, 골수 화생, 복막염, 당뇨병, 위궤양, 고령 특히 여성 (ACG 2017 p.13).
 - 담즙정체에서는 비타민 K가 흡수되지 않아 PT가 늘어날 수 있습니다 (ACG 2017 p.4).
+- ICU에서 담즙정체라 부르는 것은 대부분 비폐쇄성 간내 변화이며, 폐쇄성 담즙정체는 초음파로 쉽게 진단되지만 원인인 경우는 드뭅니다(Jenniskens 2016 p.2). [[critical-illness-cholestatic-dysfunction]]
+- 중증 환자 담즙정체의 실무 기준은 총빌리루빈 >2 mg/dL 또는 ALP·GGT 2-3배 상승입니다(Horvatits 2019 p.2-3). 기준 차이는 [[icu-cholestasis-definition-disagreements]]에 있습니다.
+- 거의 모든 항생제와 마취제·진정제가 ICU 약물 유발 담즙정체와 관련됩니다(Jenniskens 2016 p.8).
+- PN과 ICU 담즙정체의 관계는 [[parenteral-nutrition-icu-cholestasis]]에 있습니다.
 
 ## ICU 원인 판단에 쓰는 법
 (아래는 원문 내용을 ICU 상황에 적용한 파생 해석입니다.)
@@ -65,8 +71,8 @@ updated: 2026-10-16
 - ALP 단독 상승이면 GGT로 간 기원부터 확인해 골질환 등 비간 원인을 걸러냅니다 (ACG 2017 p.14).
 
 ## 근거 공백
-- 패혈증 유발 담즙정체의 진단 기준, 발생 시점, 검사 소견은 원문에 없습니다(원인 목록과 참고문헌 인용만 있음).
-- TPN 관련 간 기능 이상의 기간·용량 기준이나 진단 기준은 없습니다.
-- 급성 담관염과 급성 담낭염의 진단 기준(발열, 영상 소견, 중증도)과 처치 시점은 다루지 않습니다.
-- 무결석 담낭염, 허혈성 담관병증의 ICU 특이 정보는 없습니다.
-- ICU 환자에서 초음파의 민감도나 영상 선택 기준은 없습니다.
+- 패혈증 유발 담즙정체의 진단 기준은 ACG 2017에는 없으나 [[critical-illness-cholestatic-dysfunction]]에 다른 원문의 기준이 있습니다. 발생 시점 기준은 여전히 없습니다.
+- TPN 관련 간 기능 이상의 기간·용량 기준이나 진단 기준은 어느 원문에도 없습니다([[parenteral-nutrition-icu-cholestasis]]).
+- 급성 담관염과 급성 담낭염의 진단 기준(발열, 영상 소견, 중증도)과 처치 시점은 다루지 않습니다(TG18 없음).
+- 무결석 담낭염의 ICU 특이 정보는 새 원문에도 없습니다. 허혈성 담관병증과 관련해서는 SC-CIP가 관류 저하·저산소증·반복 담관염으로 촉발된다는 서술이 있습니다(Horvatits 2019 p.5).
+- ICU 영상 선택은 Horvatits 2019의 총담관 >7 mm 기준과 CT·MRCP 정확도로 부분 해소되었으나(Horvatits 2019 p.4), ICU 환자에서 초음파 자체의 민감도는 없습니다.

@@ -1,7 +1,7 @@
 {
- "wiki_sha256": "ea1143a3ace2e50feacd3d7cd835eb6c9863cd63e2c64d773c8ab9341e5785d3",
- "chunks": 254,
- "pages": 42,
+ "wiki_sha256": "e16700007b742a76b8320f3ae1f66f795b655693ba468dc47512b6c10077f3ae",
+ "chunks": 451,
+ "pages": 63,
  "chunking": {
   "chars": 1000,
   "overlap": 200,
