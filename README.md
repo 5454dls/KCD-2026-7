@@ -4,6 +4,7 @@ MIMIC-IV ICU 환자의 ALT·ALP·총빌리루빈을 한 시간 단위로 재생�
 
 - **시연 페이지**: GitHub Pages (`site/`). 저장소 Settings → Pages → Source: GitHub Actions 설정 후 `main`에 병합하면 배포됩니다.
 - **검토 문서**: [docs/REVIEW.md](docs/REVIEW.md) (계획 검토, 수정 내역, 발표 전략, 오늘 밤 실행 순서)
+- **실행 순서**: [docs/RUNBOOK.md](docs/RUNBOOK.md) (전체 MIMIC-IV 모델 개발 → 결과 표 → 사이트·발표 자료 교체)
 
 ## 현재 상태
 
@@ -31,6 +32,8 @@ python scripts/fhir_demo_to_csv.py --out data/mimic-iv-demo-csv   # PhysioNet �
 | `scripts/make_synthetic_site_data.py` | 실제 실행 전 화면 확인용 합성 데이터 |
 | `scripts/fhir_demo_to_csv.py` | MIMIC-IV Demo FHIR 판 → 노트북 CSV 형식 변환 |
 | `kcd_liver/rule_agent.py` | Agent 1 규칙 기반 기준 모델 (LLM 비교군) |
+| `kcd_liver/develop.py`, `scripts/develop_models.py` | 전체 MIMIC-IV 모델 개발·평가, Table 1·2, 전과 후 실험 결과 |
+| `reference/mimic_iv_demo_subject_ids.csv` | 학습에서 제외하는 공개 데모 환자 100명 |
 | `site/index.html` | 정적 시연 페이지 (외부 라이브러리 없음, 오프라인 실행 가능) |
 
 ## 실행

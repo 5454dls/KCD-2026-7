@@ -1,0 +1,77 @@
+# 오늘 밤 실행 순서 (전체 MIMIC-IV 개발 → 결과 표 → 발표)
+
+전체 MIMIC-IV는 기관 PC에서만 실행합니다. 이 저장소에는 집계 결과(`results_full.json`)만 들어옵니다.
+
+## 0. 준비 (5분)
+
+```powershell
+pip install pandas numpy scikit-learn matplotlib ipywidgets joblib
+git clone https://github.com/5454dls/KCD-2026-7   # 또는 받은 zip / bundle
+```
+
+bundle로 받은 경우: `git clone KCD-2026-7.bundle KCD-2026-7` 후 `git remote set-url origin https://github.com/5454dls/KCD-2026-7.git` 그리고 `git push -u origin claude/sweet-faraday-yxaf4j`.
+
+## 1. 노트북을 전체 MIMIC-IV로 실행
+
+`notebooks/KCD_MIMICIV_liver_agents_v2.ipynb` 설정 셀에서:
+
+| 변수 | 값 |
+|---|---|
+| `ROOT` | 공유 드라이브 MIMIC-IV 3.1 경로 (기본값 그대로) |
+| `DATA_SOURCE` | `'mimic-iv'` |
+| `MAX_PATIENTS` | `None` (시간이 부족하면 `20000`부터) |
+| LLM | 기관 승인 엔드포인트가 있으면 환경변수 `LLM_BASE_URL`, `LLM_MODEL`. 없으면 규칙 모델로 자동 실행 |
+
+처음부터 끝까지 실행합니다. 실행 시간은 이 환경에서 측정하지 못했습니다(데모 100명 약 2분). labevents 전체 스캔이 가장 오래 걸립니다.
+
+## 2. 모델 개발과 결과 표 (한 줄)
+
+```powershell
+python scripts/develop_models.py --out-dir notebooks/kcd_liver_v2_outputs --mimic-root "\\10.7.12.146\데이터 및 소스\MIMIC\MIMIC4-V3.1" --model-dir models
+```
+
+생성물:
+
+- `notebooks/kcd_liver_v2_outputs/results_full.json`: 사이트와 발표 자료가 읽는 집계 결과 (10 미만 칸 가림)
+- `notebooks/kcd_liver_v2_outputs/results_tables/table1_baseline.csv`, `table2_performance.csv`, `shadow_before_after.json`
+- `models/agent3_gbm.joblib`, `models/agent2_gbm.joblib`: **커밋하지 않습니다** (자격 인증 데이터로 학습)
+
+## 3. 시연 화면을 학습된 모델로 다시 만들기
+
+노트북을 공개 데모 데이터로 한 번 더 실행합니다.
+
+```powershell
+python scripts/fhir_demo_to_csv.py --out data/mimic-iv-demo-csv
+set KCD_MODEL_DIR=models
+```
+
+설정: `ROOT = Path('data/mimic-iv-demo-csv')`, `DATA_SOURCE = 'mimic-iv-demo'`, `MAX_PATIENTS = None`. 마지막 셀이 `site/data/`를 갱신합니다. 데모 환자 100명은 2단계 학습에서 제외되어 있으므로 시연은 처음 보는 환자에 대한 예측입니다.
+
+## 4. 결과를 사이트에 넣고 공개 전 확인
+
+```powershell
+copy notebooks\kcd_liver_v2_outputs\results_full.json site\data\results_full.json
+python scripts/check_public_data.py
+python -m http.server -d site 8000
+```
+
+`results_full.json`이 있으면 사이트의 연구 설계·성능·전과 후가 자동으로 전체 MIMIC 값으로 바뀝니다.
+
+## 5. 발표 자료 숫자 교체
+
+발표 자료의 숫자는 지금 데모 100명 값입니다. 아래 키를 `results_full.json`에서 찾아 바꿉니다. `[__]`는 비어 있는 칸입니다.
+
+| 슬라이드 | 바꿀 값 | JSON 키 |
+|---|---|---|
+| 연구 설계 | 140, 100명, 70/30, 6,504, 1,520, 281, 16 | `flow`, `table1[0]`, `agent3_development`, `agent2_development` |
+| 기초 특성 | 표 전체 | `table1` (또는 `table1_baseline.csv`) |
+| 모델 성능 | AUROC·AUPRC·Brier·보정 | `agent3_performance.models`, `agent2_performance`, `agent1_performance` |
+| 빛 | 환자 수, 판단 시점, 사건 수, AUROC | `table1[0].overall`, `agent3_development.landmarks_total`, `agent2_development.events` |
+| 그림자 1 | 1.00 → 0.78 | `shadow_leakage.before_row_split`, `after_patient_split` |
+| 그림자 2 | 6,484 → 1,520, 77% | `shadow_missing_as_normal` |
+| 그림자 3 | [__]%p | `shadow_competing.evaluation.naive_resolution_48h − aj_resolution_48h` |
+| 그림자 4 | [__]% → [__]% | `shadow_input` (`combined`, `guarded` false/true의 `adoption_rate`). LLM 없이 실행했다면 결과 없음이라고 말함 |
+| 그림자 5 | 78%, 1/3 | `agent3_development.label_counts`, `agent1_performance.n_with_proxy / n_eval_events` |
+| 시스템 | 177 → 16 | `alert_aggregation` |
+
+`results_full.json`을 이 대화에 올려주시면 사이트와 발표 자료 숫자를 바로 교체합니다.
