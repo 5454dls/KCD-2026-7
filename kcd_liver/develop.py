@@ -760,7 +760,7 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
                                 Path(model_dir) / f"agent3_gbm_{k:g}x.joblib")
             rows3.append(row)
         R["agent3_by_threshold"] = rows3
-    R["event_thresholds"] = threshold_table(cohort, lab)
+    R["event_thresholds"] = _secondary_suppress(threshold_table(cohort, lab), min_cell)
 
     # ---------------- Agent 2: at the first alert
     perf2 = {"models": []}
@@ -829,6 +829,43 @@ NOT_COUNTS = {"seed", "landmark_step_hours", "max_leaf_nodes", "n_features", "cu
               # settings and ranks, not patient counts
               "horizon_h", "horizon_hours", "horizons", "step_hours", "hour", "rank", "k_selected", "n_clusters", "n_boot", "stable_threshold",
               "threshold_x_uln"}
+
+
+# groups of counts that add up to a shown total: hiding one cell alone would let it be recovered by subtraction
+PARTITIONS = [("patients_with_event", ["recovered_before_icu_discharge", "unrecovered_before_icu_discharge", "recovery_unassessable"]),
+              ("patients_with_event", ["icu_death", "alive_icu_discharge"])]
+
+
+def _secondary_suppress(rows, min_cell):
+    """Complementary suppression: in each partition, if exactly one cell is small, also hide the next smallest one."""
+    if not min_cell or not rows:
+        return rows
+    for r in rows:
+        for total, parts in PARTITIONS:
+            if total not in r or not all(p in r for p in parts):
+                continue
+            small = [p for p in parts if isinstance(r[p], int) and 0 < r[p] < min_cell]
+            if len(small) == 1:
+                rest = sorted((p for p in parts if p not in small and isinstance(r[p], int)), key=lambda p: r[p])
+                if rest:
+                    r[rest[0]] = 0 if r[rest[0]] == 0 else -1  # marker, replaced by None below
+        for k, v in list(r.items()):
+            if v == -1:
+                r[k] = None
+                r["_suppressed"] = True
+    return rows
+
+
+def _suppress_label_counts(d: dict, total: int | None, min_cell):
+    """Label tallies with a known total: hide a second label when only one is small."""
+    if not min_cell or not d:
+        return d
+    small = [k for k, v in d.items() if isinstance(v, int) and 0 < v < min_cell]
+    if len(small) == 1 and total is not None:
+        rest = sorted((k for k, v in d.items() if k not in small and isinstance(v, int)), key=lambda k: d[k])
+        if rest:
+            d[rest[0]] = None
+    return d
 
 
 def _suppress_counts(o, min_cell, key=None):
@@ -1163,7 +1200,7 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
         ev_all = events.merge(outcomes[["case_id", "observed_path"] + (["died_icu"] if "died_icu" in outcomes else [])], on="case_id", how="inner")
         ev2 = ev_all[ev_all.observed_path.isin(PROGNOSIS)]  # recovery assessable
         R["prognosis_development"] = {"events": int(len(ev_all)), "assessable": int(len(ev2)),
-                                      "label_counts": ev_all.observed_path.value_counts().to_dict(),
+                                      "label_counts": _suppress_label_counts({k: int(v) for k, v in ev_all.observed_path.value_counts().items()}, len(ev_all), min_cell),
                                       "definition": "recovery = at ICU discharge the last ALT/ALP/TBIL after the event are all < 2x; unrecovered = any last >= 2x; unassessable = not all re-measured; death = ICU death"}
         death_bundle = None
         if "died_icu" in ev_all and ev_all.split.eq("evaluation").any() and ev_all[ev_all.split.eq("development")].died_icu.astype(bool).nunique() == 2:

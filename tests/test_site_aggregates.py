@@ -97,3 +97,15 @@ class PatternTests(unittest.TestCase):
         out, lab = gmm_explore(df, list(df.columns), ks=range(2, 4), n_boot=5)
         self.assertNotIn("LACTATE_latest", out["features"])  # observed in <50% of rows
         self.assertEqual(len(lab), n)
+
+
+class ComplementarySuppressionTests(unittest.TestCase):
+    def test_single_hidden_cell_is_not_recoverable_by_subtraction(self):
+        from kcd_liver.develop import _secondary_suppress, _suppress_counts
+        r = [{"patients_with_event": 43, "recovered_before_icu_discharge": 14, "unrecovered_before_icu_discharge": 26,
+              "recovery_unassessable": 3, "icu_death": 1, "alive_icu_discharge": 42}]
+        out = _suppress_counts(_secondary_suppress(r, 10), 10)[0]
+        self.assertIsNone(out["icu_death"])
+        self.assertIsNone(out["alive_icu_discharge"])
+        hidden = [k for k in ("recovered_before_icu_discharge", "unrecovered_before_icu_discharge", "recovery_unassessable") if out[k] is None]
+        self.assertGreaterEqual(len(hidden), 2)
