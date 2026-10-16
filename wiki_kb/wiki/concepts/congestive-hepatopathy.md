@@ -2,8 +2,8 @@
 type: concept
 title: 울혈성 간병증 (Congestive hepatopathy, 간의 수동 울혈)
 tags: [congestive-hepatopathy, cardiac-hepatopathy, right-heart-failure, passive-congestion]
-related: [hypoxic-hepatitis, waseem-chen-hypoxic-hepatitis-review, hypoxic-vs-other-acute-hepatocellular-injury, liver-chemistry-patterns-r-ratio, cholestatic-injury-workup, icu-liver-cause-evidence-map]
-sources: ["hypoxic-hepatitis-review.pdf"]
+related: [kwo-2017-acg-abnormal-liver-chemistries, hypoxic-hepatitis, waseem-chen-hypoxic-hepatitis-review, hypoxic-vs-other-acute-hepatocellular-injury, liver-chemistry-patterns-r-ratio, cholestatic-injury-workup, icu-liver-cause-evidence-map]
+sources: ["hypoxic-hepatitis-review.pdf", "kwo-2017-acg-abnormal-liver-chemistries.pdf"]
 created: 2026-10-16
 updated: 2026-10-16
 ---
@@ -28,6 +28,13 @@ updated: 2026-10-16
 ## HH와의 관계 (원문 기준)
 - 원문에서 울혈은 별도의 원인이라기보다 HH를 일으키는 토대(소인)이고, 급성 저관류가 더해져 aminotransferase 급상승형 손상(HH)으로 나타나는 구조입니다(HH review p.2).
 - 따라서 이 원문만으로는 "급성 저관류 없는 단순 울혈"에 의한 간 검사 이상과 HH를 구분하는 기준을 얻을 수 없습니다(HH review p.1-4).
+
+## ACG 2017이 말하는 것
+- 울혈성 간병증(congestive hepatopathy)은 AST/ALT 상승 원인 표에서 대체로 AST>ALT인 원인으로 분류됩니다(ACG 2017 p.9).
+- 병력 청취에서 간 외 원인으로 심부전(heart failure)을 확인하도록 합니다(ACG 2017 p.10).
+- 울혈성 심부전(congestive heart failure)은 ALP 상승 원인 표에서 간담도성·비간성 원인 양쪽에 올라 있습니다(ACG 2017 p.13).
+- 울혈성 심부전은 포합형(conjugated) 빌리루빈 상승 원인 표에도 있습니다(ACG 2017 p.15).
+- ACG 2017은 울혈성 간병증 자체의 진단 기준을 제시하지 않습니다(ACG 2017 p.9, p.13, p.15).
 
 ## ICU 원인 판단에 쓰는 법
 (아래는 원문에서 도출한 적용 지침이며 원문의 직접 권고가 아닙니다.)
