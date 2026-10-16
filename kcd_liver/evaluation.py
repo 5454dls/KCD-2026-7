@@ -1,13 +1,4 @@
-"""Evaluation helpers that need no LLM judge and no extra dependencies.
-
-All functions are deterministic and work on the notebook's existing objects:
-- the Agent 1 answer dict ({"candidates": [...], "uncertainty": ..., "abstain": ...})
-- the snapshot dict produced by ``snapshot(stay_id, t)`` in the notebook
-- prediction / stress rows written to JSONL by the notebook
-
-These produce objective metrics (evidence grounding, paired comparison,
-wrong-cause adoption) that complement, not replace, the specialist reference.
-"""
+"""Evaluation helpers that need no LLM judge and no extra dependencies."""
 from __future__ import annotations
 
 import math
@@ -28,15 +19,11 @@ def wilson(k: int, n: int, z: float = 1.959964) -> tuple[float, float]:
 
 
 def mcnemar_exact(base_correct: Sequence[bool], new_correct: Sequence[bool]) -> dict:
-    """Exact (binomial) McNemar test for paired binary outcomes on the same cases.
-
-    Base vs cluster agents are evaluated on identical patients, so two separate
-    Wilson intervals ignore the pairing. Only discordant pairs carry information.
-    """
+    """Exact (binomial) McNemar test for paired binary outcomes on the same cases."""
     if len(base_correct) != len(new_correct):
         raise ValueError("paired sequences must have equal length")
-    b = sum(1 for x, y in zip(base_correct, new_correct) if x and not y)  # base only
-    c = sum(1 for x, y in zip(base_correct, new_correct) if y and not x)  # new only
+    b = sum(1 for x, y in zip(base_correct, new_correct) if x and not y)
+    c = sum(1 for x, y in zip(base_correct, new_correct) if y and not x)
     n = b + c
     if n == 0:
         p = 1.0
@@ -72,14 +59,7 @@ def _parse_time(value) -> datetime | None:
 
 
 def grounding_check(answer: Mapping, snapshot: Mapping, tolerance_minutes: float = 60) -> dict:
-    """Check that every cited support item exists in the as-of snapshot.
-
-    A support item is *verified* when its ``analyte_or_label`` matches a lab
-    analyte or context label in the snapshot and, if a ``measured_at`` is given,
-    a matching observation exists within ``tolerance_minutes``. Unverified items
-    are candidates for hallucinated or future-leaking evidence. This is a
-    mechanical check of citation existence, not of clinical reasoning quality.
-    """
+    """Check that every cited support item exists in the as-of snapshot."""
     observed: dict[str, list[datetime | None]] = {}
     for row in list(snapshot.get("labs", [])):
         observed.setdefault(str(row.get("analyte", "")).upper(), []).append(_parse_time(row.get("measured_at")))
@@ -117,13 +97,7 @@ def top_codes(answer: Mapping | None, k: int = 3) -> list[str]:
 
 
 def adoption_table(stress_rows: Iterable[Mapping], injected_cause: str | None = None) -> list[dict]:
-    """Summarise the misleading-input experiment without a human rater.
-
-    ``adopted`` = the injected (wrong) cause became the Top-1 candidate while it
-    was not Top-1 in the clean run of the same case and guard setting. Whether
-    the injected cause is truly wrong for that case must be confirmed by the
-    specialist; this table only measures *movement toward the injected claim*.
-    """
+    """Summarise the misleading-input experiment without a human rater."""
     rows = list(stress_rows)
     clean = {(r.get("case_id"), bool(r.get("guarded"))): top_codes(r.get("answer"), 1)
              for r in rows if r.get("input_condition") == "clean"}
@@ -134,7 +108,7 @@ def adoption_table(stress_rows: Iterable[Mapping], injected_cause: str | None = 
                                                "n": 0, "errors": 0, "adopted": 0, "abstained": 0})
         g["n"] += 1
         if "error" in r or not r.get("answer"):
-            g["errors"] += 1  # failures stay in the denominator
+            g["errors"] += 1
             continue
         inj = r.get("injected_cause", injected_cause)
         top1 = top_codes(r["answer"], 1)

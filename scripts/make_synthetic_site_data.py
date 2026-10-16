@@ -32,7 +32,6 @@ UNIT = {"ALT": "iu/l", "AST": "iu/l", "ALP": "iu/l", "TBIL": "mg/dl", "INR": "",
 SYN = "SYNTHETIC: illustrative layout data, not a model output"
 
 
-# ---------------------------------------------------------------- case frames
 def lab_series(spec: dict[str, list[tuple[float, float]]]) -> list[dict]:
     """spec: analyte -> [(measured_hour, fold_or_value)] ; liver analytes given as fold ULN."""
     rows = []
@@ -176,7 +175,7 @@ def build_case(c):
             stress.append({"input_condition": cond, "guarded": False,
                            "answer": good if cond in ("clean", "claim") else wrong})
             stress.append({"input_condition": cond, "guarded": True, "answer": good if cond != "combined" else hedge})
-        stress[2]["answer"] = wrong  # claim, unguarded
+        stress[2]["answer"] = wrong
     obs = dict(c["observed"])
     obs.setdefault("endpoint", "hospital discharge/death")
     obs.setdefault("interpretation", "observed outcome, not forecast")
@@ -184,7 +183,6 @@ def build_case(c):
             "t0_hour": c["t0"], "frames": frames, "stress": stress, "observed": obs}
 
 
-# ---------------------------------------------------------------- cohort summary
 def build_summary():
     flow = pd.DataFrame({"step": ["all_icu_stays", "first_icu_per_patient", "adult_valid_stay", "analysis_sample", "first_abnormal_event"],
                          "n": [94458, 65366, 65297, 3000, 612]})

@@ -1,12 +1,4 @@
-"""External validation: apply the four frozen models to another hospital's data (MIMIC-IV layout), no retraining.
-
-1 Agent 3   hourly while normal   24 h abnormality risk            agent3_gbm.joblib
-2 Agent 2   first abnormal time   4-class prognosis (recovery x ICU death)  prognosis_gbm.joblib
-3 Agent 1   first abnormal time   10 causes 0/1 (rule code) + supplementary clustering  rule_agent.py, 08c_cluster_models.joblib
-4 Trajectory every hour           24 h quantile trajectory of ALT/AST/ALP/TBIL      trajectory_qgbm.joblib
-
-Every patient of the external site is an evaluation patient. Output is aggregate only (small cells suppressed).
-"""
+"""External validation: apply the four frozen models to another hospital's data (MIMIC-IV layout), no retraining."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -41,7 +33,6 @@ def validate(out_dir, model_dir, admissions=None, diagnoses=None, boot=200, min_
                   "models": {n: (load(n) or {}).get("trained_on") for n in
                              ["agent3_gbm.joblib", "prognosis_gbm.joblib", "trajectory_qgbm.joblib", "agent2_gbm.joblib"]}}}
 
-    # 1 Agent 3: hourly 24 h abnormality risk while all three triggers are normal
     b = load("agent3_gbm.joblib")
     if b:
         log("external: agent 3")
@@ -55,7 +46,6 @@ def validate(out_dir, model_dir, admissions=None, diagnoses=None, boot=200, min_
             R["agent3"] = {**binary_metrics(y, p, K.subject_id.to_numpy(), boot), "curves": curves(y, p),
                            "missing_features": miss, "landmarks_total": int(len(L)), "eligible": int(L.eligible.sum())}
 
-    # 4 trajectory: every 4 h across the ICU stay, regardless of state
     tb = load("trajectory_qgbm.joblib")
     if tb:
         log("external: trajectory")
@@ -81,7 +71,6 @@ def validate(out_dir, model_dir, admissions=None, diagnoses=None, boot=200, min_
                                  "coverage_80": float(np.mean((yy >= P[0.1]) & (yy <= P[0.9])))})
             R["trajectory"] = {"performance": perf, "landmarks": int(len(Lt)), "missing_features": miss}
 
-    # 2 prognosis at the first abnormal time
     pb = load("prognosis_gbm.joblib")
     if pb and len(outcomes):
         log("external: prognosis")
@@ -110,7 +99,6 @@ def validate(out_dir, model_dir, admissions=None, diagnoses=None, boot=200, min_
                 pdx = pb["death_model"].predict_proba(Xd.reindex(columns=pb["death_features"]).astype(float))[:, 1]
                 R["death_icu"] = binary_metrics(yd, pdx, ea.subject_id.to_numpy(), boot)
 
-    # 3 causes: rule code (no training) vs discharge-ICD proxy; supplementary clustering transported
     if len(events):
         log("external: agent 1 flags")
         R["agent1_flags"] = evaluate_flags(events, lab, context, hist, diagnoses)

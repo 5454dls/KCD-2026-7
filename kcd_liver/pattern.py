@@ -1,12 +1,4 @@
-"""Liver injury pattern (fixed categories) and an exploratory clustering check.
-
-The cause agent receives the ACG 2017 R-ratio pattern, a fixed and clinically defined
-category, instead of an unsupervised cluster id. Unsupervised clustering is kept only as a
-supplementary analysis: Gaussian mixture, K chosen by BIC over 2..8,
-run twice: liver pattern only (ULN ratios + R) and broad clinical phenotype (about 30 variables),
-bootstrap adjusted Rand index (ARI) for stability. It is reported as "not used" when unstable.
-A cluster is a biochemical pattern, never a cause.
-"""
+"""Liver injury pattern (fixed categories) and an exploratory clustering check."""
 from __future__ import annotations
 
 import math
@@ -15,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 PATTERNS = ["hepatocellular", "mixed", "cholestatic", "isolated_bilirubin", "unclassifiable"]
-STABLE_ARI = 0.75  # operational threshold, stated with the result
+STABLE_ARI = 0.75
 
 
 def r_pattern(alt_ratio, alp_ratio, tbil_ratio=None, r_ratio=None, abnormal=2.0):
@@ -71,7 +63,6 @@ def gmm_explore(df: pd.DataFrame, cols, ks=range(2, 9), n_boot=50, seed=0, min_n
     """Supplementary: BIC-selected Gaussian mixture plus bootstrap ARI stability."""
     from sklearn.metrics import adjusted_rand_score
     from sklearn.mixture import GaussianMixture
-    # keep variables observed in at least half of the rows; median imputation beyond that would dominate
     cols = [c for c in cols if c in df and pd.to_numeric(df[c], errors="coerce").notna().mean() >= min_observed]
     out = {"method": "GaussianMixture(diag), log2 for positive labs, K by BIC, bootstrap ARI",
            "n": int(len(df)), "features": cols, "stable_threshold": STABLE_ARI}

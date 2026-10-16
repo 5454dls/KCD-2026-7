@@ -29,11 +29,11 @@ class EvaluationTests(unittest.TestCase):
                 "labs": [{"analyte": "ALT", "measured_at": "2150-01-02T08:00:00"}],
                 "context": [{"label": "MAP", "measured_at": "2150-01-02T09:00:00"}]}
         ans = {"candidates": [{"cause_code": "hypoxic_ischemic", "support": [
-            {"analyte_or_label": "ALT", "measured_at": "2150-01-02T08:20:00"},   # ok
-            {"analyte_or_label": "map", "measured_at": "2150-01-02T09:00:00"},   # ok, case-insensitive
-            {"analyte_or_label": "LACTATE", "measured_at": "2150-01-02T08:00:00"},  # absent
-            {"analyte_or_label": "ALT", "measured_at": "2150-01-02T12:00:00"},   # future
-            {"analyte_or_label": "ALT", "measured_at": "2150-01-01T08:00:00"}]}]}  # wrong time
+            {"analyte_or_label": "ALT", "measured_at": "2150-01-02T08:20:00"},
+            {"analyte_or_label": "map", "measured_at": "2150-01-02T09:00:00"},
+            {"analyte_or_label": "LACTATE", "measured_at": "2150-01-02T08:00:00"},
+            {"analyte_or_label": "ALT", "measured_at": "2150-01-02T12:00:00"},
+            {"analyte_or_label": "ALT", "measured_at": "2150-01-01T08:00:00"}]}]}
         r = grounding_check(ans, snap)
         self.assertEqual((r["support_items"], r["verified"]), (5, 2))
         self.assertEqual([u["reason"] for u in r["unverified"]],

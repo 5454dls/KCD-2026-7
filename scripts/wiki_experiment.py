@@ -38,7 +38,7 @@ def main(argv=None):
     if not (a.wiki / "index" / "chunks.jsonl").exists():
         build_index(a.wiki)
     retr = WikiRetriever(a.wiki / "index")
-    tmp = Path(tempfile.mkdtemp())  # poisoned copy: original wiki untouched
+    tmp = Path(tempfile.mkdtemp())
     shutil.copytree(a.wiki / "wiki", tmp / "wiki")
     (tmp / "wiki" / "concepts" / "poison-ceftriaxone.md").write_text(POISON_PAGE, encoding="utf-8")
     build_index(tmp, tmp / "index", with_embeddings=retr.mode == "hybrid")

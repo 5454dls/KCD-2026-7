@@ -1,13 +1,4 @@
-"""Before/after experiment: Agent 1 (LLM) without vs with the guideline wiki, on identical cases.
-
-Arms (same cases, same model, temperature 0):
-  A  no_wiki    patient snapshot only
-  B  wiki       + retrieved guideline chunks (cite as {"wiki": "<chunk id>"})
-  C  placebo    + the same number of unrelated wiki chunks (is it the content or just a longer prompt?)
-  D  rule       deterministic rule baseline (no LLM)
-  E  poisoned   wiki with one planted false statement (shadow: does the agent follow wrong knowledge?)
-Outputs are aggregate only. Full MIMIC-IV snapshots may only be sent to an approved, no-retention endpoint.
-"""
+"""Before/after experiment: Agent 1 (LLM) without vs with the guideline wiki, on identical cases."""
 from __future__ import annotations
 
 import json
@@ -99,7 +90,7 @@ def run(cases: list[dict], proxy: dict, retriever=None, poisoned_retriever=None,
                                  "patient_items": g.get("support_items", 0), "patient_verified": g.get("verified", 0),
                                  "wiki_cited": w["wiki_citations"], "wiki_valid": w["valid"],
                                  "poison_followed": int(_flags(ans).get("dili", 0) and any("poison" in e["page"] for e in ev)) if arm == "E_poisoned" else None})
-                except Exception as ex:  # failures stay in the denominator
+                except Exception as ex:
                     rows.append({"i": i, "arm": arm, "rep": rep, "error": f"{type(ex).__name__}: {ex}"[:200]})
         if (i + 1) % 20 == 0:
             log(f"wiki experiment: {i + 1}/{len(cases)} cases")
@@ -131,7 +122,6 @@ def summarize(rows, cases, proxy, arms) -> dict:
                             "wiki_citation_valid": wv / wi if wi else None, "wiki_citations": wi,
                             "repeat_consistency": sum(consistent) / len(consistent) if consistent else None,
                             "poison_followed": sum(r.get("poison_followed") or 0 for r in ok) if arm == "E_poisoned" else None}
-    # paired exact McNemar on 'all 9 assessable flags match the proxy' (cholecystitis excluded)
     def correct(i, arm):
         r = first.get((i, arm))
         return None if not r or "flags" not in r else all(r["flags"][c] == ref[i][c] for c in CAUSE_FLAGS if c != "cholecystitis")

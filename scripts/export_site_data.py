@@ -31,7 +31,6 @@ from kcd_liver.site_aggregates import suppress  # noqa: E402
 
 PUBLIC_CASE_SOURCES = {"mimic-iv-demo", "synthetic"}
 
-# CSV -> summary key. Missing files stay null and the site shows "미집계".
 AGGREGATE_FILES = {
     "cohort_flow": "04_cohort_flow.csv",
     "event_groups": "15_event_groups.csv",
@@ -73,7 +72,7 @@ def read_csv(path: Path, min_cell: int | None) -> list[dict] | None:
     with path.open(encoding="utf-8-sig", newline="") as fh:
         rows = [{k: num(v) if v != "" else None for k, v in r.items()} for r in csv.DictReader(fh)]
     if not rows:
-        return None  # intentionally blank tables stay "not aggregated"
+        return None
     if min_cell:
         for r in rows:
             for k in list(r):
@@ -110,7 +109,7 @@ def export_cases(db_path: Path, site_data: Path) -> list[dict]:
         stress = [{"input_condition": c, "guarded": bool(g), "answer": json.loads(r)}
                   for c, g, r in con.execute(
                       "SELECT condition, guarded, result_json FROM stress WHERE case_key=?", (key,))]
-        for s in stress:  # failures are kept, not dropped
+        for s in stress:
             if isinstance(s["answer"], dict) and "error" in s["answer"] and "candidates" not in s["answer"]:
                 s["error"] = s["answer"].get("error")
         obs = con.execute("SELECT outcome_json FROM observed_outcomes WHERE case_key=?", (key,)).fetchone()
@@ -165,7 +164,6 @@ def main(argv=None):
         summary["injected_cause"] = args.injected_cause
     if summary.get("paired_test"):
         summary["paired_test"] = summary["paired_test"][0]
-    # Figure aggregates computed in the notebook from in-memory tables take precedence.
     agg_path = args.out_dir / "40_site_aggregates.json"
     if agg_path.exists():
         agg = json.loads(agg_path.read_text(encoding="utf-8"))

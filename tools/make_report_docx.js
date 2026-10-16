@@ -39,7 +39,6 @@ function table(head, rows, widths) {
            ...rows.map(r => new TableRow({ children: r.map((c, i) => cell(c, i, false)) }))] });
 }
 const gap = () => new Paragraph({ spacing: { after: 60 }, children: [] });
-// ---------------------------------------------------------------- data (public, already small-cell suppressed)
 const path = require("path");
 const R = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "site", "data", "results_full.json"), "utf8"));
 const AGG = process.argv[3] || null; // optional: full_aggregates folder from the return package (counts < 10 are hidden here)
@@ -61,7 +60,6 @@ const CAUSE = { hypoxic_hepatitis: "저산소성 간염", congestive_hepatopathy
 const gbm = P3.models.find(m => m.model === "그래디언트 부스팅"), lr = P3.models.find(m => m.model === "로지스틱 회귀");
 const body = [];
 
-// ---------------- cover
 body.push(new Paragraph({ spacing: { before: 2400, after: 200 }, children: [new TextRun({ text: "KCD 2026 Datathon", color: ACC, bold: true, size: 26 })] }));
 body.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: "ICU 간기능 이상 감시 에이전트", bold: true, size: 48 })] }));
 body.push(new Paragraph({ spacing: { after: 600 }, children: [new TextRun({ text: "결과 보고서: 데이터 전처리부터 성능과 그림자 실험까지", size: 30, color: MUTED })] }));
@@ -74,7 +72,6 @@ body.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRu
 body.push(new TableOfContents("목차", { hyperlink: true, headingStyleRange: "1-2" }));
 body.push(P([new TextRun({ text: "목차가 비어 보이면 Word에서 목차를 오른쪽 클릭한 뒤 '필드 업데이트'를 누르세요.", color: MUTED, size: 18 })]));
 
-// ---------------- 1 summary
 body.push(H1("1. 요약", true));
 body.push(L(`대상: 첫 ICU 입실 성인 ${n(t1n.overall)}명(개발 ${n(t1n.development)}, 평가 ${n(t1n.evaluation)}). 이 가운데 ${n(t1n.event)}명(${pc(t1n.event / t1n.overall)})에서 ICU 중 첫 간 검사 이상(ALT·ALP·총빌리루빈 중 하나라도 ≥2×ULN)이 생겼습니다.`));
 body.push(L(`경과: 2×ULN 첫 사건 중 ICU 퇴실 때 회복 ${pc(ET[0].recovered_rate)}, ICU 사망(퇴실 후 24시간 포함) ${pc(ET[0].died_icu_rate)}. 5×ULN에서는 회복 ${pc(ET[3].recovered_rate)}, 사망 ${pc(ET[3].died_icu_rate)}로 기준이 높을수록 나빴습니다.`));
@@ -84,7 +81,6 @@ body.push(L(`궤적: ALT·AST·ALP·총빌리루빈 모두 6-24시간 뒤 값을
 body.push(L(`원인(Agent 1, 규칙 모델): 퇴원 진단 대리 기준과 Top-1 ${pc(A1.models[0].top1.rate, 0)}, Top-3 ${pc(A1.models[0].top3.rate, 0)} 일치. 담도폐쇄는 과다 판정(특이도 32%), DILI(민감도 8%)와 바이러스 간염은 거의 잡지 못했습니다. 대리 기준 자체의 한계는 11장에 정리했습니다.`));
 body.push(L(`그림자: 행 단위 분할은 AUROC를 ${f(R.shadow_leakage.after_patient_split)}에서 ${f(R.shadow_leakage.before_row_split)}로 부풀렸고, 측정 안 된 시간을 정상으로 두면 정상 시간의 ${pc(R.shadow_missing_as_normal.unmeasured_share_of_naive_normal, 0)}가 실제로는 측정되지 않은 시간이었습니다. ALT 소수점 오류 하나로 규칙 원인 판정 ${R.shadow_data_error.scenarios[1].before.agent1_flag_changed}/${R.shadow_data_error.scenarios[1].before.agent1_rows}건이 바뀌었고, 입력 검사(가드)가 그중 ${pc(R.shadow_data_error.scenarios[1].catch_rate_after, 0)}를 잡았습니다.`));
 
-// ---------------- 2 data
 body.push(H1("2. 데이터 원천과 사용 테이블"));
 body.push(P("MIMIC-IV v3.1의 hosp·icu 모듈을 CSV로 직접 읽었습니다. 환자 단위 원자료와 중간 파일은 실행 PC 밖으로 나가지 않았고, 이 보고서의 수는 모두 집계입니다."));
 body.push(table(["테이블", "모듈", "쓰임"], [
@@ -99,7 +95,6 @@ body.push(table(["테이블", "모듈", "쓰임"], [
   ["diagnoses_icd", "hosp", "이전 입원 진단(기저질환 변수)과 같은 입원의 퇴원 진단(원인 대리 기준). 시각 정보 없음"],
 ], [2.2, 1, 6]));
 
-// ---------------- 3 preprocessing
 body.push(H1("3. 전처리"));
 body.push(H2("3.1 시점 원칙"));
 body.push(L("모든 값은 그 시각까지 보고된 결과만 씁니다. 검사의 사용 가능 시각 = max(채혈 시각 charttime, 보고 시각 storetime)."));
@@ -127,7 +122,6 @@ body.push(H2("3.5 모델 입력 처리"));
 for (const r of R.preprocessing.rules) body.push(L(r));
 body.push(P(`Agent 3 특징은 ${A3.n_features}개입니다: 간 검사 ULN 배수·24시간 변화·측정 횟수·경과 시간, 혈액·생화학, 활력징후, 승압제, 나이·성별, 이전 입원 진단, ICU 입실 전 병동 검사(마지막 값·최댓값, 입원부터 ICU까지 시간). 변수별 결측률·중앙값은 VARIABLES.md와 preprocessing_variables.csv에 있습니다.`));
 
-// ---------------- 4 cohort
 body.push(H1("4. 대상자 선정"));
 body.push(table(["단계", "n", "설명"], [
   ["전체 ICU 입실", n(flowN.all_icu_stays), "MIMIC-IV icustays"],
@@ -140,7 +134,6 @@ body.push(table(["단계", "n", "설명"], [
 ], [2.6, 1.6, 5]));
 body.push(P("사건 집단: 입실 초기 이상(입실 직후 첫 측정부터 이상), 관찰 중 신규(정상 측정 뒤 이상), 시점 불명(입실 뒤 첫 측정이 이미 이상이지만 입실 초기로 보기 어려움)."));
 
-// ---------------- 5 definitions
 body.push(H1("5. 결과 정의"));
 body.push(table(["항목", "정의"], [
   ["이상 사건", "ALT, ALP, 총빌리루빈 중 하나라도 ≥2×ULN. 기준별 분석은 2·3·4·5×ULN"],
@@ -152,7 +145,6 @@ body.push(table(["항목", "정의"], [
   ["조기 예측 목표", "세 항목이 모두 24시간 안에 측정되고 모두 2×ULN 미만인 시각에서, 다음 24시간 안 ≥5×ULN 관찰"],
 ], [2.2, 7]));
 
-// ---------------- 6 table 1
 body.push(H1("6. 기초 특성 (Table 1)"));
 const T1 = (r, k) => { const v = r[k]; if (v == null) return "–"; if (r.kind === "count") return n(v);
   if (r.kind === "median_iqr") return `${v[0]} [${v[1]}-${v[2]}]`; if (r.kind === "n_pct") return v[0] == null ? "<10" : `${n(v[0])}${v[1] != null ? " (" + pc(v[1]) + ")" : ""}`; return String(v); };
@@ -160,14 +152,12 @@ body.push(table(["변수", "전체", "이상 사건", "사건 없음", "SMD", "�
   R.table1.map(r => [r.variable, T1(r, "overall"), T1(r, "event"), T1(r, "no_event"), r.smd_event == null ? "–" : f(r.smd_event, 2), T1(r, "development"), T1(r, "evaluation")]), [3.2, 1.6, 1.5, 1.5, 0.8, 1.5, 1.4]));
 body.push(P([new TextRun({ text: "연속형은 중앙값 [사분위범위], 범주형은 n (%). SMD 0.1 미만이면 비슷합니다. 개발·평가 SMD는 모두 0.02 이하로 분할이 균형적입니다.", color: MUTED, size: 18 })]));
 
-// ---------------- 7 thresholds
 body.push(H1("7. 기준별 사건과 경과"));
 body.push(table(["기준", "첫 사건", "회복", "미회복", "판정 불가", "ICU 사망", "생존 퇴실"], ET.map(r => [
   `${r.threshold_x_uln}×ULN`, n(r.patients_with_event), `${n(r.recovered_before_icu_discharge)} (${pc(r.recovered_rate)})`, n(r.unrecovered_before_icu_discharge),
   n(r.recovery_unassessable), `${n(r.icu_death)} (${pc(r.died_icu_rate)})`, n(r.alive_icu_discharge)]), [1.2, 1.2, 1.7, 1.2, 1.3, 1.7, 1.3]));
 body.push(P("기준이 높아질수록 회복률은 떨어지고(19.9%에서 8.9%) ICU 사망률은 올라갑니다(21.7%에서 29.3%). 회복 판정 불가가 2×ULN에서 23%로 커서, 퇴실 전 재검 여부가 결과 해석에 큰 영향을 줍니다."));
 
-// ---------------- 8 models
 body.push(H1("8. 모델 개발과 성능"));
 body.push(H2("8.1 Agent 3 조기 예측 (매시간)"));
 const L3 = A3.label_counts;
@@ -223,7 +213,6 @@ body.push(P(`용혈과 바이러스 간염은 칸 하나가 ${MIN} 미만이라,
 body.push(H2("8.5 보조 군집"));
 body.push(P("ALT·ALP·총빌리루빈 배수와 R 비(log2)로 가우시안 혼합(대각 공분산)을 맞추고 BIC로 군집 수를 골랐습니다. 후보 2-8 중 8이 선택되었고 부트스트랩 ARI 중앙값은 0.83(사분위 0.70-0.90)이었습니다. BIC가 후보 끝(8)까지 계속 줄어 경계에서 선택된 것이므로, 군집 수는 확정값이 아니라 탐색 결과로 봐야 합니다. 군집은 원인이 아니라 패턴 묶음입니다."));
 
-// ---------------- 9 shadows
 body.push(H1("9. 그림자 실험 (전과 후)"));
 const SL = R.shadow_leakage, SM = R.shadow_missing_as_normal, SC = R.shadow_competing.evaluation;
 body.push(table(["그림자", "잘못된 방법 (전)", "바른 방법 (후)", "의미"], [
@@ -241,7 +230,6 @@ body.push(table(["오류", "해당 시점", "가드가 잡음", "새 고위험 (
   x.label, n(x.applicable), pc(x.catch_rate_after, 0), `${s(x.before.new_high_risk)} → ${s(x.after.new_high_risk)}`, x.before.agent1_rows ? `${s(x.before.agent1_flag_changed)} → ${s(x.after.agent1_flag_changed)} / ${x.before.agent1_rows}` : "–"]), [3, 1.2, 1.3, 1.8, 2.2]));
 body.push(P("핵심: 범위 밖 오류(나이, ALT×100, 체온 °F)는 가드가 거의 다 잡지만, 그럴듯한 범위 안에 떨어지는 오류(빌리루빈 µmol/L 42%, 젖산×10 8%)는 대부분 통과합니다. 체온 형식 오류('37..5')는 가드가 없으면 조용히 '측정 안 됨'으로 바뀝니다."));
 
-// ---------------- 10 ICD proxy
 body.push(H1("10. 진단 코드(ICD) 매핑"));
 body.push(H2("10.1 원인 10개의 대리 기준"));
 body.push(P("MIMIC-IV에는 ICD-9-CM(대략 2015년 9월까지)과 ICD-10-CM(그 뒤)이 섞여 있어 두 버전을 모두 매핑했습니다. 코드는 앞자리 일치(접두어)로 찾습니다. 예: 'I50'은 I50.0-I50.9 전체."));
@@ -269,7 +257,6 @@ body.push(table(["변수", "ICD-9-CM", "ICD-10-CM"], [
 ], [2.4, 3, 4]));
 body.push(P("기저질환은 이번 ICU 입실 전에 퇴원이 끝난 이전 입원의 진단만 씁니다. 같은 입원의 코드는 퇴원 뒤에 붙으므로 모델 입력에 쓰면 미래 정보 누수가 됩니다."));
 
-// ---------------- 11 timing
 body.push(H1("11. 대리 기준의 시간 문제"));
 body.push(H2("11.1 질문: ICU 진단 시점이 없지 않은가, 병원과 ICU를 구분하는가"));
 body.push(L([B("시각이 없습니다. "), "diagnoses_icd에는 subject_id, hadm_id, seq_num, icd_code, icd_version만 있고 진단 시각이 없습니다. 코드는 퇴원 뒤 청구용으로 붙습니다. seq_num은 중요도 순서이지 시간 순서가 아닙니다."]));
@@ -287,7 +274,6 @@ body.push(table(["원인", "시각이 있는 근거 (MIMIC-IV)", "창"], [
 ], [2, 5.5, 2]));
 body.push(P("이 방식은 같은 정보를 규칙 모델도 쓰기 때문에 순환 평가가 될 수 있습니다. 따라서 ICD 대리 기준, 시각 근거 대리 기준, 전문의 판정 세 가지를 나란히 보고하는 것을 권합니다."));
 
-// ---------------- 12 limits
 body.push(H1("12. 한계와 다음 단계"));
 body.push(L("Agent 3 그래디언트 부스팅의 보정이 나쁩니다. 확률 문턱을 쓰기 전에 재보정하거나 로지스틱 회귀를 기본 모델로 둡니다."));
 body.push(L("원인 판정은 대리 기준의 시간 문제(11장) 때문에 해석에 한계가 있습니다. 담도폐쇄 과다 판정, DILI·바이러스 간염 저판정을 규칙에서 고쳐야 합니다."));
@@ -296,7 +282,6 @@ body.push(L("군집 수가 후보 끝에서 선택되었습니다."));
 body.push(L("한 기관 자료입니다. 모델 패키지(원자료 없음)로 외부 기관 검증이 필요합니다."));
 body.push(L("과거 자료 재생입니다. 실제 배포 전 전향적 검증이 필요합니다."));
 
-// ---------------- 13 sharing
 body.push(H1("13. 공유 범위"));
 body.push(table(["묶음", "들어 있는 것", "들어 있지 않은 것"], [
   ["결과 묶음 (return package)", "집계 표, 그림, 결과 JSON, 변수 설명, 모델 카드", "환자 단위 자료, ID"],

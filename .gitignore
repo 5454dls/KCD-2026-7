@@ -1,4 +1,3 @@
-# 공개 저장소: MIMIC-IV(자격 인증 데이터) 환자 단위 산출물은 절대 커밋하지 않는다.
 kcd_liver_v2_outputs/
 **/kcd_liver_v2_outputs/
 *.sqlite

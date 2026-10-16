@@ -27,7 +27,6 @@ class RuleAgentTests(unittest.TestCase):
         snap = {"labs": [lab("ALT", 1.2), lab("ALP", 2.5), lab("TBIL", 3.1), lab("WBC", None, 19)], "context": []}
         out = rule_agent1(snap)
         codes = [c["cause_code"] for c in out["candidates"]]
-        # TG18 suspected cholangitis (inflammation + cholestasis) and sepsis cholestasis overlap: both listed
         self.assertEqual(set(codes[:2]), {"sepsis_cholestasis", "biliary_obstruction_cholangitis"})
 
     def test_weak_evidence_abstains_and_schema_is_valid(self):
@@ -62,7 +61,6 @@ class RuleAgentTests(unittest.TestCase):
         self.assertTrue(serology_positive("POSITIVE"))
         self.assertFalse(serology_positive("NON-REACTIVE"))
         self.assertFalse(serology_positive("NOT DETECTED"))
-        # real MIMIC-IV strings: boilerplate mentions POSITIVE inside a negative result
         self.assertFalse(serology_positive("NEGATIVE.  RECOMMENDED FOLLOW-UP FOR POSITIVE HCV ANTIBODY: HCV VIRAL LOAD."))
         self.assertTrue(serology_positive("POSITIVE*.  RECOMMENDED FOLLOW-UP FOR POSITIVE HCV ANTIBODY: HCV VIRAL LOAD."))
         self.assertFalse(serology_positive("NEG."))
@@ -76,7 +74,7 @@ class RuleAgentTests(unittest.TestCase):
         f = rule_agent1({"labs": [lab("ALT", 12), lab("ALP", 2.5), lab("TBIL", 2.4, 2.8)], "context": [], "exposures": ex})["flags"]
         self.assertEqual(f["viral_hepatitis"]["present"], 1)
         self.assertEqual(f["pn_associated"]["present"], 1)
-        late = exposures(ctx, "2150-01-01T01:00:00")  # serology not yet reported at 01:00
+        late = exposures(ctx, "2150-01-01T01:00:00")
         self.assertEqual(late["serology"], [])
 
     def test_drug_record_needs_administration(self):
@@ -108,7 +106,7 @@ class DataErrorTests(unittest.TestCase):
                             "value": [4500.0, 40.0, 1.0, 88.4], "ratio": [100.0, 1.0, 1.0, 70.0],
                             "charttime": [t] * 4, "available_at": [t] * 4})
         kept, q = guard_lab(lab)
-        self.assertEqual(set(q.analyte), {"ALT", "CREAT"})  # ALT discordant with AST; creatinine out of range
+        self.assertEqual(set(q.analyte), {"ALT", "CREAT"})
         self.assertEqual(dict(zip(q.analyte, q.reason))["ALT"], "discordant_partner")
 
 

@@ -77,7 +77,6 @@ def flat_tables(R: dict, out: Path):
     pd.DataFrame(rows).to_csv(out / "table2_performance.csv", index=False, encoding="utf-8-sig")
     sh = {k: v for k, v in R.items() if k.startswith("shadow_")}
     (out / "shadow_before_after.json").write_text(json.dumps(sh, ensure_ascii=False, indent=1), encoding="utf-8")
-    # paper tables the team asked for: flowchart, 2/3/4/5x basic counts, Agent 3 by target, death model, preprocessing
     for name, key in [("flowchart.csv", "flow"), ("basic_counts_by_threshold.csv", "event_thresholds"),
                       ("agent3_by_threshold.csv", "agent3_by_threshold")]:
         if R.get(key):
@@ -107,7 +106,7 @@ def main(argv=None):
     dx = read_hosp(a.mimic_root, "diagnoses_icd", ["subject_id", "hadm_id", "icd_code", "icd_version"])
     excl = pd.read_csv(a.exclude_subjects).subject_id.tolist() if a.exclude_subjects and a.exclude_subjects.exists() else []
     if a.source != "mimic-iv":
-        excl = []  # the demo run cannot exclude itself
+        excl = []
     R = develop(a.out_dir, adm, dx, excl, source=a.source, min_cell=a.min_cell if a.source == "mimic-iv" else None,
                 step_hours=a.step_hours, boot=a.boot, model_dir=a.model_dir)
     from kcd_liver.develop import develop_v2

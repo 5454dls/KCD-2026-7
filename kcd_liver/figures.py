@@ -1,12 +1,4 @@
-"""Paper-style matplotlib figures from the site aggregates dict.
-
-    from kcd_liver.figures import render_all
-    paths = render_all(aggregates, OUT / "figures", show=True)
-
-Each figure mirrors the web page (Fig 2-10) so that the notebook shows, step by
-step, whether the pipeline did what it should. Missing inputs produce a
-labelled placeholder instead of an invented plot.
-"""
+"""Paper-style matplotlib figures from the site aggregates dict."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -80,7 +72,7 @@ def fig3_qc(agg, ax):
     ax.barh(names, [r["n"] or 0 for r in q], color=[PALETTE.get(a, PALETTE["muted"]) for a in names])
     for i, r in enumerate(q):
         if r["n"]:
-            share = lambda k: "<10건" if r.get(k) is None else f"{r[k] / r['n']:.1%}"  # small cells are suppressed
+            share = lambda k: "<10건" if r.get(k) is None else f"{r[k] / r['n']:.1%}"
             ax.text(r["n"], i, f"  단위오류 {share('unit_invalid')} · ULN없음 {share('missing_uln')}",
                     va="center", fontsize=7, color=PALETTE["muted"])
     ax.set_xlabel("추출 건수")
@@ -261,7 +253,7 @@ def render_all(agg: dict, out_dir: Path, show: bool = False) -> list[Path]:
         fig, axes = plt.subplots(1, ncols, figsize=size)
         try:
             fn(agg, axes if ncols > 1 else axes)
-        except Exception as ex:  # one broken figure must not stop the run; the reason is printed on the figure
+        except Exception as ex:
             for a in (axes if ncols > 1 else [axes]):
                 a.clear()
             _na(axes[0] if ncols > 1 else axes, f"{name}: {type(ex).__name__}")

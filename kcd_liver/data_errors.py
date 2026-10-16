@@ -1,14 +1,4 @@
-"""Shadow experiment: what happens when a single value is entered wrongly (age 19 -> 190, decimal or unit slips).
-
-Before = the current pipeline (only the static bounds the notebook already applies).
-After  = plus a point-in-time plausibility guard:
-  R1 hard physiological range (impossible values are rejected),
-  R2 implausible jump against the same patient's previous value within 48 h
-     (ALT/AST: accepted when the partner enzyme from the same draw also rose; true shock liver moves both),
-  R3 discordance: ALT/AST >= 20x ULN with the partner enzyme from the same draw < 3x ULN.
-Quarantined values are treated as not measured and shown as "확인 필요" with the original value.
-The guard's own cost is measured on unmodified data: real values it would hold, and true events it would delay.
-"""
+"""Shadow experiment: what happens when a single value is entered wrongly (age 19 -> 190, decimal or unit slips)."""
 from __future__ import annotations
 
 import re
@@ -16,7 +6,6 @@ import re
 import numpy as np
 import pandas as pd
 
-# what the notebook already rejects (cell "Plausibility bounds"); the realistic "before"
 CURRENT_BOUNDS = {"ALBUMIN": (.1, 10), "SODIUM": (80, 200), "CREAT": (.05, 150), "PLATELET": (0, 2000),
                   "WBC": (0, 500), "GLUCOSE": (1, 2000)}
 HARD_RANGE = {"ALT": (1, 20000), "AST": (1, 30000), "ALP": (5, 5000), "TBIL": (.05, 60), "CREAT": (.1, 25),
@@ -85,7 +74,6 @@ def guard_lab(lab: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         if a == "ALBUMIN":
             m |= d.analyte.eq(a) & d._reason.eq("") & (d._jump <= 1 / k)
         d.loc[m, "_reason"] = "jump"
-    # ALT/AST jump confirmed when the partner from the same draw (within 1 h) also rose >= 5x
     for a, b in PARTNER.items():
         cand = d[d.analyte.eq(a) & d._reason.eq("jump")]
         if cand.empty:
@@ -97,7 +85,6 @@ def guard_lab(lab: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         ok = m.loc[m.pj.ge(5), "index"]
         d.loc[ok, "_reason"] = ""
         d.loc[m.loc[~m.pj.ge(5), "index"], "_reason"] = "jump_unconfirmed"
-    # R3 discordance: ALT/AST >= 20x ULN while the partner from the same draw is < 3x ULN (shock liver raises both)
     if "ratio" in d:
         for a, b in PARTNER.items():
             cand = d[d.analyte.eq(a) & d._reason.eq("") & d.ratio.ge(20)]
@@ -163,7 +150,6 @@ def corrupt(sc: dict, rows: pd.DataFrame, lab, context, cohort, lookback_h=24):
         if not np.isfinite(v):
             continue
         if sc["kind"].startswith("malformed"):
-            # the pipeline coerces '37..5' to NaN and drops the row without any warning: simulate exactly that
             drop.append(j)
             applicable[i], orig[i], new[i] = True, v, malformed(v)
             continue
@@ -194,7 +180,7 @@ def experiment(rows: pd.DataFrame, lab, context, cohort, hist, a3=None, traj=Non
                scenarios=SCENARIOS, high_risk_quantile=0.9, max_rule_rows=500, per_row=False, events=None, log=print):
     """Run every scenario on the same rows under four conditions; return a JSON-ready summary."""
     from .develop import build_features, RATIO_FEATS
-    def _ids(d):  # notebook frames can carry stay_id as object; merge_asof needs one integer type
+    def _ids(d):
         d = d.copy()
         d["stay_id"] = pd.to_numeric(d["stay_id"], errors="coerce")
         d = d.dropna(subset=["stay_id"])
@@ -207,7 +193,7 @@ def experiment(rows: pd.DataFrame, lab, context, cohort, hist, a3=None, traj=Non
     if hist is not None and len(hist):
         hist = _ids(hist)
     rows = rows[["stay_id", "t"]].reset_index(drop=True)
-    cost_lab = apply_current_bounds(lab)  # guard cost is measured on all supplied records
+    cost_lab = apply_current_bounds(lab)
     keep = set(rows.stay_id)
     lab, context, cohort = lab[lab.stay_id.isin(keep)], context[context.stay_id.isin(keep)], cohort[cohort.stay_id.isin(keep)]
     lab_now = apply_current_bounds(lab)
@@ -234,7 +220,6 @@ def experiment(rows: pd.DataFrame, lab, context, cohort, hist, a3=None, traj=Non
                       "rule_rows": int(len(rr))}, "scenarios": []}
     lab_g0, _ = guard_lab(lab_now)
     ctx_g0, nctx0 = guard_context(context)
-    # cost of the guard on unmodified data (all supplied records)
     _, q0 = guard_lab(cost_lab)
     cost = {"lab_values": int(len(cost_lab)), "quarantined": int(len(q0)),
             "quarantined_share": float(len(q0) / len(cost_lab)) if len(cost_lab) else None,
@@ -267,7 +252,6 @@ def experiment(rows: pd.DataFrame, lab, context, cohort, hist, a3=None, traj=Non
         if n == 0:
             res["scenarios"].append(r)
             continue
-        # was the corrupted value removed? (before = current bounds only; after = guard)
         if sc["kind"] == "age":
             caught_before = np.zeros(n, bool)
             caught_after = ~H1.set_index("stay_id").age.reindex(rows.stay_id[app]).between(*AGE_RANGE).to_numpy()
@@ -282,7 +266,6 @@ def experiment(rows: pd.DataFrame, lab, context, cohort, hist, a3=None, traj=Non
             ka = [(s, c, a, round(v, 6)) in kept_a for s, c, v in zip(corr.stay_id, corr.charttime, corr.value)]
             caught_before, caught_after = ~np.array(kb, bool), ~np.array(ka, bool)
         elif sc["kind"].startswith("malformed"):
-            # before: silently dropped (no record of the error); after: the format audit flags it for re-entry
             caught_before = np.zeros(n, bool)
             caught_after = np.array([classify_text_value(v) == "malformed_number" for v in np.array(new, dtype=object)[app]])
         else:

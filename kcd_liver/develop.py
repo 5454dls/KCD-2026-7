@@ -1,31 +1,4 @@
-"""Model development and evaluation on the notebook's private outputs (full MIMIC-IV).
-
-Inputs are the patient-level files the notebook already writes to its OUT folder
-(01_cohort_private.csv, 03_labs_private.csv, 05_events_private.csv,
-07_context_private.csv, 10_outcomes_EVALUATION_ONLY.csv) plus admissions and
-diagnoses_icd from the MIMIC-IV hosp module. Everything here is vectorised
-(merge_asof), so the hourly landmark design scales to the full cohort.
-
-Output: ONE aggregate results dictionary (tables, metrics with 95% CI, curves)
-that holds no patient-level rows. With ``min_cell`` set, counts below it are
-suppressed before writing. Trained models are saved separately and must stay
-local (they were fit on credentialed data).
-
-Design (pre-specified, frozen before looking at evaluation patients):
-- Split: the notebook's patient-level development/evaluation split. Subjects in
-  ``exclude_subjects`` (the public demo patients) are removed from BOTH sets so
-  that the public replay never shows in-sample predictions.
-- Agent 3 (runs every hour): currently normal landmarks (ALT, ALP, TBIL all
-  measured within 24 h and all < 2xULN, before the stay's first event) ->
-  observed 2xULN abnormality within the next 24 h. Unknown follow-up is
-  excluded from training and reported, never forced negative.
-- Agent 2 (runs once at the first alert): first event within 48 h among
-  resolution / death before resolution / discharge before resolution / none.
-- Agent 1 (runs once at the first alert): rule baseline (and LLM outputs when
-  present) scored against discharge-ICD proxy categories of the same admission.
-  The proxy is an evaluation-only reference, never an agent input, and it is
-  not the specialist reference standard.
-"""
+"""Model development and evaluation on the notebook's private outputs (full MIMIC-IV)."""
 from __future__ import annotations
 
 import json
@@ -45,21 +18,18 @@ RATIO_FEATS = ["ALT", "AST", "ALP", "TBIL"]
 VALUE_FEATS = ["INR", "ALBUMIN", "LACTATE", "CREAT", "BUN", "PLATELET", "WBC", "SODIUM", "GLUCOSE", "BICARB", "HEMOGLOBIN", "NTPROBNP"]
 VITALS = ["MAP", "HR", "RR", "SPO2", "TEMP_C"]
 PRESSORS = "norepinephrine|epinephrine|vasopressin|phenylephrine|dopamine"
-# Agent 3 target (team decision): any of ALT/ALP/TBIL >= 5x ULN within 24 h; eligibility stays all three < 2x
 A3_TARGET = 5.0
 THRESHOLDS = [2.0, 3.0, 4.0, 5.0]
 HISTORY = ["history_liver", "history_viral_hepatitis", "history_heart_failure", "history_ckd", "history_diabetes", "history_cancer"]
 A2_CLASSES = ["resolution", "death_before_resolution", "discharge_before_resolution", "no_event_observed"]
 SEED = 20261016
 
-# ICD proxy for Agent 1 evaluation (current admission discharge codes, evaluation only)
-# Discharge-ICD proxy categories (NOT a reference standard; assigned after discharge, never an input)
 ICD_PROXY = {
     "hypoxic_hepatitis": {9: r"^(570|7855[0-9]?)", 10: r"^(K720|K762|K763|R57)"},
     "congestive_hepatopathy": {9: r"^(5730|428)", 10: r"^(K761|I50)"},
     "sepsis_cholestasis": {9: r"^(038|99591|99592|78552)", 10: r"^(A40|A41|R652)"},
     "dili": {9: r"^(5733|E93[0-9]|E94[0-9])", 10: r"^(K71|T3[6-9]|T4[0-9]|T50)"},
-    "pn_associated": None,  # no specific ICD code: proxy not available
+    "pn_associated": None,
     "biliary_obstruction_cholangitis": {9: r"^(5761|5762|574[3-9])", 10: r"^(K830|K831|K80[3-7])"},
     "cholecystitis": {9: r"^(5750|5751|574[01]|574[3-4]|574[6-8])", 10: r"^(K81|K80[0146])"},
     "hemolysis": {9: r"^(282|283)", 10: r"^(D5[5-9])"},
@@ -76,7 +46,6 @@ HIST_RULES = {
 }
 
 
-# ------------------------------------------------------------------ loading
 def load_private(out_dir: Path) -> dict:
     out_dir = Path(out_dir)
     rd = lambda n, **k: pd.read_csv(out_dir / n, low_memory=False, **k)
@@ -128,22 +97,19 @@ def history_flags(cohort: pd.DataFrame, admissions: pd.DataFrame | None, diagnos
     flags = dx.groupby("stay_id")[list(HIST_RULES)].any().astype(float)
     known = set(dx.stay_id)
     out = base[["stay_id"]].merge(flags, on="stay_id", how="left")
-    # no completed previous admission with codes -> unknown, not absent
     for h in HISTORY:
         out.loc[~out.stay_id.isin(known), h] = np.nan
     return out
 
 
-# ------------------------------------------------------------------ features
 def _asof(rows: pd.DataFrame, ev: pd.DataFrame, time_col: str, take: list[str], prefix: str, at: str = "t") -> pd.DataFrame:
     if ev.empty:
-        for c in take:  # an absent analyte: keep time columns datetime so age arithmetic still works
+        for c in take:
             rows[prefix + c] = pd.NaT if c in ("charttime", "available_at") else np.nan
         return rows
     right = ev[["stay_id", time_col] + [c for c in take if c != time_col]].dropna(subset=[time_col]).sort_values(time_col)
     right = right.rename(columns={c: prefix + c for c in right.columns if c != "stay_id"})
     left = rows.copy()
-    # merge_asof needs identical key dtypes (notebook frames may carry object ids or us-resolution times)
     for d, col in ((left, at), (right, prefix + time_col)):
         d["stay_id"] = pd.to_numeric(d["stay_id"], errors="coerce").astype("float64")
         d[col] = pd.to_datetime(d[col], errors="coerce").astype("datetime64[ns]")
@@ -155,12 +121,7 @@ def _asof(rows: pd.DataFrame, ev: pd.DataFrame, time_col: str, take: list[str], 
 
 def build_features(rows: pd.DataFrame, lab: pd.DataFrame, context: pd.DataFrame, cohort: pd.DataFrame,
                    hist: pd.DataFrame | None = None, time_col: str = "available_at") -> pd.DataFrame:
-    """Point-in-time features for (stay_id, t) rows.
-
-    ``time_col='available_at'`` is the correct design (result reported by t).
-    ``time_col='charttime'`` deliberately leaks results drawn but not yet
-    reported; it exists only for the leakage before/after experiment.
-    """
+    """Point-in-time features for (stay_id, t) rows."""
     lab = lab[["stay_id", "analyte", "value", "ratio", "charttime", "available_at"]].copy()
     context = context.copy()
     for d in (lab, context):
@@ -208,7 +169,6 @@ def build_features(rows: pd.DataFrame, lab: pd.DataFrame, context: pd.DataFrame,
     c = cohort[cc].drop_duplicates("stay_id").copy()
     c["stay_id"] = c["stay_id"].astype("int64")
     c["intime"] = pd.to_datetime(c["intime"]).astype("datetime64[ns]")
-    # pre-ICU ward measurements of the same admission: last and highest x ULN before ICU admission (constant per stay)
     pre = lab[lab.analyte.isin(RATIO_FEATS)].merge(c[["stay_id", "intime"]], on="stay_id")
     pre = pre[(pre.charttime < pre.intime) & (pre.available_at <= pre.intime) & pre.ratio.notna()].sort_values("charttime")
     for a in RATIO_FEATS:
@@ -229,8 +189,7 @@ def build_features(rows: pd.DataFrame, lab: pd.DataFrame, context: pd.DataFrame,
 
 
 def feature_columns(X: pd.DataFrame, observed_in=None) -> list[str]:
-    """Model inputs. With observed_in (development mask), drop columns never observed there:
-    HistGradientBoosting cannot bin a feature with zero observed values."""
+    """Model inputs. With observed_in (development mask), drop columns never observed there: HistGradientBoosting cannot bin a feature with zero observed values."""
     cols = [c for c in X.columns if c not in {"stay_id", "t", "subject_id", "split", "y", "label", "case_id"}]
     if observed_in is not None:
         m = np.asarray(observed_in, bool)
@@ -238,7 +197,6 @@ def feature_columns(X: pd.DataFrame, observed_in=None) -> list[str]:
     return cols
 
 
-# ------------------------------------------------------------------ labels
 def agent3_landmarks(cohort, lab, events, step_hours=1, time_col="available_at"):
     """Hourly landmarks inside the ICU monitoring window, before the first event."""
     c = cohort[["stay_id", "subject_id", "split", "intime", "monitor_end", "obs_end"]].dropna(subset=["intime", "monitor_end"])
@@ -253,7 +211,6 @@ def agent3_landmarks(cohort, lab, events, step_hours=1, time_col="available_at")
         rows.append(pd.DataFrame({"stay_id": r.stay_id, "subject_id": r.subject_id, "split": r.split, "t": ts, "obs_end": r.obs_end}))
     L = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(columns=["stay_id", "subject_id", "split", "t", "obs_end"])
     L["t"] = pd.to_datetime(L.t).astype("datetime64[ns]")
-    # eligibility: all three triggers fresh (<=24 h since draw) and below threshold
     E = L[["stay_id", "t"]].copy()
     E["_i"] = np.arange(len(E))
     for a in TRIGGERS:
@@ -267,17 +224,14 @@ def agent3_landmarks(cohort, lab, events, step_hours=1, time_col="available_at")
     L["eligible"] = fresh & below
     any_fresh = np.logical_or.reduce([E[f"{a}_fresh"].values for a in TRIGGERS])
     any_high = np.logical_or.reduce([(E[f"{a}_ratio"] >= 2).fillna(False).values & E[f"{a}_fresh"].values for a in TRIGGERS])
-    L["naive_normal"] = ~any_high  # "no abnormal value shown" ignores whether anything was measured
+    L["naive_normal"] = ~any_high
     L["unmeasured_any"] = ~fresh
     L["no_trigger_at_all"] = ~any_fresh
     return L
 
 
 def agent3_labels(L: pd.DataFrame, lab: pd.DataFrame, horizon=24, end_window=6, threshold=None) -> pd.Series:
-    """abnormal_observed / no_abnormality_observed / terminal / insufficient_measurement (notebook semantics).
-
-    threshold: x ULN that counts as the predicted abnormality (any of ALT/ALP/TBIL). Default A3_TARGET (team: 5x).
-    """
+    """abnormal_observed / no_abnormality_observed / terminal / insufficient_measurement (notebook semantics)."""
     threshold = A3_TARGET if threshold is None else threshold
     t = pd.to_datetime(L.t)
     h = t + pd.Timedelta(hours=horizon)
@@ -312,7 +266,6 @@ def agent2_follow(events: pd.DataFrame, outcomes: pd.DataFrame, horizon=48) -> p
     return pd.DataFrame({"case_id": o.case_id, "follow_hours": np.clip(tm, 0, horizon), "first_event": ev})
 
 
-# ------------------------------------------------------------------ models
 def preprocessing_report(X: pd.DataFrame, cols, dev_mask, lr_pipeline=None) -> dict:
     """Per-variable missingness (development vs evaluation) and the imputation/scaling learned on development only."""
     dev_mask = np.asarray(dev_mask, bool)
@@ -340,8 +293,7 @@ def preprocessing_report(X: pd.DataFrame, cols, dev_mask, lr_pipeline=None) -> d
 
 
 def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) -> list[dict]:
-    """First event at 2/3/4/5x ULN (any of ALT/ALP/TBIL) during ICU monitoring, with recovery judged at ICU discharge
-    (last value of all three after the event < 2x), not assessable when a trigger was not re-measured, and ICU death."""
+    """First event at 2/3/4/5x ULN (any of ALT/ALP/TBIL) during ICU monitoring, with recovery judged at ICU discharge (last value of all three after the event < 2x), not assessable when a trigger was not re-measured, and ICU death."""
     thresholds = THRESHOLDS if thresholds is None else thresholds
     c = cohort.set_index("stay_id")
     trig = lab[lab.analyte.isin(TRIGGERS) & lab.ratio.notna()].sort_values("charttime")
@@ -360,15 +312,14 @@ def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) ->
             n += 1
             after = g[(g.charttime > t0) & (g.available_at <= r.monitor_end)]
             icu_death += bool(r.get("icu_death")) if "icu_death" in c else 0
-            # status at ICU discharge: last value of each trigger after the event
             lastv = after.drop_duplicates("analyte", keep="last").set_index("analyte").ratio
             if (lastv >= 2).any():
-                pass  # unrecovered
+                pass
             elif set(TRIGGERS) <= set(lastv.index):
                 rec += 1
             else:
                 unass += 1
-            died += bool(r.get("icu_death")) if "icu_death" in c else 0  # team decision: ICU death only
+            died += bool(r.get("icu_death")) if "icu_death" in c else 0
         out.append({"threshold_x_uln": k, "patients_with_event": n, "recovered_before_icu_discharge": rec,
                     "unrecovered_before_icu_discharge": n - rec - unass, "recovery_unassessable": unass,
                     "icu_death": icu_death, "alive_icu_discharge": n - icu_death,
@@ -415,7 +366,6 @@ def _calib(y, p):
     from sklearn.linear_model import LogisticRegression
     lp = np.log(p / (1 - p)).reshape(-1, 1)
     slope = LogisticRegression(C=1e6, max_iter=2000).fit(lp, y).coef_[0][0]
-    # calibration-in-the-large: intercept with slope fixed at 1 (one Newton loop)
     a = 0.0
     for _ in range(50):
         q = 1 / (1 + np.exp(-(lp[:, 0] + a)))
@@ -432,7 +382,6 @@ def binary_metrics(y, p, groups, boot=200, seed=SEED):
            "prevalence": float(y.mean()) if len(y) else None,
            "auroc": _auroc(y, p), "auprc": _ap(y, p), "brier": float(np.mean((p - y) ** 2)) if len(y) else None}
     out["cal_intercept"], out["cal_slope"] = _calib(y, p)
-    # patient-cluster bootstrap: hourly rows of one patient are not independent
     rng = np.random.default_rng(seed)
     ug = np.unique(groups)
     idx_by = pd.Series(np.arange(len(y))).groupby(groups).apply(lambda s: s.values).to_dict()
@@ -448,7 +397,6 @@ def binary_metrics(y, p, groups, boot=200, seed=SEED):
     for k, v in stats.items():
         v = [x for x in v if x is not None]
         out[k + "_ci"] = [float(np.percentile(v, 2.5)), float(np.percentile(v, 97.5))] if len(v) >= 20 else None
-    # top-decile alert burden
     if len(y) >= 10:
         cut = np.quantile(p, .9)
         top = p >= cut
@@ -477,7 +425,6 @@ def curves(y, p, n=60):
     return {"roc": roc, "pr": pr, "calibration": cal}
 
 
-# ------------------------------------------------------------------ agent 1 evaluation
 def icd_proxy(events, diagnoses):
     if diagnoses is None or not len(diagnoses):
         return {}
@@ -573,7 +520,6 @@ def evaluate_agent1(events, lab, context, hist, diagnoses, llm_rows=None):
     return out
 
 
-# ------------------------------------------------------------------ table 1
 def _med(s):
     s = pd.to_numeric(s, errors="coerce").dropna()
     return None if s.empty else [float(s.median()), float(s.quantile(.25)), float(s.quantile(.75))]
@@ -634,7 +580,6 @@ def table1(cohort, events, hist):
     return rows
 
 
-# ------------------------------------------------------------------ main entry
 def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, source="mimic-iv", min_cell=10,
             step_hours=1, train_step_hours=None, boot=200, model_dir=None, max_train_rows=600_000, log=print):
     from sklearn.base import clone
@@ -654,7 +599,6 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
     flow_path = Path(out_dir) / "04_cohort_flow.csv"
     R["flow"] = pd.read_csv(flow_path).to_dict("records") if flow_path.exists() else None
 
-    # ---------------- Agent 3: hourly landmarks
     log("agent3: building landmarks")
     L = agent3_landmarks(cohort, lab, events, step_hours=step_hours)
     L["label"] = agent3_labels(L, lab) if len(L) else []
@@ -669,7 +613,6 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
             "train_patients": int(known[known.split.eq("development")].subject_id.nunique()),
             "test_patients": int(known[known.split.eq("evaluation")].subject_id.nunique())}
     R["agent3_development"] = dev3
-    # shadow: missing-as-normal
     if len(L):
         nn = L[L.naive_normal]
         R["shadow_missing_as_normal"] = {
@@ -686,7 +629,7 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
         Xa = X[cols].astype(float)
         tr = known.split.eq("development").values
         te = ~tr
-        if tr.sum() > max_train_rows:  # cap rows, sampled by patient-stratified random rows
+        if tr.sum() > max_train_rows:
             pick = np.random.default_rng(SEED).choice(np.where(tr)[0], max_train_rows, replace=False)
             tr = np.zeros(len(known), bool)
             tr[pick] = True
@@ -709,7 +652,6 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
         R["preprocessing"] = preprocessing_report(X, cols, tr, fitted.get("로지스틱 회귀"))
         prev = y[tr].mean()
         perf3["models"].append({"model": "기준선 (개발 집단 발생률)", **binary_metrics(y[te], np.full(te.sum(), prev), g[te], 0)})
-        # one predeclared landmark per evaluation patient (first eligible after 24 h, else first)
         Ke = known[te].copy()
         Ke["p"] = fitted["그래디언트 부스팅"].predict_proba(Xa[te])[:, 1]
         Ke["h"] = (Ke.t - Ke.merge(cohort[["stay_id", "intime"]], on="stay_id", how="left").intime.values).dt.total_seconds() / 3600
@@ -717,14 +659,12 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
         one = Ke.sort_values(["subject_id", "after24", "t"], ascending=[True, False, True]).drop_duplicates("subject_id")
         if len(one) and one.y.nunique() == 2:
             perf3["one_landmark_per_patient_gbm"] = binary_metrics(one.y.values, one.p.values, np.arange(len(one)), boot)
-        # shadow: row-level random split (patients leak across train/test)
         rng = np.random.default_rng(SEED)
         rows_tr = rng.random(len(known)) < .7
         m_row = gbm(*best).fit(Xa[rows_tr], y[rows_tr])
         p_row = m_row.predict_proba(Xa[~rows_tr])[:, 1]
         shadow = {"after_patient_split": perf3["models"][1]["auroc"], "before_row_split": _auroc(y[~rows_tr], p_row),
                   "after_auprc": perf3["models"][1]["auprc"], "before_auprc": _ap(y[~rows_tr], p_row)}
-        # shadow: results drawn but not yet reported used as features (charttime instead of availability)
         Xl = build_features(known[["stay_id", "t"]], lab, context, cohort, hist, time_col="charttime")[cols].astype(float)
         m_l = gbm(*best).fit(Xl[tr], y[tr])
         shadow["before_unreported_results"] = _auroc(y[te], m_l.predict_proba(Xl[te])[:, 1])
@@ -737,7 +677,6 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
                          "trained_on": source, "built_at": R["meta"]["built_at"]}, Path(model_dir) / "agent3_gbm.joblib")
     R["agent3_performance"] = perf3
     R["agent3_target"] = {"threshold_x_uln": A3_TARGET, "definition": "any of ALT/ALP/TBIL >= threshold within 24 h, from hours when all three < 2x"}
-    # sensitivity: the same model trained for 2/3/4/5x targets (fixed hyperparameters from the main grid search)
     if len(known) and best is not None:
         rows3 = []
         for k in THRESHOLDS:
@@ -762,7 +701,6 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
         R["agent3_by_threshold"] = rows3
     R["event_thresholds"] = _secondary_suppress(threshold_table(cohort, lab), min_cell)
 
-    # ---------------- Agent 2: at the first alert
     perf2 = {"models": []}
     if len(outcomes):
         ev2 = events.merge(outcomes[["case_id", "first_event_48h"]], on="case_id", how="inner")
@@ -770,7 +708,6 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
                                    "excluded_insufficient": int(ev2.first_event_48h.eq("insufficient_measurement").sum())}
         K2 = ev2[ev2.first_event_48h.isin(A2_CLASSES)].copy()
         fol = agent2_follow(events, outcomes)
-        # shadow: competing events ignored vs kept (evaluation events)
         fe = fol.merge(events[["case_id", "split"]], on="case_id")
         if len(fe):
             for sp in ["development", "evaluation"]:
@@ -807,12 +744,10 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
                                  "trained_on": source}, Path(model_dir) / "agent2_gbm.joblib")
     R["agent2_performance"] = perf2
 
-    # ---------------- Agent 1
     pred_path = Path(out_dir) / "09_agent_predictions.jsonl"
     llm_rows = [json.loads(x) for x in pred_path.read_text(encoding="utf-8").splitlines() if x.strip()] if pred_path.exists() else None
     R["agent1_performance"] = evaluate_agent1(events, lab, context, hist, diagnoses, llm_rows)
 
-    # ---------------- other shadows from notebook outputs
     for key, name in [("alert_aggregation", "18_alert_aggregation.csv"), ("threshold_sensitivity", "33_threshold_sensitivity.csv"),
                       ("value_format_audit", "02c_value_format_audit.csv")]:
         p = Path(out_dir) / name
@@ -826,12 +761,10 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
 
 
 NOT_COUNTS = {"seed", "landmark_step_hours", "max_leaf_nodes", "n_features", "cutoff_fold_uln", "min_cell_suppression",
-              # settings and ranks, not patient counts
               "horizon_h", "horizon_hours", "horizons", "step_hours", "hour", "rank", "k_selected", "n_clusters", "n_boot", "stable_threshold",
               "threshold_x_uln", "groups"}
 
 
-# groups of counts that add up to a shown total: hiding one cell alone would let it be recovered by subtraction
 PARTITIONS = [("patients_with_event", ["recovered_before_icu_discharge", "unrecovered_before_icu_discharge", "recovery_unassessable"]),
               ("patients_with_event", ["icu_death", "alive_icu_discharge"])]
 
@@ -848,7 +781,7 @@ def _secondary_suppress(rows, min_cell):
             if len(small) == 1:
                 rest = sorted((p for p in parts if p not in small and isinstance(r[p], int)), key=lambda p: r[p])
                 if rest:
-                    r[rest[0]] = 0 if r[rest[0]] == 0 else -1  # marker, replaced by None below
+                    r[rest[0]] = 0 if r[rest[0]] == 0 else -1
         for k, v in list(r.items()):
             if v == -1:
                 r[k] = None
@@ -869,12 +802,7 @@ def _suppress_label_counts(d: dict, total: int | None, min_cell):
 
 
 def public_postprocess(R: dict, min_cell) -> dict:
-    """Close subtraction leaks left after per-cell suppression (run on every public results file).
-
-    - cause 2x2 tables: flagged = tp+fp, proxy_positive = tp+fn and sensitivity/specificity reveal a hidden cell,
-      so a row with any hidden cell hides those too, and a second cell when only one is hidden.
-    - confusion matrices: row totals (per-class events) and accuracy reveal a hidden cell, so the matrix is dropped.
-    """
+    """Close subtraction leaks left after per-cell suppression (run on every public results file)."""
     if not min_cell or not isinstance(R, dict):
         return R
     cells = ("tp", "fp", "fn", "tn")
@@ -925,7 +853,6 @@ def _suppress_counts(o, min_cell, key=None):
             if k in ("k", "n", "events", "adopted") and small(v):
                 out["_suppressed"] = True
         if out.get("_suppressed") or any(small(v) for k, v in o.items() if k not in NOT_COUNTS):
-            # a rate next to a hidden count would reveal it: hide every rate/share in the same record
             for r in list(out):
                 if r in ("rate", "ci", "observed", "ci_low", "ci_high", "adoption_rate", "prevalence") or r.endswith("_rate") or r.endswith("_share"):
                     out[r] = None
@@ -953,7 +880,6 @@ def _json_safe(o):
     return o
 
 
-# ================================================================== v2: explanations, trajectories, prognosis
 FEATURE_GROUPS = {
     "liver_level": "간 수치 (현재)", "liver_change": "간 수치 변화", "measurement": "측정 패턴",
     "perfusion": "관류·쇼크", "inflammation": "염증·감염", "renal_metabolic": "신장·대사",
@@ -963,7 +889,7 @@ TRAJ_ANALYTES = ["ALT", "AST", "ALP", "TBIL"]
 TRAJ_HORIZONS = [6, 12, 18, 24]
 TRAJ_QUANTILES = [0.1, 0.5, 0.9]
 PROGNOSIS = ["recovered_alive_icu", "recovered_died_icu",
-             "unrecovered_alive_icu", "unrecovered_died_icu"]  # recovery-assessable events; unassessable_* kept for death only
+             "unrecovered_alive_icu", "unrecovered_died_icu"]
 
 
 def group_of(col: str) -> str:
@@ -986,13 +912,7 @@ def group_of(col: str) -> str:
 
 
 def group_shapley(predict, X: pd.DataFrame, background: pd.DataFrame, cols: list[str], max_rows=None) -> np.ndarray:
-    """Exact Shapley values over clinical feature GROUPS (interventional, averaged over a background sample).
-
-    With 9 groups there are 2^9 coalitions, so no sampling approximation is needed.
-    Values are in the model's output units (probability) and sum to f(x) - mean f(background).
-    Grouping keeps correlated measurements of one physiology together, so credit is not split arbitrarily
-    between, e.g., ALT level and ALT change.
-    """
+    """Exact Shapley values over clinical feature GROUPS (interventional, averaged over a background sample)."""
     import itertools
     groups = list(FEATURE_GROUPS)
     gidx = {g: [i for i, c in enumerate(cols) if group_of(c) == g] for g in groups}
@@ -1001,12 +921,11 @@ def group_shapley(predict, X: pd.DataFrame, background: pd.DataFrame, cols: list
     Xv = X[cols].to_numpy(float)
     Bv = background[cols].to_numpy(float)
     K = len(Bv)
-    masks = np.array(list(itertools.product([0, 1], repeat=G)), dtype=bool)  # 2^G x G
+    masks = np.array(list(itertools.product([0, 1], repeat=G)), dtype=bool)
     from math import factorial
     out = np.zeros((len(Xv), G))
     for r in range(len(Xv)):
-        # rows: coalition x background
-        M = np.repeat(Bv[None, :, :], len(masks), axis=0).copy()  # C x K x p
+        M = np.repeat(Bv[None, :, :], len(masks), axis=0).copy()
         for gi, g in enumerate(groups):
             on = masks[:, gi]
             M[np.ix_(on, np.arange(K), gidx[g])] = Xv[r, gidx[g]]
@@ -1028,10 +947,7 @@ def group_shapley(predict, X: pd.DataFrame, background: pd.DataFrame, cols: list
 
 
 def synthetic_background(X: pd.DataFrame, n: int = 10) -> pd.DataFrame:
-    """n reference rows; row i takes the ((i+0.5)/n) percentile of every variable independently.
-
-    No row equals a real patient. Binary variables keep 0/1 values; never-observed variables stay missing.
-    """
+    """n reference rows; row i takes the ((i+0.5)/n) percentile of every variable independently."""
     qs = [(i + .5) / n for i in range(n)]
     A = X.apply(pd.to_numeric, errors="coerce")
     return pd.DataFrame({c: (A[c].quantile(qs, interpolation="nearest").to_numpy() if A[c].notna().any() else [np.nan] * n)
@@ -1070,7 +986,7 @@ def trajectory_rows(cohort, lab, step_hours=4, horizons=TRAJ_HORIZONS, window=3,
             Q = L[["stay_id", "t"]].assign(_i=np.arange(len(L)), th=L.t + pd.Timedelta(hours=h)).sort_values("th")
             m = pd.merge_asof(Q, e[["stay_id", "charttime", "y"]], left_on="th", right_on="charttime", by="stay_id",
                               direction="nearest", tolerance=pd.Timedelta(hours=window)).sort_values("_i")
-            ok = m.charttime.values > L.t.values  # the target must be drawn after t
+            ok = m.charttime.values > L.t.values
             targets[(a, h)] = np.where(ok, m.y.values, np.nan)
     return L, targets
 
@@ -1085,7 +1001,7 @@ def fit_trajectory(L, targets, X, cols, max_rows=400_000, boot_rows=None):
         Xs, ys, hs, sp, lastv = [], [], [], [], []
         for h in TRAJ_HORIZONS:
             y = targets[(a, h)]
-            keep = ~np.isnan(y) & ~np.isnan(last)  # forecast only analytes measured in the last 24 h
+            keep = ~np.isnan(y) & ~np.isnan(last)
             Xs.append(X.loc[keep, cols].assign(horizon_h=float(h)))
             ys.append(y[keep]); hs.append(np.full(keep.sum(), h)); sp.append(tr[keep]); lastv.append(np.log2(np.clip(last[keep], 1e-3, None)))
         if not sum(len(y) for y in ys):
@@ -1185,7 +1101,6 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
     if model_dir:
         Path(model_dir).mkdir(parents=True, exist_ok=True)
 
-    # ---- Agent 3 explanations (global group Shapley on evaluation landmarks)
     a3p = Path(model_dir) / "agent3_gbm.joblib" if model_dir else None
     if a3p and a3p.exists():
         log("v2: group Shapley for Agent 3")
@@ -1197,7 +1112,6 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
             X = build_features(K[["stay_id", "t"]], lab, context, cohort, hist)
             dev, te = K.split.eq("development").values, K.split.eq("evaluation").values
             rng = np.random.default_rng(SEED)
-            # synthetic reference rows (per-variable percentiles), so the shareable model file holds no real patient row
             bg = synthetic_background(X.loc[dev, b["features"]] if dev.any() else X[b["features"]], n=10)
             b["background"] = bg.reset_index(drop=True)
             joblib.dump(b, a3p)
@@ -1217,7 +1131,6 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
                                         "rank": [r["group"] for r in imp].index("measurement") + 1 if m else None,
                                         "groups": len(imp)}
 
-    # ---- 24 h trajectories
     log("v2: trajectory landmarks")
     Lt, targets = trajectory_rows(cohort, lab, step_hours=traj_step_hours)
     if len(Lt):
@@ -1232,16 +1145,14 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
             joblib.dump({"models": models, "features": cols_t, "kind": "trajectory_qgbm", "trained_on": R["meta"]["source"]},
                         Path(model_dir) / "trajectory_qgbm.joblib")
 
-    # ---- Agent 2: 4-class prognosis (resolution x death)
     if len(outcomes):
         ev_all = events.merge(outcomes[["case_id", "observed_path"] + (["died_icu"] if "died_icu" in outcomes else [])], on="case_id", how="inner")
-        ev2 = ev_all[ev_all.observed_path.isin(PROGNOSIS)]  # recovery assessable
+        ev2 = ev_all[ev_all.observed_path.isin(PROGNOSIS)]
         R["prognosis_development"] = {"events": int(len(ev_all)), "assessable": int(len(ev2)),
                                       "label_counts": _suppress_label_counts({k: int(v) for k, v in ev_all.observed_path.value_counts().items()}, len(ev_all), min_cell),
                                       "definition": "recovery = at ICU discharge the last ALT/ALP/TBIL after the event are all < 2x; unrecovered = any last >= 2x; unassessable = not all re-measured; death = ICU death"}
         death_bundle = None
         if "died_icu" in ev_all and ev_all.split.eq("evaluation").any() and ev_all[ev_all.split.eq("development")].died_icu.astype(bool).nunique() == 2:
-            # 1-year death on ALL events, including those whose recovery cannot be assessed
             Xd = build_features(ev_all.rename(columns={"t0": "t"})[["stay_id", "t"]], lab, context, cohort, hist)
             trd = ev_all.split.eq("development").to_numpy()
             cold = feature_columns(Xd, trd)
@@ -1278,10 +1189,8 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
                                  "trained_on": R["meta"]["source"], **(death_bundle or {})}, Path(model_dir) / "prognosis_gbm.joblib")
         R["prognosis_performance"] = perf
 
-    # ---- Agent 1: 0/1 flags
     R["agent1_flags"] = evaluate_flags(events, lab, context, hist, diagnoses)
 
-    # ---- shadow: one wrongly entered value (age 19 -> 190, decimal/unit slips) before vs after a plausibility guard
     try:
         from .data_errors import experiment
         a3b = joblib.load(a3p) if a3p and a3p.exists() else None
@@ -1289,7 +1198,6 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
         trb = joblib.load(tp) if tp and tp.exists() else None
         L = agent3_landmarks(cohort, lab, events, step_hours=1)
         L = L[L.split.eq("evaluation") & L.eligible]
-        # pre-declared sample: one random eligible hour per evaluation patient, at most 2,000 patients
         rows = L.sample(frac=1, random_state=SEED).groupby("stay_id").head(1).head(2000)
         ev_eval = events[events.split.eq("evaluation")]
         ev_lab = lab[lab.stay_id.isin(set(cohort.loc[cohort.split.eq("evaluation"), "stay_id"]))]
@@ -1297,6 +1205,6 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
             log(f"v2: data-entry error shadow on {len(rows):,} evaluation patients")
             R["shadow_data_error"] = experiment(rows, ev_lab, context, cohort, hist, a3b, trb, rule_agent1, snapshot_payload,
                                                 events=ev_eval, log=log)
-    except Exception as ex:  # reported, never silently dropped
+    except Exception as ex:
         R["shadow_data_error"] = {"status": "failed", "error": f"{type(ex).__name__}: {ex}"}
     return public_postprocess(_suppress_counts(_json_safe(R), min_cell), min_cell)

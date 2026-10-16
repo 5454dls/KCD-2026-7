@@ -86,7 +86,6 @@ def main(argv=None):
     (out / "hosp").mkdir(parents=True, exist_ok=True)
     (out / "icu").mkdir(parents=True, exist_ok=True)
 
-    # patients
     pid, pts = {}, []
     for p in read(fd, "MimicPatient"):
         sid = int(ident(p, "identifier/patient"))
@@ -95,7 +94,6 @@ def main(argv=None):
         by = int(p["birthDate"][:4])
         pts.append({"subject_id": sid, "gender": sex or {"female": "F", "male": "M"}.get(p.get("gender")),
                     "anchor_age": 0, "anchor_year": by, "anchor_year_group": "", "dod": p.get("deceasedDateTime")})
-    # hospital admissions
     hadm_of, adm = {}, []
     for e in read(fd, "MimicEncounter"):
         hid = ident(e, "encounter-hosp")
@@ -108,7 +106,6 @@ def main(argv=None):
                     "dischtime": t(e["period"].get("end")), "deathtime": t(e["period"].get("end")) if died else None,
                     "admission_type": e.get("class", {}).get("code"), "discharge_location": disp,
                     "hospital_expire_flag": int(died)})
-    # ICU stays
     stay_of, stays = {}, []
     for e in read(fd, "MimicEncounterICU"):
         sid_ = int(ident(e, "encounter-icu"))
@@ -120,7 +117,6 @@ def main(argv=None):
     st = pd.DataFrame(stays)
     st["los"] = (pd.to_datetime(st.outtime) - pd.to_datetime(st.intime)).dt.total_seconds() / 86400
 
-    # labs + dictionary
     labs, dlab = [], {}
     for o in read(fd, "MimicObservationLabevents"):
         c = coding(o)
@@ -133,7 +129,6 @@ def main(argv=None):
                      "storetime": t(o.get("issued")), "value": o.get("valueString", q.get("value")), "valuenum": q.get("value"),
                      "valueuom": q.get("unit"), "ref_range_lower": (rr.get("low") or {}).get("value"),
                      "ref_range_upper": (rr.get("high") or {}).get("value")})
-    # charted vitals (only the items the notebook uses), output, ICU infusions
     d_items, ce, uo, ie = {}, [], [], []
     for o in read(fd, "MimicObservationChartevents"):
         c = coding(o)
@@ -167,7 +162,6 @@ def main(argv=None):
                    "amount": dose.get("value"), "amountuom": dose.get("unit"), "rate": rate.get("value"), "rateuom": rate.get("unit"),
                    "statusdescription": {"completed": "FinishedRunning", "stopped": "Stopped", "in-progress": "ChangeDose/Rate"}.get(m.get("status"), m.get("status")),
                    "orderid": None})
-    # eMAR (hospital medication administrations)
     names = {}
     for med in read(fd, "MimicMedication"):
         fc, nm = ident(med, "formulary-drug-cd"), ident(med, "medication-name")
@@ -181,7 +175,6 @@ def main(argv=None):
         em.append({"subject_id": pid.get(ref(m, "subject")), "hadm_id": hadm_of.get(ref(m, "context")),
                    "charttime": t(m.get("effectiveDateTime")), "storetime": None, "medication": med,
                    "event_txt": coding((m.get("dosage") or {}), "method").get("code")})
-    # diagnoses (used only from completed PREVIOUS admissions by the notebook)
     dx = []
     for c_ in read(fd, "MimicCondition"):
         c = coding(c_)

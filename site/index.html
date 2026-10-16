@@ -11,8 +11,6 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-/* Layout: a lab-report console. Hero with the thesis, the pipeline as Figure 1,
-   a replay console for the live demo, then numbered paper figures. */
 :root{
   --paper:#f3f6f5; --surface:#ffffff; --sunk:#e9efed; --ink:#13232a; --muted:#56686d; --line:#d3dedb;
   --accent:#a8660e; --accent-soft:#f6e7cf;
@@ -68,7 +66,6 @@ button,select,input{font:inherit;color:inherit}
 button,a,.case-btn,.tab,.node{transition:transform .45s var(--ease),background-color .3s var(--ease),border-color .3s var(--ease),box-shadow .45s var(--ease),color .3s var(--ease)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 
-/* top bar */
 .bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:20;margin-top:10px}
 .bar .wrap{display:flex}
 .pill{display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;padding:8px 10px 8px 16px;border-radius:999px;background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid color-mix(in srgb,var(--line) 80%,transparent);box-shadow:0 10px 30px -18px rgba(19,35,42,.35)}
@@ -81,7 +78,6 @@ button,a,.case-btn,.tab,.node{transition:transform .45s var(--ease),background-c
 .src[data-kind="synthetic"]{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .src[data-kind="mimic-iv-demo"]{background:var(--ok-soft);color:var(--ok);border-color:transparent}
 
-/* hero */
 .hero{padding-block:clamp(40px,6vw,84px) 32px;background:radial-gradient(60% 70% at 85% 30%,var(--accent-soft),transparent 70%),radial-gradient(50% 60% at 0% 100%,color-mix(in srgb,var(--alt) 10%,transparent),transparent 70%)}
 .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(28px,4vw,56px);align-items:center}
 .hero h1{font-size:clamp(2.1rem,1.2rem + 3.2vw,3.7rem);font-weight:800;line-height:1.22;letter-spacing:-.03em}
@@ -98,7 +94,6 @@ button,a,.case-btn,.tab,.node{transition:transform .45s var(--ease),background-c
 .btn-ico{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--paper) 16%,transparent)}
 .btn-ico svg{width:16px;height:16px;transition:transform .45s var(--ease)}
 .btn.primary:hover .btn-ico svg{transform:translateX(3px)}
-/* double-bezel monitor device */
 .bezel{padding:7px;border-radius:26px;background:linear-gradient(160deg,color-mix(in srgb,var(--mon-shell) 70%,var(--surface)),color-mix(in srgb,var(--mon-shell) 35%,var(--paper)));box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 30px 60px -30px rgba(11,20,22,.55),0 12px 24px -18px rgba(11,20,22,.4)}
 .device{border-radius:20px;padding:16px 18px 14px;box-shadow:inset 0 1px 1px rgba(255,255,255,.08);display:grid;gap:10px;min-height:340px;position:relative;overflow:hidden}
 .device::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(80% 60% at 70% 0%,var(--mon-glow),transparent 70%)}
@@ -122,14 +117,12 @@ button,a,.case-btn,.tab,.node{transition:transform .45s var(--ease),background-c
 .synthetic-banner{background:var(--warn-soft);color:var(--warn);font-size:.85rem}
 .synthetic-banner .wrap{padding-block:9px}
 
-/* sections */
 section{padding-block:clamp(56px,7vw,104px)}
 section,figure{scroll-margin-top:84px}
 .sec-head{display:grid;gap:12px;margin-bottom:clamp(24px,3vw,40px);max-width:72ch}
 .sec-head p{color:var(--muted)}
 .rule{border:0;border-top:1px solid var(--line);margin:0}
 
-/* pipeline figure */
 .pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;position:relative}
 .stage{display:grid;gap:8px;align-content:start;position:relative}
 .stage-h{font:700 .82rem var(--f-body);color:var(--muted);display:flex;gap:8px;align-items:center}
@@ -150,7 +143,6 @@ a.node:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 
 .pipe-foot span{display:inline-flex;gap:6px;align-items:center}
 .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
 
-/* console */
 .console-bezel{padding:7px;border-radius:24px;background:linear-gradient(160deg,color-mix(in srgb,var(--mon-shell) 70%,var(--surface)),color-mix(in srgb,var(--mon-shell) 35%,var(--paper)));box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 40px 80px -40px rgba(11,20,22,.55)}
 .console{border-radius:18px;overflow:hidden;box-shadow:inset 0 1px 1px rgba(255,255,255,.07)}
 .console-top{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--sunk)}
@@ -239,7 +231,6 @@ a.node:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 
 .reveal{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .reveal-out{font-size:.84rem;padding:8px 12px;border-radius:8px;background:var(--sunk)}
 
-/* shadow demos */
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
 .tab{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;cursor:pointer;font-size:.88rem;font-weight:600}
 .tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
@@ -259,7 +250,6 @@ a.node:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 
 .quote{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:.84rem;padding:10px 12px;background:var(--crit-soft);color:var(--ink);margin-bottom:12px;border-radius:10px}
 .quote svg{width:18px;height:18px;fill:var(--crit);margin-top:2px}
 
-/* paper figures */
 .figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
 figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 40px -34px rgba(19,35,42,.45);padding:18px 18px 14px;position:relative;min-width:0;display:flex;flex-direction:column;gap:10px}
 figure.wide{grid-column:1/-1}
@@ -358,7 +348,6 @@ figcaption code{font:500 .76rem var(--f-mono);background:var(--sunk);padding:1px
 .metrics b{display:block;font:700 1.15rem var(--f-body);font-variant-numeric:tabular-nums;color:var(--ink)}
 .metrics span{font-size:.7rem;color:var(--muted)}
 
-/* repro */
 .repro{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px}
 pre{background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font:500 .8rem/1.6 var(--f-mono);margin:0}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.84rem}
@@ -649,7 +638,6 @@ python scripts/export_site_data.py --out-dir OUT --source mimic-iv \
 
 <script>
 "use strict";
-/* ---------------- labels ---------------- */
 const CAUSE={hypoxic_hepatitis:"저산소성 간염",congestive_hepatopathy:"울혈성 간병증",sepsis_cholestasis:"패혈증 유발 담즙정체",dili:"약물 유발 간손상 (DILI)",pn_associated:"정맥영양 관련 간기능 이상",biliary_obstruction_cholangitis:"담도폐쇄·담관염",cholecystitis:"담낭염",hemolysis:"용혈",viral_hepatitis:"바이러스 간염",others:"기타",unknown:"원인 불명",hypoxic_ischemic:"저산소·허혈",drug_related:"약물 관련",biliary:"담도",congestive:"울혈",baseline_liver:"기저 간질환",other_hepatic:"기타 간성",nonhepatic:"비간성"};
 const FLAG_ORDER=["hypoxic_hepatitis","congestive_hepatopathy","sepsis_cholestasis","dili","pn_associated","biliary_obstruction_cholangitis","cholecystitis","hemolysis","viral_hepatitis","others"];
 const GROUP={initial_abnormal:["입실 초기 이상","crit"],incident:["관찰 중 신규 이상","crit"],onset_unknown:["발생 시점 불명","warn"],normal:["이상 사건 없음","ok"]};
@@ -667,13 +655,11 @@ const pct=(x,d=0)=>x==null||isNaN(x)?"–":(x*100).toFixed(d)+"%";
 const fmt=(x,d=2)=>x==null||isNaN(x)?"–":(+x).toLocaleString("ko-KR",{maximumFractionDigits:d});
 const NS="http://www.w3.org/2000/svg";
 
-/* ---------------- tiny svg kit ---------------- */
 function S(tag,attrs={},text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e}
 function svgBox(w,h,label){const s=S("svg",{viewBox:`0 0 ${w} ${h}`,role:"img","aria-label":label||"",style:`max-width:${Math.round(w*1.15)}px`});return s}
 const lin=(d0,d1,r0,r1)=>v=>r0+(v-d0)/(d1-d0||1)*(r1-r0);
 function niceTicks(max,n=5){if(!(max>0))return[0,1];const step=Math.pow(10,Math.floor(Math.log10(max/n)));const m=[1,2,2.5,5,10].find(m=>max/(m*step)<=n)||10;const st=m*step,out=[];for(let v=0;v<=max+1e-9;v+=st)out.push(+v.toFixed(10));if(out[out.length-1]<max)out.push(+(out[out.length-1]+st).toFixed(10));return out}
 
-/* ---------------- state ---------------- */
 const st={manifest:null,summary:null,cases:{},key:null,hour:0,playing:false,timer:null,a1view:"with_cluster",revealed:false};
 
 async function load(){
@@ -696,7 +682,6 @@ async function load(){
 
 async function getCase(k){if(!st.cases[k]){st.cases[k]=await (await fetch(`data/cases/${encodeURIComponent(k)}.json`,{cache:"no-store"})).json();prep(st.cases[k])}return st.cases[k]}
 function prep(c){
-  // derive alert hour and a per-hour log of newly published results
   c.alertHour=c.t0_hour??(c.frames.find(f=>f.agent1&&f.agent1.status!=="no_current_alert")||{}).hour??null;
   const seen=new Set();c.points={ALT:[],ALP:[],TBIL:[]};c.logs=[];
   for(const f of c.frames){
@@ -718,7 +703,6 @@ async function selectCase(k){
   render();renderShadowCase();
 }
 
-/* ---------------- replay render ---------------- */
 function frameAt(c,h){let f=c.frames[0];for(const x of c.frames){if(x.hour<=h)f=x;else break}return f}
 function patientState(f,c,h){
   const fresh=TRIG.map(a=>f.labs.find(l=>l.analyte===a&&l.ratio!=null&&l.age_hours<=24));
@@ -810,7 +794,6 @@ function renderA3(f){
    `<div class="gauge"><div class="ci" style="left:${(ci[0]||0)*100}%;width:${((ci[1]||0)-(ci[0]||0))*100}%"></div><div class="pt" style="left:calc(${(a.risk_next24||0)*100}% - 1px)"></div></div>${thin?`<p class="smalln">결과가 확인된 참고 사례가 ${a.known_n}명뿐이라 이 값은 해석하지 않습니다. 전체 MIMIC-IV에서 다시 계산합니다.</p>`:""}<p class="warnline">충분히 재검된 사례에서만 계산한 조건부 비율. 선택 편향이 남습니다.</p>`;
 }
 
-/* ---------------- transport ---------------- */
 function tick(){const c=st.cases[st.key];if(!c)return;if(st.hour>=c.max_hour){stop();return}st.hour++;$("#hour").value=st.hour;render();
   if(c.alertHour!=null&&st.hour===c.alertHour){stop();flash()}}
 function flash(){const el=$("#ag1");el.animate?.([{boxShadow:"0 0 0 0 var(--crit)"},{boxShadow:"0 0 0 6px transparent"}],{duration:900,iterations:2})}
@@ -831,11 +814,9 @@ function wire(){
     document.querySelectorAll("#shadow [role=tabpanel]").forEach(p=>p.hidden=p.id!==t.dataset.tab)});
 }
 
-/* ---------------- shadow demos ---------------- */
 function na(file,msg){return `<div class="na"><div>${msg||"아직 집계되지 않았습니다."}</div><code>${esc(file)}</code></div>`}
 function renderShadowCase(){
   const c=st.cases[st.key],S0=st.summary||{};const inj=S0.injected_cause||"dili";
-  // data-entry error, this case
   const de=c.data_errors,row=de&&de.rows&&de.rows[0];
   if(row&&row.scenarios){const sk=Object.fromEntries((de.scenarios||[]).map(x=>[x.key,x]));
     const fl=a=>(a&&a.length)?a.map(k=>esc(CAUSE[k]||k)).join(", "):"없음";
@@ -844,12 +825,10 @@ function renderShadowCase(){
       const changed=r.flags_before&&r.flags_clean&&r.flags_before.join()!==r.flags_clean.join();
       return `<tr><td>${esc(x.label)}</td><td>${fmt(r.original,1)} → <b>${fmt(r.entered,1)}</b></td><td>${rp(r.risk_before)}</td><td>${rp(r.risk_after)}</td><td class="${changed?"smd-hi":""}">${r.flags_before?fl(r.flags_before)+(changed?" (바뀜)":""):"–"}</td><td>${x.caught_after?"<b>보류</b> · 재측정 확인":"통과 (규칙으로 못 잡음)"}</td></tr>`}).join("")}</tbody></table></div>`;
   }else $("#stress-case").innerHTML=na("data_errors",de&&de.status?`이 환자는 시험하지 못했습니다 (${esc(de.status)}).`:"이 환자에는 값 오류 시험 기록이 없습니다.");
-  // competing, this case
   const f=c.frames.find(x=>x.agent2&&x.agent2.status==="exploratory_reference_estimate");
   if(f&&f.agent2.curve)$("#compete-case").innerHTML=cifSVG(f.agent2.curve,"이 환자의 유사 사례");
   else if(f)$("#compete-case").innerHTML=stackBar(f.agent2.joint_first_event)+`<p class="naive">단순 중도절단 해소 ${pct(f.agent2.naive_competing_events_censored_resolution)} vs 경쟁위험 ${pct(f.agent2.joint_first_event.resolution)}</p>`;
   else $("#compete-case").innerHTML=na("agent2 output","이 환자는 이상 사건이 없어 경과 추정 대상이 아닙니다.");
-  // grounding, this case
   const a=c.frames.find(x=>x.agent1&&x.agent1.answer);
   if(a&&a.agent1.backend==="rule"){$("#ground-case").innerHTML=na("09_agent_predictions.jsonl","규칙 기반 모델은 스냅샷에 있는 기록만 인용하도록 만들어져 있어 이 검사는 항상 통과합니다. 환각 근거 검사는 LLM 출력에 적용합니다.")}
   else if(a&&a.agent1.answer.with_cluster?.candidates){const fr=frameAt(c,a.agent1.output_at_hour);const have=new Set(fr.labs.map(l=>l.analyte.toUpperCase()));
@@ -871,7 +850,6 @@ function cifSVG(cv,label){
   return `<div class="plot">${s.outerHTML}</div>`;
 }
 
-/* ---------------- paper figures ---------------- */
 function fig(id,num,title,body,caption,file,wide){
   const syn=(st.summary||{}).source==="synthetic";
   const demo=(st.summary||{}).source==="mimic-iv-demo";
@@ -889,17 +867,14 @@ function renderFigures(){
   const fs=$("#fig-source");
   if(D.source==="mimic-iv-demo"){fs.hidden=false;fs.textContent="아래 그림은 공개 데이터 MIMIC-IV Demo 100명에 노트북을 실제로 실행한 결과입니다. 사건이 16건뿐이라 신뢰구간이 넓고 일부 그림은 계산되지 않습니다. 전체 MIMIC-IV 결과는 10 미만 칸을 가린 집계로 교체합니다."}
   else if(D.source==="mimic-iv"){fs.hidden=false;fs.textContent="아래 그림은 전체 MIMIC-IV 집계입니다. 10 미만 칸은 가렸습니다."}
-  // Fig 2 cohort flow (CONSORT)
   let f2="";if(D.cohort_flow){const rows=D.cohort_flow,W=520,bh=40,gap=22,H=rows.length*(bh+gap),s=svgBox(W,H,"코호트 흐름");
     rows.forEach((r,i)=>{const y0=i*(bh+gap);s.append(S("rect",{x:110,y:y0,width:300,height:bh,rx:6,fill:"var(--sunk)",stroke:"var(--line)"}));
       s.append(S("text",{x:260,y:y0+16,"text-anchor":"middle",class:"t-title"},STEP[r.step]||r.step));s.append(S("text",{x:260,y:y0+31,"text-anchor":"middle",class:"ink"},r.n==null?"<10":"n = "+fmt(r.n,0)));
       if(i<rows.length-1){s.append(S("line",{x1:260,x2:260,y1:y0+bh,y2:y0+bh+gap-3,stroke:"var(--muted)"}));const nx=rows[i+1].n,dx=r.n!=null&&nx!=null?r.n-nx:null;
         if(dx)s.append(S("text",{x:270,y:y0+bh+gap/2+4},`− ${fmt(dx,0)}`))}});f2=s.outerHTML}
   out.push(fig("fig2",2,"코호트 흐름",f2,"성인 첫 ICU 입실을 환자 단위로 개발·평가 집단에 나눈 뒤, ICU 관찰 중 ALT·ALP·총빌리루빈 중 하나가 2×ULN 이상이 된 첫 사건을 주 분석에 사용했다. 분석 표본 단계는 실행 설정 MAX_PATIENTS를 반영한다.","04_cohort_flow.csv"));
-  // Fig 3 lab QC
   const q=D.lab_qc;out.push(fig("fig3",3,"검사 품질 관리",q?hbars(q,{label:r=>r.analyte,value:r=>r.n,color:r=>TRIG.includes(r.analyte)?COL[r.analyte]:"var(--muted)",lw:120,w:680,rm:230,extra:(s,r,yy,x)=>{if(r.n){s.append(S("text",{x:676,y:yy+15,"text-anchor":"end",style:"font-size:9.5px"},`단위오류 ${pct(r.unit_invalid/r.n,1)} · ULN없음 ${pct(r.missing_uln/r.n,1)}`))}}}):"",
     "항목별 추출 건수와 단위 불일치·행별 ULN 결측 비율. ULN이 없는 행은 배수를 계산하지 않으며 정상으로 간주하지 않는다. 기관 기준 대체값을 쓰면 별도 표시한다.","02_lab_quality.csv"));
-  // Fig 4 events
   let f4="";if(D.event_groups||D.trigger_ratio_hist){const W=520,s=svgBox(W,250,"첫 이상 사건");
     if(D.event_groups){const gs=["initial_abnormal","incident","onset_unknown"],sp=["development","evaluation"],tot={};D.event_groups.forEach(r=>tot[r.split]=(tot[r.split]||0)+(r.n||0));
       s.append(S("text",{x:0,y:12,class:"t-title"},"(a) 집단 구성"));
@@ -914,26 +889,22 @@ function renderFigures(){
       s.append(S("text",{x:84,y:yy(mx)+4,"text-anchor":"end"},fmt(mx,0)));s.append(S("text",{x:84,y:239,"text-anchor":"end"},"0"))}
     f4=s.outerHTML}
   out.push(fig("fig4",4,"첫 이상 사건의 구성과 크기",f4,"(a) 입실 24시간 내 기준 충족은 입실 초기 이상, 이후 첫 충족이면서 같은 항목 48시간 내 이전 값이 기준 미만이면 신규, 이전 값이 없으면 시점 불명. (b) 사건을 일으킨 항목의 ULN 배수. t0는 결과 공개 시각이며 실제 손상 시작 시각이 아니다.","05_events_private.csv → 집계",false));
-  // Fig 5 cluster heatmap
   let f5="";const cp=D.cluster_profile;if(cp&&cp.rows){const fs=cp.features,W=520,cw=Math.min(62,(W-110)/fs.length),rh=34,H=40+cp.rows.length*rh,s=svgBox(W,H,"간 손상 패턴 프로파일");
     fs.forEach((c,j)=>s.append(S("text",{x:110+j*cw+cw/2,y:14,"text-anchor":"middle",style:"font-size:9px"},c.replace("_ratio","").replace("_slope24"," 기울기").replace("_delta24"," Δ"))));
     cp.rows.forEach((r,i)=>{const z=cp.z[i]||{};s.append(S("text",{x:100,y:30+i*rh+rh/2,"text-anchor":"end",class:"ink"},`${cp.grouping==="liver_pattern"?({hepatocellular:"간세포형",mixed:"혼합형",cholestatic:"담즙정체형",isolated_bilirubin:"빌리루빈 단독"}[r.cluster]||r.cluster):"군집 "+r.cluster} · n=${r.n??"<10"}`));
       fs.forEach((c,j)=>{const v=z[c],a=v==null?0:Math.max(-2,Math.min(2,v));s.append(S("rect",{x:110+j*cw,y:22+i*rh,width:cw-3,height:rh-4,rx:4,fill:a>=0?"var(--accent)":"var(--alt)","fill-opacity":(.12+Math.abs(a)/2*.75).toFixed(2)}));
         s.append(S("text",{x:110+j*cw+cw/2,y:22+i*rh+rh/2+2,"text-anchor":"middle",class:"ink"},fmt(r[c],1)))})});f5=s.outerHTML}
   out.push(fig("fig5",5,"간 손상 패턴 (ACG R 비)",f5,"t0 시점 R 비로 정한 고정 범주(간세포형 R≥5, 담즙정체형 R≤2, 그 사이 혼합형, 효소 정상·빌리루빈 상승은 빌리루빈 단독)별 배수 중앙값(칸 안 숫자)과 범주 간 표준화 점수(색). 원인이 아니라 생화학 패턴이며 Agent 1에는 이 범주만 들어갑니다. 비지도 군집(log2 배수에 GMM, BIC로 K 선택, 부트스트랩 ARI)은 보조 분석이며 "+(D.clustering_check&&D.clustering_check.status==="ok"?`이번 실행은 K=${D.clustering_check.k_selected}, ARI 중앙값 ${fmt(D.clustering_check.ari_median,2)}로 ${D.clustering_check.used?"안정":"불안정해 사용하지 않음"}.`+(D.clustering_check.clinical_phenotype_gmm&&D.clustering_check.clinical_phenotype_gmm.status==="ok"?` 넓은 임상 표현형 군집(변수 ${D.clustering_check.clinical_phenotype_gmm.features.length}개: 관류·염증·신장·합성 기능·병력 포함)은 K=${D.clustering_check.clinical_phenotype_gmm.k_selected}, ARI ${fmt(D.clustering_check.clinical_phenotype_gmm.ari_median,2)}.`:""):"표본이 부족해 실행하지 않았습니다."),"08_features.csv · 08b_clustering_check.json → 집계"));
-  // Fig 6 validation forest + grounding
   let f6="";const cv=D.cause_validation;if(cv){const W=520,rows=cv,H=rows.length*30+60,s=svgBox(W,H,"원인 추정 검증"),x=lin(0,1,180,W-20);
     [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:8,y2:H-40}));s.append(S("text",{x:x(t),y:H-26,"text-anchor":"middle"},pct(t)))});
     rows.forEach((r,i)=>{const yy=20+i*30,c=r.condition==="cluster"?"var(--alt)":"var(--muted)";s.append(S("text",{x:170,y:yy+4,"text-anchor":"end",class:"ink"},`${r.metric==="top1"?"Top-1":"Top-3"} · ${r.condition==="cluster"?"+패턴":"기본"}  ${r.k??"–"}/${r.n??"–"}`));
       if(r.rate==null)return;s.append(S("line",{x1:x(r.ci_low),x2:x(r.ci_high),y1:yy,y2:yy,stroke:c,"stroke-width":2}));s.append(S("rect",{x:x(r.rate)-5,y:yy-5,width:10,height:10,fill:c}))});
     const p=D.paired_test;if(p){s.append(S("text",{x:10,y:H-8,class:"ink"},`짝지은 McNemar (Top-1): 불일치 ${p.discordant}쌍 (기본만 ${p.base_only} · 패턴 추가만 ${p.new_only}), 정확 p = ${fmt(p.p_exact_two_sided,3)}`))}f6=s.outerHTML}
   out.push(fig("fig6",6,"전문의 참조 대비 원인 후보 일치",f6,"단일 최우선 원인 판정이 가능한 평가 사례에서의 Top-1·Top-3 일치율과 95% Wilson CI. 같은 환자에 R 비 패턴 정보만 추가했으므로 두 조건은 짝지은 자료이며 비교는 McNemar 정확 검정으로 한다. 실행 실패는 분모에서 빼지 않는다. 전문의 1인 판정은 참조 기준이며 확진이 아니다.","12_cause_validation.csv · 35_paired_mcnemar.csv",true));
-  // Fig 7 outcomes + CIF
   let f7="";if(D.cif_development||D.outcome_paths){let html="";
     if(D.outcome_paths)html+=hbars(D.outcome_paths,{label:r=>PATH[r.path]||r.path,value:r=>r.n,lw:150,color:r=>/death/.test(r.path)?"var(--c-death)":/resolved_then_hospital/.test(r.path)?"var(--c-res)":"var(--c-dis)"});
     if(D.cif_development)html+=cifSVG(D.cif_development,"개발 집단 누적발생");f7=html}
   out.push(fig("fig7",7,"관찰 경로와 경쟁 사건 누적발생",f7,"위: ICU 퇴실·ICU 사망까지 추적한 관찰 경로. 해소는 사건을 일으킨 모든 항목이 24시간 내 재측정에서 2×ULN 미만인 경우로 정의한 연구용 이상 해소이며 간 기능 회복과 다르다. 아래: 개발 집단 첫 사건의 Aalen-Johansen 누적발생(실선)과 사망·퇴원을 중도절단으로 처리한 1−KM(점선). 점선이 실선보다 높게 나타나는 정도가 경쟁 사건을 무시할 때의 과대추정이다.","10_outcomes_EVALUATION_ONLY.csv → 집계",true));
-  // Fig 8 agent3 calibration
   let f8="";const a3=D.agent3;if(a3&&a3.calibration){const W=360,H=300,m={l:44,r:14,t:14,b:40},mx=Math.max(.5,...a3.calibration.map(r=>Math.max(r.ci_high||0,r.mean_predicted||0)));const x=lin(0,mx,m.l,W-m.r),y=lin(0,mx,H-m.b,m.t),s=svgBox(W,H,"보정");
     niceTicks(mx,5).filter(t=>t<=mx).forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:m.t,y2:H-m.b}));s.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(t),y2:y(t)}));s.append(S("text",{x:x(t),y:H-m.b+14,"text-anchor":"middle"},pct(t)));s.append(S("text",{x:m.l-5,y:y(t)+3,"text-anchor":"end"},pct(t)))});
     s.append(S("line",{x1:x(0),y1:y(0),x2:x(mx),y2:y(mx),stroke:"var(--muted)","stroke-dasharray":"4 4"}));
@@ -941,7 +912,6 @@ function renderFigures(){
     s.append(S("text",{x:(m.l+W-m.r)/2,y:H-6,"text-anchor":"middle"},"예측 위험 (구간 평균)"));s.append(S("text",{x:12,y:(m.t+H-m.b)/2,transform:`rotate(-90 12 ${(m.t+H-m.b)/2})`,"text-anchor":"middle"},"관찰 비율"));
     f8=`<div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;align-items:center">${s.outerHTML}<div class="metrics" style="grid-template-columns:1fr 1fr"><div><b>${fmt(a3.auroc,3)}</b><span>AUROC</span></div><div><b>${fmt(a3.auprc,3)}</b><span>AUPRC (유병률 ${pct(a3.prevalence,1)})</span></div><div><b>${fmt(a3.brier,3)}</b><span>Brier</span></div><div><b>${fmt(a3.n_known,0)}/${fmt(a3.n_all,0)}</b><span>결과 확인 가능 / 전체</span></div></div></div>`}
   out.push(fig("fig8",8,"정상 환자 24시간 이상 발생: 보정과 판별",f8,"평가 환자마다 입실 24시간 시점 하나를 사전 지정해 계산했다. 점 크기는 구간 표본 수, 막대는 95% Wilson CI, 점선은 완전 보정선. 다음 24시간 재검으로 결과를 확인할 수 있었던 사례만 평가했으므로 전체 ICU 환자로 일반화하지 않는다.","22_agent3_predictions.csv → 집계"));
-  // Fig 9 stress adoption
   let f9="";const sa=D.stress_adoption;if(sa){const conds=["claim","rationale","combined"],W=520,H=170,s=svgBox(W,H,"입력 오류"),x=lin(0,1,130,W-20);
     [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:6,y2:H-34}));s.append(S("text",{x:x(t),y:H-20,"text-anchor":"middle"},pct(t)))});
     conds.forEach((c,i)=>{const yy=24+i*38;s.append(S("text",{x:120,y:yy+4,"text-anchor":"end",class:"ink"},COND[c]));
@@ -949,13 +919,11 @@ function renderFigures(){
         s.append(S("line",{x1:x(r.ci_low),x2:x(r.ci_high),y1:y2,y2:y2,stroke:col,"stroke-width":2}));s.append(S("circle",{cx:x(r.adoption_rate),cy:y2,r:4.5,fill:col}));s.append(S("text",{x:x(r.ci_high)+6,y:y2+3},`${r.adopted}/${r.n}`))})});
     [["방어 없음","var(--crit)"],["방어 문구","var(--ok)"]].forEach(([t,c],j)=>{s.append(S("circle",{cx:136+j*110,cy:H-6,r:4,fill:c}));s.append(S("text",{x:144+j*110,y:H-3,class:"ink"},t))});f9=s.outerHTML}
   out.push(fig("fig9",9,"잘못된 입력에 대한 취약성과 방어 문구 효과",f9,`같은 평가 사례 스냅샷에 잘못된 주장·설명을 넣었을 때 주입 원인(${esc(CAUSE[D.injected_cause]||D.injected_cause||"")})이 원본에서는 1순위가 아니었다가 1순위로 바뀐 비율. 주입 원인이 해당 사례에서 실제로 틀렸는지는 전문의가 확인한다. 방어 문구가 참인 정보까지 무시하게 만드는지는 참인 정보 조건으로 따로 시험한다.`,"17_input_stress.jsonl"));
-  // Fig 10 threshold + alerts
   let f10="";if(D.threshold_sensitivity||D.alert_aggregation){let h="";
     if(D.alert_aggregation)h+=hbars(D.alert_aggregation,{label:r=>r.comparison==="raw_abnormal_lab_records"?"기준 이상 검사 기록":"환자별 첫 사건 알림",value:r=>r.n,lw:150,color:r=>r.comparison==="raw_abnormal_lab_records"?"var(--muted)":"var(--accent)"});
     if(D.threshold_sensitivity)h+=hbars(D.threshold_sensitivity,{label:r=>`${r.cutoff_fold_uln}×ULN`,value:r=>r.n_patients_flagged,lw:150,color:r=>r.cutoff_fold_uln==2?"var(--crit)":"var(--muted)"});f10=h}
   out.push(fig("fig10",10,"알림 통합과 임계값 민감도",f10,"위: 기준 이상 검사 기록 수와 환자당 첫 사건 알림 수의 기계적 비교. 아래: 임계값별 알림 대상 환자 수(빨강이 채택 기준). 첫 사건만 알리는 설계는 이후 악화를 놓칠 수 있다.","18_alert_aggregation.csv · 33_threshold_sensitivity.csv",true));
   $("#figs").innerHTML=out.join("");
-  // cohort-level shadow cards
   $("#stress-cohort").innerHTML=na("shadow_data_error","결과를 불러오는 중입니다.");
   $("#compete-cohort").innerHTML=D.cif_development?cifSVG(D.cif_development,"개발 집단"):na("risk_reference (notebook)");
   const g=D.grounding;$("#ground-cohort").innerHTML=g?hbars(g,{label:r=>`${r.condition==="cluster"?"+패턴":"기본"} ${r.verified??"<10"}/${r.support_items??"<10"}`,value:r=>r.rate,max:1,fmtv:v=>pct(v,0),lw:130,color:()=>"var(--ok)"}):na("36_grounding_summary.csv");
@@ -965,7 +933,6 @@ function renderFigures(){
 function renderMeta(){const m=st.manifest,c=m.config||{};
   const kv=[["데이터",m.source],["생성 시각",m.built_at],["코드 커밋",m.git_commit||"–"],["임계값",(c.threshold??"–")+"×ULN"],["난수 시드",c.seed??"–"],["보조 군집(GMM K)",c.cluster_k??"–"],["LLM 실행",c.LLM_enabled==null?"–":c.LLM_enabled?"예":"아니오"],["M4 커밋",c.m4_reviewed_commit||"–"]];
   $("#meta").innerHTML=kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}
-/* ---------------- run lanes: A3 hourly, A1/A2 at the alert ---------------- */
 function drawLanes(c,h){
   const W=600,x=v=>v/Math.max(1,c.max_hour)*W,ticks=(hs,col,w)=>hs.map(v=>`<rect x="${x(v)-w/2}" y="3" width="${w}" height="10" rx="2" fill="${col}"/>`).join("");
   const a3=c.frames.filter(f=>f.hour<=h&&f.agent3&&/estimate/.test(f.agent3.status||"")).map(f=>f.hour);
@@ -975,7 +942,6 @@ function drawLanes(c,h){
   $("#lanes").innerHTML=lane(`A3 매시간 · ${a3.length}회`,ticks(a3,"var(--alp)",Math.max(1.5,W/c.max_hour*.7)))+lane(`A1 알림·갱신 · ${a1.length}회`,ticks(a1,"var(--alt)",5))+lane(`A2 알림 시 · ${a2.length}회`,ticks(a2,"var(--c-dis)",5));
 }
 
-/* ---------------- paper results ---------------- */
 const N=v=>v==null?"<10":(+v).toLocaleString("ko-KR");
 const F2=v=>v==null?null:(+v).toFixed(2);
 const CI=(v,ci,d=3)=>v==null?"–":`${fmt(v,d)}${ci?` <span class="ci">(${fmt(ci[0],d)}–${fmt(ci[1],d)})</span>`:""}`;
@@ -1163,7 +1129,6 @@ function renderChecks(R,kind){
   $("#checks").innerHTML=items.map(([o,t])=>`<li class="${o?"":"todo"}">${o?ok:todo}<span>${t}</span></li>`).join("");
 }
 
-/* ---------------- hero monitor: one authored moment ---------------- */
 function heroMonitor(c){
   const g=GROUP[c.group]||[""];$("#hm-id").textContent=`${c.case_key}${g[0]?" · "+g[0]:""}`;
   const end=Math.min(c.max_hour,(c.alertHour??c.max_hour-36)+36);

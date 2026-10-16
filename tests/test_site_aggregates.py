@@ -7,7 +7,6 @@ from kcd_liver.site_aggregates import aalen_johansen, auroc, build_site_aggregat
 
 class SiteAggregateTests(unittest.TestCase):
     def test_aalen_johansen_matches_notebook_competing_cif(self):
-        # Notebook self-check: two patients, both events at t=1 -> 0.5 / 0.5
         r = aalen_johansen([1, 1], ["resolution", "death"], horizon=4)
         self.assertAlmostEqual(r["cif"]["resolution"][-1], .5)
         self.assertAlmostEqual(r["cif"]["death"][-1], .5)
@@ -60,8 +59,8 @@ class DevelopV2Tests(unittest.TestCase):
         B = pd.DataFrame([[1.0, 1.0, 50.0], [0.0, 0.0, 60.0]], columns=cols)
         phi, groups = group_shapley(f, X, B, cols)
         total = f(X.to_numpy())[0] - f(B.to_numpy()).mean()
-        self.assertAlmostEqual(phi.sum(), total, places=9)  # efficiency: contributions add up exactly
-        self.assertAlmostEqual(phi[0][groups.index("background")], 0.0, places=12)  # unused feature gets zero
+        self.assertAlmostEqual(phi.sum(), total, places=9)
+        self.assertAlmostEqual(phi[0][groups.index("background")], 0.0, places=12)
 
 
 class PatternTests(unittest.TestCase):
@@ -95,7 +94,7 @@ class PatternTests(unittest.TestCase):
                            "pressor_record6": rng.integers(0, 2, n).astype(float),
                            "LACTATE_latest": np.where(rng.random(n) < .8, np.nan, 2.0)})
         out, lab = gmm_explore(df, list(df.columns), ks=range(2, 4), n_boot=5)
-        self.assertNotIn("LACTATE_latest", out["features"])  # observed in <50% of rows
+        self.assertNotIn("LACTATE_latest", out["features"])
         self.assertEqual(len(lab), n)
 
 

@@ -1,24 +1,4 @@
-"""Deterministic rule baseline for Agent 1 (possible causes of a liver-test abnormality).
-
-Purpose: a transparent comparator for the LLM agent and a working Agent 1 when
-no approved LLM endpoint is configured. It reads ONLY the as-of snapshot built
-by the notebook and cites only observations present in it, so every support
-item is grounded by construction. It is not a diagnostic tool.
-
-Ten causes, each judged independently as 0/1 (several may apply at once):
-  1 hypoxic_hepatitis      very high aminotransferases with hypoperfusion (shock, MAP, lactate, pressor)
-  2 congestive_hepatopathy heart-failure history with liver-test rise
-  3 sepsis_cholestasis     cholestatic pattern with systemic inflammation
-  4 dili                   recorded administration of a commonly implicated drug
-  5 pn_associated          parenteral nutrition exposure (days) with cholestatic or mixed pattern
-  6 biliary_obstruction_cholangitis  TG18 "suspected" level: systemic inflammation + cholestasis (imaging absent)
-  7 cholecystitis          NOT assessable from structured data (TG18 needs local signs and imaging) -> always 0
-  8 hemolysis              indirect-predominant bilirubin, low haptoglobin, high LDH, haemoglobin drop
-  9 viral_hepatitis        positive hepatitis serology available by as_of, or chronic viral hepatitis code
- 10 others                 muscle source, isolated bilirubin, chronic liver disease, unexplained hepatocellular
-Pattern: ACG 2017 R ratio = (ALT/ULN)/(ALP/ULN): >=5 hepatocellular, <=2 cholestatic, otherwise mixed.
-Weights are a pre-specified project choice, frozen before evaluation, not fitted to outcomes.
-"""
+"""Deterministic rule baseline for Agent 1 (possible causes of a liver-test abnormality)."""
 from __future__ import annotations
 
 import re
@@ -26,7 +6,7 @@ import re
 CAUSE_FLAGS = ["hypoxic_hepatitis", "congestive_hepatopathy", "sepsis_cholestasis", "dili", "pn_associated",
                "biliary_obstruction_cholangitis", "cholecystitis", "hemolysis", "viral_hepatitis", "others"]
 NOT_ASSESSABLE = {"cholecystitis": "국소 소견(Murphy 징후)과 영상이 구조화 자료에 없어 판단 불가 (TG18)"}
-FLAG_THRESHOLD = 1.0  # pre-specified: a category is flagged when its evidence score reaches this
+FLAG_THRESHOLD = 1.0
 
 HEPATOTOXIC = ["acetaminophen", "ceftriaxone", "amoxicillin", "clavulanate", "piperacillin", "isoniazid", "rifampin",
                "valpro", "phenytoin", "amiodarone", "azithromycin", "fluconazole", "voriconazole", "ketoconazole",
@@ -34,10 +14,9 @@ HEPATOTOXIC = ["acetaminophen", "ceftriaxone", "amoxicillin", "clavulanate", "pi
                "sulfamethoxazole", "trimethoprim", "oxacillin", "nafcillin", "tmp", "linezolid", "propofol"]
 PRESSORS = ["norepinephrine", "epinephrine", "vasopressin", "phenylephrine", "dopamine"]
 PN_PATTERN = r"parenteral|\btpn\b|\bppn\b|clinimix|kabiven|intralipid|smoflipid|lipid emulsion|amino acid"
-# serology: markers of current infection vs markers that only show past or chronic exposure
 SERO_ACTIVE = r"surface antigen|hbsag|igm|viral load|rna|dna|e antigen"
 SERO_EXPOSURE = r"hepatitis c virus antibody|hcv ab|anti-hcv|core antibody"
-VERSION = "rule_baseline_v2.1"  # v2.1: NT-proBNP for congestive hepatopathy; frozen before the full MIMIC-IV evaluation
+VERSION = "rule_baseline_v2.1"
 
 
 def _num(x):
@@ -60,10 +39,7 @@ def serology_positive(value) -> bool:
 
 
 def exposures(ctx_rows, as_of) -> dict:
-    """Admission-level exposures known at as_of (beyond the 48 h snapshot window).
-
-    ctx_rows: iterable of dicts with kind, label, value, charttime/measured_at, available_at (all <= as_of).
-    """
+    """Admission-level exposures known at as_of (beyond the 48 h snapshot window)."""
     import pandas as pd
     t = pd.Timestamp(as_of)
     pn, sero = [], []
@@ -117,7 +93,6 @@ def rule_agent1(payload: dict) -> dict:
         if against:
             s["against"].append(against)
 
-    # systemic inflammation (TG18 A: fever or WBC <4 / >10 x10^9/L); shared by sepsis and cholangitis
     w = val("WBC")
     infl = []
     if w is not None and (w > 10 or w < 4):
@@ -125,7 +100,6 @@ def rule_agent1(payload: dict) -> dict:
     if hot is not None and _num(hot["value"]) > 38:
         infl.append(_sup(hot, f"체온 {_num(hot['value']):.1f}°C"))
 
-    # 1 hypoxic hepatitis
     top_amino = max([(a, ratio(a)) for a in ("ALT", "AST") if ratio(a) is not None], key=lambda x: x[1], default=None)
     if top_amino and top_amino[1] >= 5:
         add("hypoxic_hepatitis", 1 if top_amino[1] >= 10 else .5, _sup(labs[top_amino[0]], f"{top_amino[0]} {top_amino[1]:.1f}×ULN"))
@@ -138,7 +112,6 @@ def rule_agent1(payload: dict) -> dict:
             add("hypoxic_hepatitis", 1 if lac >= 4 else .5, _sup(labs["LACTATE"], f"젖산 {lac:.1f} mmol/L"))
         if pressor:
             add("hypoxic_hepatitis", 1, _sup(pressor[-1], "승압제 주입 기록"))
-    # 2 congestive hepatopathy: heart-failure history and/or raised NT-proBNP with a liver-test rise
     liver_up = (tb or 0) >= 2 or (alp or 0) >= 2 or (alt or 0) >= 2
     if liver_up and hist.get("history_heart_failure"):
         add("congestive_hepatopathy", 1.2, {"analyte_or_label": "history_heart_failure", "measured_at": None,
@@ -146,13 +119,11 @@ def rule_agent1(payload: dict) -> dict:
     bnp = val("NTPROBNP")
     if liver_up and bnp is not None:
         age = _num((payload.get("demographics") or {}).get("age"))
-        # age-stratified rule-in cut-offs for acute heart failure (ICON: 450 / 900 / 1800 pg/mL); 900 when age unknown
         cut = 900 if age is None else 450 if age < 50 else 900 if age <= 75 else 1800
         if bnp >= cut:
             add("congestive_hepatopathy", 1.0, _sup(labs["NTPROBNP"], f"NT-proBNP {bnp:.0f} pg/mL (기준 {cut})"))
         else:
             add("congestive_hepatopathy", 0, against=f"NT-proBNP {bnp:.0f} pg/mL, 기준 {cut} 미만")
-    # 3 sepsis-associated cholestasis
     if cholestatic:
         lead = "TBIL" if (tb or 0) >= (alp or 0) else "ALP"
         add("sepsis_cholestasis", .5, _sup(labs[lead], f"{lead} {ratio(lead):.1f}×ULN, 담즙정체 우세"))
@@ -164,15 +135,13 @@ def rule_agent1(payload: dict) -> dict:
         if pressor:
             add("sepsis_cholestasis", .5, _sup(pressor[-1], "승압제 (패혈성 쇼크 가능)"))
         add("sepsis_cholestasis", 0, against="배양·감염 진단 기록이 입력에 없음")
-    # 4 DILI
     seen = {}
-    for m in meds:  # one citation per drug, latest record
+    for m in meds:
         seen[str(m.get("label")).lower()] = m
     for m in list(seen.values())[-2:]:
         add("dili", .9, _sup(m, f"{m.get('label')} 투여 기록"))
     if "dili" in S:
         add("dili", 0, against="48시간 창 밖의 투약·잠복기·RUCAM은 확인 불가")
-    # 5 PN-associated liver dysfunction
     pnd = _num(ex.get("pn_days"))
     if pnd is not None:
         rec = {"analyte_or_label": ex.get("pn_label", "parenteral nutrition record"), "measured_at": ex.get("pn_first_at")}
@@ -182,7 +151,6 @@ def rule_agent1(payload: dict) -> dict:
                                       "measured_at": (labs.get("TBIL") or labs.get("ALP") or {}).get("measured_at"),
                                       "reason": "담즙정체·혼합 패턴"})
         add("pn_associated", 0, against="정맥영양 조성·열량은 입력에 없음")
-    # 6 biliary obstruction / cholangitis: TG18 suspected = A (inflammation) + B (cholestasis: TBIL>=2 mg/dL or ALP/GGT/AST/ALT >1.5x)
     tval = val("TBIL")
     jaundice = tval is not None and tval >= 2
     abn = [(a, ratio(a)) for a in ("ALP", "GGT", "AST", "ALT") if ratio(a) is not None and ratio(a) > 1.5]
@@ -198,8 +166,6 @@ def rule_agent1(payload: dict) -> dict:
         if dbil is not None and tbv and dbil / tbv >= .5:
             add("biliary_obstruction_cholangitis", .25, _sup(labs["DBIL"], f"직접 빌리루빈 {dbil / tbv:.0%}"))
         add("biliary_obstruction_cholangitis", 0, against="TG18 C 영상(담관 확장)이 입력에 없음: '의심' 수준까지만")
-    # 7 cholecystitis: not assessable (no local signs, no imaging)
-    # 8 hemolysis
     dbil = val("DBIL")
     if tval is not None and tval >= 1.5:
         if dbil is not None and dbil / tval < .3:
@@ -218,7 +184,6 @@ def rule_agent1(payload: dict) -> dict:
                                   "reason": f"48시간 내 혈색소 {hb_drop:.1f} g/dL 감소"})
         if "hemolysis" in S and "HAPTO" not in labs:
             add("hemolysis", 0, against="합토글로빈 측정 없음")
-    # 9 viral hepatitis
     for s in ex.get("serology", []):
         if serology_positive(s.get("value")):
             active = bool(re.search(SERO_ACTIVE, s["label"], re.I)) and not re.search(r"surface antibody|anti-hbs", s["label"], re.I)
@@ -230,7 +195,6 @@ def rule_agent1(payload: dict) -> dict:
         add("viral_hepatitis", .5, {"analyte_or_label": "history_viral_hepatitis", "measured_at": None, "reason": "이전 입원 만성 바이러스 간염 코드"})
     if "viral_hepatitis" in S and (alt or 0) >= 10:
         add("viral_hepatitis", .5, _sup(labs["ALT"], f"ALT {alt:.1f}×ULN"))
-    # 10 others: muscle source, isolated bilirubin, chronic liver disease, unexplained hepatocellular
     ck = ratio("CK")
     if ast is not None and alt is not None and ck is not None and ck >= 5 and ast >= .8 * alt:
         add("others", 1.5, _sup(labs["CK"], f"근육 기원 가능: CK {ck:.1f}×ULN, AST {ast:.1f}× ≥ ALT {alt:.1f}×"))

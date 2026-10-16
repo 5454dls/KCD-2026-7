@@ -1,15 +1,4 @@
-"""Guideline wiki retrieval for Agent 1 (llm_wiki-compatible project folder).
-
-The wiki is an llm_wiki project (Karpathy LLM-wiki pattern): purpose.md, schema.md, raw/sources/*.pdf and
-wiki/**/*.md pages with YAML frontmatter. Pages are chunked the same way llm_wiki does (heading-aware, about
-1,000 characters with 200 characters of overlap) so chunk ids `page_id#n` mean the same thing in both tools.
-
-Search backends (chosen automatically, recorded in the manifest):
-  vector  cosine similarity over embeddings from an OpenAI-compatible /v1/embeddings endpoint
-          (EMBED_BASE_URL, EMBED_MODEL, optional EMBED_API_KEY). The query MUST be embedded with the same model.
-  bm25    keyword search, no model needed (fallback, and the 'lexical' arm of hybrid search)
-The index holds guideline text only. Patient data must never be written into the wiki or the index.
-"""
+"""Guideline wiki retrieval for Agent 1 (llm_wiki-compatible project folder)."""
 from __future__ import annotations
 
 import hashlib
@@ -97,7 +86,7 @@ def _tokens(s: str) -> list[str]:
     s = s.lower()
     words = re.findall(r"[a-z][a-z0-9\-]+|\d+(?:\.\d+)?", s)
     hangul = re.findall(r"[가-힣]+", s)
-    grams = [h[i:i + 2] for h in hangul for i in range(max(1, len(h) - 1))]  # Korean bigrams, like llm_wiki's CJK search
+    grams = [h[i:i + 2] for h in hangul for i in range(max(1, len(h) - 1))]
     return words + grams
 
 
@@ -193,7 +182,6 @@ class WikiRetriever:
             qn = math.sqrt(sum(x * x for x in q)) or 1
             cos = [sum(a * b for a, b in zip(q, v)) / (qn * (math.sqrt(sum(x * x for x in v)) or 1)) for v in self.vecs]
             score = [.5 * s + .5 * c for s, c in zip(score, cos)]
-        # meta sections (what a source does NOT cover, how it was searched) list keywords but carry no evidence
         score = [sc * (META_WEIGHT if META_HEADINGS.search(self.chunks[i]["heading_path"]) else 1) for i, sc in enumerate(score)]
         order = sorted(range(len(self.chunks)), key=lambda i: -score[i])
         out = []

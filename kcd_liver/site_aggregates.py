@@ -1,12 +1,4 @@
-"""Cohort-level aggregates for the paper-style figures (notebook + GitHub Pages).
-
-Input: the DataFrames the notebook already holds in memory. Output: a JSON-safe
-dict with NO patient-level rows. For the credentialed full MIMIC-IV, call with
-``min_cell=10`` so that small counts are suppressed before anything is written.
-
-Every figure on the site and every PNG from ``kcd_liver.figures`` reads only
-this dict, so the notebook and the web page always show the same numbers.
-"""
+"""Cohort-level aggregates for the paper-style figures (notebook + GitHub Pages)."""
 from __future__ import annotations
 
 import math
@@ -36,7 +28,7 @@ def aalen_johansen(times: Iterable[float], events: Iterable[str], horizon: float
     d = pd.DataFrame({"time": list(times), "event": list(events)}).dropna(subset=["time"])
     grid = np.arange(0, horizon + grid_step / 2, grid_step)
     surv, cif = 1.0, {c: 0.0 for c in causes}
-    km_res = 1.0  # naive: competing events treated as censoring -> 1 - KM for resolution
+    km_res = 1.0
     event_times = sorted(d.loc[(d.time <= horizon) & d.event.isin(causes), "time"].unique())
     steps = []
     for t in event_times:

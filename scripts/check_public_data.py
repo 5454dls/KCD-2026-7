@@ -1,11 +1,4 @@
-"""Fail if the public site would expose credentialed MIMIC-IV patient-level data.
-
-Run in CI before every Pages deploy and locally before committing site/data.
-Rules:
-- no *.sqlite / *_private.csv / *EVALUATION_ONLY* anywhere in the repository tree
-- site/data/cases/* is allowed only when manifest.source is mimic-iv-demo or synthetic
-- summary files built from full mimic-iv must carry min_cell_suppression
-"""
+"""Fail if the public site would expose credentialed MIMIC-IV patient-level data."""
 from __future__ import annotations
 
 import fnmatch
@@ -16,8 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN = ["*.sqlite", "*.sqlite3", "*_private.csv", "*EVALUATION_ONLY*", "*.duckdb"]
-# gitignored local work folders: private files there never reach the repository
-LOCAL_ONLY = {".git", "run_all", "data", "models", "m4_data"}  # top-level only (site/data is checked)
+LOCAL_ONLY = {".git", "run_all", "data", "models", "m4_data"}
 DEEP_LOCAL = {".git", "run_all", "kcd_liver_v2_outputs", "specialist_blinded_packets"}
 
 
