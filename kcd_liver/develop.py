@@ -705,7 +705,8 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
     R["agent1_performance"] = evaluate_agent1(events, lab, context, hist, diagnoses, llm_rows)
 
     # ---------------- other shadows from notebook outputs
-    for key, name in [("alert_aggregation", "18_alert_aggregation.csv"), ("threshold_sensitivity", "33_threshold_sensitivity.csv")]:
+    for key, name in [("alert_aggregation", "18_alert_aggregation.csv"), ("threshold_sensitivity", "33_threshold_sensitivity.csv"),
+                      ("value_format_audit", "02c_value_format_audit.csv")]:
         p = Path(out_dir) / name
         R[key] = pd.read_csv(p).to_dict("records") if p.exists() else None
     sp = Path(out_dir) / "17_input_stress.jsonl"

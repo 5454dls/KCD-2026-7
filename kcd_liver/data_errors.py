@@ -11,6 +11,8 @@ The guard's own cost is measured on unmodified data: real values it would hold, 
 """
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pandas as pd
 
@@ -33,7 +35,29 @@ SCENARIOS = [
     {"key": "creat_umol", "label": "크레아티닌을 µmol/L로 입력 (×88.4)", "kind": "lab", "analyte": "CREAT", "factor": 88.4},
     {"key": "lactate_x10", "label": "젖산 소수점 밀림 (2.1 → 21)", "kind": "lab", "analyte": "LACTATE", "factor": 10},
     {"key": "temp_f", "label": "체온 °F를 °C 칸에 (37 → 98.6)", "kind": "vital", "label_name": "TEMP_C"},
+    {"key": "temp_malformed", "label": "체온 형식 오류 (37.5 → '37..5')", "kind": "malformed_vital", "label_name": "TEMP_C"},
+    {"key": "alt_malformed", "label": "ALT 형식 오류 (45 → '4..5')", "kind": "malformed", "analyte": "ALT"},
 ]
+
+
+def classify_text_value(text) -> str:
+    """Why a numeric field has no number: censored ('<5'), de-identified ('___'), malformed number ('37..5'), other text."""
+    t = str(text or "").strip()
+    if not t or t.lower() == "nan":
+        return "empty"
+    if re.fullmatch(r"_+\.?", t):
+        return "deidentified"
+    if re.match(r"^[<>]=?\s*\d", t):
+        return "censored"
+    if re.search(r"\d", t) and re.fullmatch(r"[\d\s.,+-]+\*?\.?", t):
+        return "malformed_number"
+    return "text"
+
+
+def malformed(v: float) -> str:
+    """How a slip typically looks: 37.5 -> '37..5', 45 -> '4..5'."""
+    s = f"{v:g}"
+    return s.replace(".", "..", 1) if "." in s else (s[:-1] + ".." + s[-1] if len(s) > 1 else s + "..")
 
 
 def apply_current_bounds(lab: pd.DataFrame) -> pd.DataFrame:
@@ -118,30 +142,39 @@ def corrupt(sc: dict, rows: pd.DataFrame, lab, context, cohort, lookback_h=24):
             new[i] = float(ages.get(s, np.nan))
             orig[i] = new[i] / sc["factor"]
         return lab, context, cohort, applicable, orig, new
-    src = lab if sc["kind"] == "lab" else context
-    is_target = src.analyte.eq(sc["analyte"]) if sc["kind"] == "lab" else (src.kind.eq("vital") & src.label.eq(sc["label_name"]))
+    on_lab = sc["kind"] in ("lab", "malformed")
+    src = lab if on_lab else context
+    is_target = src.analyte.eq(sc["analyte"]) if on_lab else (src.kind.eq("vital") & src.label.eq(sc["label_name"]))
     tgt = src[is_target & src.stay_id.isin(set(rows.stay_id))]
     by = {k: g.sort_values("available_at") for k, g in tgt.groupby("stay_id")}
     src = src.copy()
     if sc["kind"] == "vital":
         src["value"] = src["value"].astype(object)
+    drop = []
     for i, (s, t) in enumerate(zip(rows.stay_id, pd.to_datetime(rows.t))):
         g = by.get(s)
         if g is None:
             continue
-        g = g[(g.available_at <= t) & (g.charttime >= t - pd.Timedelta(hours=lookback_h if sc["kind"] == "lab" else 6))]
+        g = g[(g.available_at <= t) & (g.charttime >= t - pd.Timedelta(hours=lookback_h if on_lab else 6))]
         if g.empty:
             continue
         j = g.index[-1]
         v = float(pd.to_numeric(src.at[j, "value"], errors="coerce"))
         if not np.isfinite(v):
             continue
+        if sc["kind"].startswith("malformed"):
+            # the pipeline coerces '37..5' to NaN and drops the row without any warning: simulate exactly that
+            drop.append(j)
+            applicable[i], orig[i], new[i] = True, v, malformed(v)
+            continue
         nv = v * sc["factor"] if sc["kind"] == "lab" else v * 9 / 5 + 32
         src.at[j, "value"] = nv
         if sc["kind"] == "lab" and "ratio" in src and pd.notna(src.at[j, "ratio"]):
             src.at[j, "ratio"] = float(src.at[j, "ratio"]) * sc["factor"]
         applicable[i], orig[i], new[i] = True, v, nv
-    if sc["kind"] == "lab":
+    if drop:
+        src = src.drop(index=drop)
+    if on_lab:
         return src, context, cohort, applicable, orig, new
     return lab, src, cohort, applicable, orig, new
 
@@ -248,6 +281,10 @@ def experiment(rows: pd.DataFrame, lab, context, cohort, hist, a3=None, traj=Non
             kb = [(s, c, a, round(v, 6)) in kept_b for s, c, v in zip(corr.stay_id, corr.charttime, corr.value)]
             ka = [(s, c, a, round(v, 6)) in kept_a for s, c, v in zip(corr.stay_id, corr.charttime, corr.value)]
             caught_before, caught_after = ~np.array(kb, bool), ~np.array(ka, bool)
+        elif sc["kind"].startswith("malformed"):
+            # before: silently dropped (no record of the error); after: the format audit flags it for re-entry
+            caught_before = np.zeros(n, bool)
+            caught_after = np.array([classify_text_value(v) == "malformed_number" for v in np.array(new, dtype=object)[app]])
         else:
             caught_before = np.zeros(n, bool)
             caught_after = np.array([not (VITAL_RANGE["TEMP_C"][0] <= v <= VITAL_RANGE["TEMP_C"][1]) for v in np.array(new)[app]])
@@ -265,6 +302,14 @@ def experiment(rows: pd.DataFrame, lab, context, cohort, hist, a3=None, traj=Non
                 out.update(median_abs_dp=float(np.median(dp)), p90_abs_dp=float(np.quantile(dp, .9)),
                            new_high_risk=int(((p >= hi) & (base < hi))[app].sum()),
                            lost_high_risk=int(((p < hi) & (base >= hi))[app].sum()))
+            if sc["kind"].startswith("malformed"):
+                a = sc.get("analyte") or sc["label_name"]
+                ref = X0g if tag == "after" else X0
+                lost = X[f"{a}_latest"].isna() & ref[f"{a}_latest"].notna()
+                stale = X[f"{a}_latest"].notna() & (X[f"{a}_latest"] != ref[f"{a}_latest"])
+                out["became_unmeasured"] = int(lost[app].sum())
+                out["older_value_used"] = int(stale[app].sum())
+                out["warning_shown"] = int(caught_after.sum()) if tag == "after" else 0
             if sc["kind"] == "lab" and sc["analyte"] in RATIO_FEATS:
                 a = sc["analyte"]
                 ref = X0g if tag == "after" else X0
@@ -274,7 +319,7 @@ def experiment(rows: pd.DataFrame, lab, context, cohort, hist, a3=None, traj=Non
                 if f_base is not None:
                     d = np.abs(np.log2(f_new) - np.log2(f_base))[app]
                     out["traj24_median_abs_log2_change"] = float(np.nanmedian(d)) if np.isfinite(d).any() else None
-            if rule and sc["kind"] in ("lab", "vital"):
+            if rule and sc["kind"] != "age":
                 Lr = L1b if tag == "before" else L1g
                 Cr = C1 if tag == "before" else C1g
                 base_flags = fl0 if tag == "before" else _flags(rule, snap_fn, rr, lab_g0, ctx_g0, hist)

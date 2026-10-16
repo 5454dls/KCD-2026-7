@@ -89,3 +89,24 @@ class RuleAgentTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DataErrorTests(unittest.TestCase):
+    def test_text_value_classes(self):
+        from kcd_liver.data_errors import classify_text_value, malformed
+        self.assertEqual(classify_text_value("37..5"), "malformed_number")
+        self.assertEqual(classify_text_value("<5*."), "censored")
+        self.assertEqual(classify_text_value("___"), "deidentified")
+        self.assertEqual(classify_text_value("NEG."), "text")
+        self.assertEqual(malformed(37.5), "37..5")
+
+    def test_guard_range_and_partner_discordance(self):
+        import pandas as pd
+        from kcd_liver.data_errors import guard_lab
+        t = pd.Timestamp("2150-01-01 10:00")
+        lab = pd.DataFrame({"stay_id": [1, 1, 1, 1], "analyte": ["ALT", "AST", "TBIL", "CREAT"],
+                            "value": [4500.0, 40.0, 1.0, 88.4], "ratio": [100.0, 1.0, 1.0, 70.0],
+                            "charttime": [t] * 4, "available_at": [t] * 4})
+        kept, q = guard_lab(lab)
+        self.assertEqual(set(q.analyte), {"ALT", "CREAT"})  # ALT discordant with AST; creatinine out of range
+        self.assertEqual(dict(zip(q.analyte, q.reason))["ALT"], "discordant_partner")
