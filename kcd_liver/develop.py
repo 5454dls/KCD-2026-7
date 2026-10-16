@@ -841,6 +841,17 @@ def group_shapley(predict, X: pd.DataFrame, background: pd.DataFrame, cols: list
     return out, groups
 
 
+def synthetic_background(X: pd.DataFrame, n: int = 10) -> pd.DataFrame:
+    """n reference rows; row i takes the ((i+0.5)/n) percentile of every variable independently.
+
+    No row equals a real patient. Binary variables keep 0/1 values; never-observed variables stay missing.
+    """
+    qs = [(i + .5) / n for i in range(n)]
+    A = X.apply(pd.to_numeric, errors="coerce")
+    return pd.DataFrame({c: (A[c].quantile(qs, interpolation="nearest").to_numpy() if A[c].notna().any() else [np.nan] * n)
+                         for c in A.columns})
+
+
 def explain_rows(bundle, X: pd.DataFrame, background: pd.DataFrame | None = None) -> list[dict]:
     """Per-row group Shapley for an Agent 3 bundle (dict with model, features, background)."""
     cols = bundle["features"]
@@ -1000,7 +1011,8 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
             X = build_features(K[["stay_id", "t"]], lab, context, cohort, hist)
             dev, te = K.split.eq("development").values, K.split.eq("evaluation").values
             rng = np.random.default_rng(SEED)
-            bg = X.loc[dev, b["features"]].sample(min(10, int(dev.sum())), random_state=SEED) if dev.any() else X[b["features"]].head(10)
+            # synthetic reference rows (per-variable percentiles), so the shareable model file holds no real patient row
+            bg = synthetic_background(X.loc[dev, b["features"]] if dev.any() else X[b["features"]], n=10)
             b["background"] = bg.reset_index(drop=True)
             joblib.dump(b, a3p)
             pick = np.where(te)[0]

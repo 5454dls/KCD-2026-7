@@ -38,19 +38,36 @@ def pattern_frame(features: pd.DataFrame) -> pd.Series:
                      index=features.index, name="liver_pattern")
 
 
-def _matrix(df: pd.DataFrame, cols):
+def _prep_params(df: pd.DataFrame, cols):
+    """Preprocessing learned on development data only (log2 choice, median, mean, SD)."""
     X = df[cols].apply(pd.to_numeric, errors="coerce")
-    for c in cols:
-        v = X[c].dropna()
-        # log2 for strictly positive, non-binary columns (ULN ratios, lab values); slopes and flags stay linear
-        if len(v) and (v > 0).all() and v.nunique() > 2:
-            X[c] = np.log2(X[c].clip(lower=0.05))
-    X = X.fillna(X.median())
-    sd = X.std(ddof=0).replace(0, 1)
-    return ((X - X.mean()) / sd).to_numpy()
+    logc = [c for c in cols if len(X[c].dropna()) and (X[c].dropna() > 0).all() and X[c].nunique() > 2]
+    for c in logc:
+        X[c] = np.log2(X[c].clip(lower=0.05))
+    med = X.median()
+    X = X.fillna(med)
+    return {"cols": list(cols), "log_cols": logc, "median": med.to_dict(), "mean": X.mean().to_dict(),
+            "sd": X.std(ddof=0).replace(0, 1).to_dict()}
 
 
-def gmm_explore(df: pd.DataFrame, cols, ks=range(2, 9), n_boot=50, seed=0, min_n=30, min_observed=0.5):
+def _apply_params(df: pd.DataFrame, P: dict) -> np.ndarray:
+    X = df.reindex(columns=P["cols"]).apply(pd.to_numeric, errors="coerce")
+    for c in P["log_cols"]:
+        X[c] = np.log2(X[c].clip(lower=0.05))
+    X = X.fillna(pd.Series(P["median"]))
+    return ((X - pd.Series(P["mean"])) / pd.Series(P["sd"])).to_numpy()
+
+
+def _matrix(df: pd.DataFrame, cols):
+    return _apply_params(df, _prep_params(df, cols))
+
+
+def assign_clusters(model: dict, df: pd.DataFrame) -> np.ndarray:
+    """Apply a saved clustering model (from gmm_explore(return_model=True)) to new data, e.g. another hospital."""
+    return model["gmm"].predict(_apply_params(df, model["prep"]))
+
+
+def gmm_explore(df: pd.DataFrame, cols, ks=range(2, 9), n_boot=50, seed=0, min_n=30, min_observed=0.5, return_model=False):
     """Supplementary: BIC-selected Gaussian mixture plus bootstrap ARI stability."""
     from sklearn.metrics import adjusted_rand_score
     from sklearn.mixture import GaussianMixture
@@ -59,8 +76,9 @@ def gmm_explore(df: pd.DataFrame, cols, ks=range(2, 9), n_boot=50, seed=0, min_n
     out = {"method": "GaussianMixture(diag), log2 for positive labs, K by BIC, bootstrap ARI",
            "n": int(len(df)), "features": cols, "stable_threshold": STABLE_ARI}
     if len(df) < min_n or not cols:
-        return {**out, "status": "insufficient", "used": False}, None
-    X = _matrix(df, cols)
+        return ({**out, "status": "insufficient", "used": False}, None) + ((None,) if return_model else ())
+    prep = _prep_params(df, cols)
+    X = _apply_params(df, prep)
     fit = lambda k, A, s: GaussianMixture(k, covariance_type="diag", n_init=3, random_state=s).fit(A)
     bic = []
     for k in ks:
@@ -68,7 +86,8 @@ def gmm_explore(df: pd.DataFrame, cols, ks=range(2, 9), n_boot=50, seed=0, min_n
             break
         bic.append({"k": int(k), "bic": float(fit(k, X, seed).bic(X))})
     k_best = min(bic, key=lambda r: r["bic"])["k"]
-    ref = fit(k_best, X, seed).predict(X)
+    ref_model = fit(k_best, X, seed)
+    ref = ref_model.predict(X)
     rng = np.random.default_rng(seed)
     aris = []
     for b in range(n_boot):
@@ -79,4 +98,6 @@ def gmm_explore(df: pd.DataFrame, cols, ks=range(2, 9), n_boot=50, seed=0, min_n
     out.update(status="ok", bic=bic, k_selected=int(k_best), ari_q25=float(q[0]), ari_median=float(q[1]),
                ari_q75=float(q[2]), n_boot=n_boot, used=stable,
                sizes=[int(s) for s in np.bincount(ref, minlength=k_best)])
+    if return_model:
+        return out, ref, {"gmm": ref_model, "prep": prep, "k": int(k_best), "stable": stable, "kind": "gmm_cluster"}
     return out, ref

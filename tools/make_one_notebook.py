@@ -4,7 +4,7 @@ from pathlib import Path
 import nbformat
 
 ROOT = Path(__file__).resolve().parents[1]
-PATHS = ["kcd_liver", "scripts", "reference", "site", "notebooks/KCD_MIMICIV_liver_agents_v2.ipynb", ".gitignore"]
+PATHS = ["kcd_liver", "scripts", "reference", "site", "notebooks/KCD_MIMICIV_liver_agents_v2.ipynb", "notebooks/KCD_EXTERNAL.ipynb", ".gitignore"]
 runner = nbformat.read(ROOT / "notebooks" / "KCD_RUN_ALL.ipynb", as_version=4)
 
 buf = io.BytesIO()
