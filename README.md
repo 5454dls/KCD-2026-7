@@ -31,6 +31,7 @@ python tools/make_one_notebook.py         # 코드 수정 후 KCD_ONE.ipynb 재�
 | `notebooks/KCD_MIMICIV_liver_agents_v2.ipynb` | 코호트, 검사 추출·품질 관리, 사건, 원인 규칙, 재생 기록 |
 | `notebooks/KCD_ONE.ipynb`, `KCD_RUN_ALL.ipynb` | 전체 실행기 |
 | `notebooks/KCD_EXTERNAL.ipynb` | 다른 병원 외부 검증 (모델 묶음 안에서 실행) |
+| `notebooks/KCD_CLUSTER.ipynb` | 개선된 클러스터링 (KCD_ONE 실행 뒤 같은 폴더에서) |
 | `kcd_liver/develop.py` | 모델 개발·평가, Table 1·2, 그림자 실험, 작은 칸 가림 |
 | `kcd_liver/rule_agent.py` | Agent 1 규칙 모델 |
 | `kcd_liver/data_errors.py` | 입력 오류 가드와 오류 주입 실험 |
