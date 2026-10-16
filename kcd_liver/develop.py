@@ -279,7 +279,7 @@ def agent3_labels(L: pd.DataFrame, lab: pd.DataFrame, horizon=24, end_window=6) 
         ma = pd.merge_asof(Qa, e, left_on="h", right_on="available_at", by="stay_id", direction="backward").sort_values("_i")
         ok = (pd.to_datetime(ma.available_at.values) > t.values) & (pd.to_datetime(ma.charttime.values) >= (h - pd.Timedelta(hours=end_window)).values)
         measured_end &= np.asarray(ok, dtype=bool)
-    lab_ = np.where(abnormal, "abnormal_observed", np.where(terminal, "death_or_hospital_discharge_before_observation_end",
+    lab_ = np.where(abnormal, "abnormal_observed", np.where(terminal, "death_or_icu_discharge_before_observation_end",
                     np.where(measured_end, "no_abnormality_observed", "insufficient_measurement")))
     return pd.Series(lab_, index=L.index)
 
@@ -289,7 +289,7 @@ def agent2_follow(events: pd.DataFrame, outcomes: pd.DataFrame, horizon=48) -> p
     rt = (o.resolution_time - o.t0).dt.total_seconds() / 3600
     et = (o.end_time - o.t0).dt.total_seconds() / 3600
     ev = np.where(rt.notna() & (rt <= horizon) & (o.resolution_time < o.end_time), "resolution",
-                  np.where(et <= horizon, np.where(o.terminal.eq("death"), "death", "hospital_discharge"), "censor"))
+                  np.where(et <= horizon, np.where(o.terminal.eq("death"), "death", "icu_discharge"), "censor"))
     tm = np.where(ev == "resolution", rt, np.where(ev == "censor", horizon, et)).astype(float)
     return pd.DataFrame({"case_id": o.case_id, "follow_hours": np.clip(tm, 0, horizon), "first_event": ev})
 
@@ -672,7 +672,7 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
                     R.setdefault("shadow_competing", {})[sp] = {"n": int(len(f_)), "aj_resolution_48h": aj["cif"]["resolution"][-1],
                                                                 "naive_resolution_48h": aj["naive_resolution"][-1],
                                                                 "aj_death_48h": aj["cif"]["death"][-1],
-                                                                "aj_discharge_48h": aj["cif"]["hospital_discharge"][-1], "curve": aj}
+                                                                "aj_discharge_48h": aj["cif"]["icu_discharge"][-1], "curve": aj}
         if len(K2) and K2.split.eq("evaluation").any() and K2[K2.split.eq("development")].first_event_48h.nunique() >= 2:
             X2 = build_features(K2.rename(columns={"t0": "t"})[["stay_id", "t"]], lab, context, cohort, hist)
             cols2 = feature_columns(X2, K2.split.eq("development").values)
@@ -776,8 +776,8 @@ FEATURE_GROUPS = {
 TRAJ_ANALYTES = ["ALT", "AST", "ALP", "TBIL"]
 TRAJ_HORIZONS = [6, 12, 18, 24]
 TRAJ_QUANTILES = [0.1, 0.5, 0.9]
-PROGNOSIS = ["resolved_then_hospital_discharge", "resolved_then_death",
-             "resolution_unconfirmed_before_hospital_discharge", "resolution_unconfirmed_before_death"]
+PROGNOSIS = ["resolved_then_icu_discharge", "resolved_then_death",
+             "resolution_unconfirmed_before_icu_discharge", "resolution_unconfirmed_before_death"]
 
 
 def group_of(col: str) -> str:

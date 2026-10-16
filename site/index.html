@@ -416,7 +416,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
   <div class="qstrip" aria-label="프로젝트가 답할 질문">
     <div class="q"><b>Q1</b><span>어떤 검사 변화가, 언제 공개되었는가?</span></div>
     <div class="q"><b>Q2</b><span>가능한 원인은 무엇이고 근거는 어느 기록에 있는가?</span></div>
-    <div class="q"><b>Q3</b><span>해소를 기다리는 동안 퇴원하거나 사망하면 해석은 어떻게 바뀌는가?</span></div>
+    <div class="q"><b>Q3</b><span>해소를 기다리는 동안 ICU에서 퇴실하거나 사망하면 해석은 어떻게 바뀌는가?</span></div>
     <div class="q"><b>Q4</b><span>잘못된 주장 한 문장이 들어가면 결론은 얼마나 흔들리는가?</span></div>
   </div>
 </div></section>
@@ -454,7 +454,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
     <figure id="fig-cal"><div class="fig-title"><span>FIGURE 5</span>Agent 3 보정</div><div class="plot" id="cal-plot"></div>
       <figcaption><b>Figure 5.</b> 예측 위험 10분위별 평균 예측값과 관찰 비율(95% Wilson CI). 점선은 완전 보정선입니다. 보정 기울기 1, 절편 0이 이상적입니다.</figcaption></figure>
     <figure id="fig-a2"><div class="fig-title"><span>FIGURE 6</span>Agent 2: 예후 네 경로 판별</div><div class="plot" id="a2-plot"></div>
-      <figcaption><b>Figure 6.</b> 첫 알림 시점에 예측한 예후 네 경로(수치 해소 여부 × 병원 내 사망 여부)별 일대다 AUROC. ‘미해소’에는 퇴원·사망 전 재검이 없어 해소를 확인하지 못한 경우가 포함됩니다.</figcaption></figure>
+      <figcaption><b>Figure 6.</b> 첫 알림 시점에 예측한 예후 네 경로(수치 해소 여부 × ICU 사망 여부, 추적은 ICU 퇴실까지)별 일대다 AUROC. ‘미해소’에는 ICU 퇴실·사망 전 재검이 없어 해소를 확인하지 못한 경우가 포함됩니다.</figcaption></figure>
     <figure id="fig-a1"><div class="fig-title"><span>FIGURE 7</span>Agent 1: 원인 후보 일치</div><div class="plot" id="a1-plot"></div>
       <figcaption><b>Figure 7.</b> 대리 범주가 하나 이상 있는 평가 사건에서 1순위 또는 3순위 안에 대리 범주가 포함된 비율. 규칙 모델과 LLM은 같은 사례에서 비교하며 짝지은 McNemar 검정을 함께 표시합니다.</figcaption></figure>
     <figure class="wide" id="tab3"><div class="fig-title"><span>TABLE 3</span>향후 24시간 간 수치 궤적 예측</div><div class="plot" id="table3"></div>
@@ -493,7 +493,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
     <div class="stage">
       <div class="stage-h"><i>4</i>세 에이전트</div>
       <a class="node agent a1" href="#fig6"><b>Agent 1 · 원인 후보</b><small>LLM이 최대 3개 후보와 근거·반대 근거, 판단 보류 출력</small><span class="fig">Fig 6<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
-      <a class="node agent a2" href="#fig7"><b>Agent 2 · 경과 경로</b><small>유사 개발 사례 50명의 해소·사망·퇴원 누적발생 (경쟁위험)</small><span class="fig">Fig 7<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node agent a2" href="#fig7"><b>Agent 2 · 경과 경로</b><small>유사 개발 사례 50명의 해소·ICU 사망·ICU 퇴실 누적발생 (경쟁위험)</small><span class="fig">Fig 7<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
       <a class="node agent a3" href="#fig8"><b>Agent 3 · 정상 환자 24시간</b><small>최근 24시간 세 항목 모두 기준 미만일 때만, 유사 사례 비율</small><span class="fig">Fig 8<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
     </div>
     <div class="stage">
@@ -572,8 +572,8 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
     <div class="card"><h3>평가 집단 전체에서</h3><p>평가 환자마다 한 시각을 무작위로 정해 같은 오류를 넣었습니다. 오류 차단율과, 오류가 없는 실제 값을 잘못 보류한 비율(규칙의 비용)을 함께 봅니다.</p><div id="stress-cohort"></div></div>
   </div>
   <div class="panel" id="t-compete" role="tabpanel" hidden>
-    <div class="card"><h3>해소만 세면 생기는 착시</h3><p>퇴원·사망을 단순 중도절단으로 처리하면(점선) 해소 확률이 실제보다 커집니다. 경쟁 사건을 남긴 Aalen-Johansen 추정(실선)과 비교합니다.</p><div id="compete-case"></div></div>
-    <div class="card"><h3>개발 집단 전체 첫 사건 누적발생</h3><p>첫 이상 사건 이후 48시간 동안의 해소·사망·병원 퇴원. 진단이 아닌 관찰 경로입니다.</p><div id="compete-cohort"></div></div>
+    <div class="card"><h3>해소만 세면 생기는 착시</h3><p>ICU 퇴실·사망을 단순 중도절단으로 처리하면(점선) 해소 확률이 실제보다 커집니다. 경쟁 사건을 남긴 Aalen-Johansen 추정(실선)과 비교합니다.</p><div id="compete-case"></div></div>
+    <div class="card"><h3>개발 집단 전체 첫 사건 누적발생</h3><p>첫 이상 사건 이후 48시간 동안의 해소·사망·ICU 퇴실. 진단이 아닌 관찰 경로입니다.</p><div id="compete-cohort"></div></div>
   </div>
   <div class="panel" id="t-ground" role="tabpanel" hidden>
     <div class="card"><h3>에이전트가 인용한 근거는 실제로 있었나</h3><p>원인 후보마다 인용한 검사가 그 시각의 스냅샷에 존재하는지 기계적으로 대조합니다. LLM 평가자 없이 계산되는 지표입니다.</p><div id="ground-case"></div></div>
@@ -651,8 +651,8 @@ python scripts/export_site_data.py --out-dir OUT --source mimic-iv \
 const CAUSE={hypoxic_hepatitis:"저산소성 간염",congestive_hepatopathy:"울혈성 간병증",sepsis_cholestasis:"패혈증 유발 담즙정체",dili:"약물 유발 간손상 (DILI)",pn_associated:"정맥영양 관련 간기능 이상",biliary_obstruction_cholangitis:"담도폐쇄·담관염",cholecystitis:"담낭염",hemolysis:"용혈",viral_hepatitis:"바이러스 간염",others:"기타",unknown:"원인 불명",hypoxic_ischemic:"저산소·허혈",drug_related:"약물 관련",biliary:"담도",congestive:"울혈",baseline_liver:"기저 간질환",other_hepatic:"기타 간성",nonhepatic:"비간성"};
 const FLAG_ORDER=["hypoxic_hepatitis","congestive_hepatopathy","sepsis_cholestasis","dili","pn_associated","biliary_obstruction_cholangitis","cholecystitis","hemolysis","viral_hepatitis","others"];
 const GROUP={initial_abnormal:["입실 초기 이상","crit"],incident:["관찰 중 신규 이상","crit"],onset_unknown:["발생 시점 불명","warn"],normal:["이상 사건 없음","ok"]};
-const PATH={resolved_then_hospital_discharge:"해소 후 생존 퇴원",resolution_unconfirmed_before_hospital_discharge:"해소 확인 전 퇴원",resolution_unconfirmed_before_death:"해소 확인 전 사망",resolved_then_death:"해소 후 사망"};
-const FIRST={resolution:"48h 내 해소",no_event_observed:"48h 내 사건 없음",insufficient_measurement:"측정 부족 (판정 불가)",death_before_resolution:"해소 전 사망",discharge_before_resolution:"해소 전 퇴원"};
+const PATH={resolved_then_icu_discharge:"해소 후 생존 ICU 퇴실",resolution_unconfirmed_before_icu_discharge:"해소 확인 전 ICU 퇴실",resolution_unconfirmed_before_death:"해소 확인 전 사망",resolved_then_death:"해소 후 사망"};
+const FIRST={resolution:"48h 내 해소",no_event_observed:"48h 내 사건 없음",insufficient_measurement:"측정 부족 (판정 불가)",death_before_resolution:"해소 전 사망",discharge_before_resolution:"해소 전 ICU 퇴실"};
 const STEP={all_icu_stays:"전체 ICU 입실",first_icu_per_patient:"환자별 첫 ICU 입실",adult_valid_stay:"성인·유효 입실",analysis_sample:"분석 표본",first_abnormal_event:"첫 이상 사건 발생"};
 const COND={clean:"원본",claim:"잘못된 주장",rationale:"잘못된 설명",combined:"주장 + 설명"};
 const TRIG=["ALT","ALP","TBIL"], COL={ALT:"var(--alt)",ALP:"var(--alp)",TBIL:"var(--tbil)"};
@@ -781,17 +781,17 @@ function renderA1(f,c,h){
   el.innerHTML=`<div class="agent-h"><h3><i>A1</i>원인 후보</h3>${seg}</div><small class="muted" style="font-size:.74rem">${a.output_at_hour}h 시점 출력 · ${a.synthetic?"합성 예시":rule?esc(a.model||"rule baseline")+" (사전 계산)":esc(a.model||"LLM")+" 캐시"}</small>`+body;
   el.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{st.a1view=b.dataset.v;render()});
 }
-function stackBar(j){const parts=[["resolution","해소","var(--c-res)"],["death","사망","var(--c-death)"],["hospital_discharge","퇴원","var(--c-dis)"],["no_first_event","48h 내 없음","var(--c-none)"]];
+function stackBar(j){const parts=[["resolution","해소","var(--c-res)"],["death","사망","var(--c-death)"],["icu_discharge","퇴원","var(--c-dis)"],["no_first_event","48h 내 없음","var(--c-none)"]];
   return `<div class="stack">${parts.map(([k,,c])=>`<div style="width:${(j[k]||0)*100}%;background:${c}" title="${k}"></div>`).join("")}</div><div class="legend">${parts.map(([k,l,c])=>`<span><i class="sw" style="background:${c}"></i>${l} ${pct(j[k])}</span>`).join("")}</div>`}
 function renderA2(f){
   const el=$("#ag2"),a=f.agent2||{};const on=a.status==="exploratory_reference_estimate";el.dataset.active=on;
   if(!on){el.innerHTML=agentHead("A2","경과 경로","대기")+`<p class="empty-agent">${a.status==="not_yet_abnormal"||a.status==="not_eligible_normal_or_unknown"?"이상 사건 이후에만 계산합니다.":esc(a.reason||a.status||"")}</p>`;return}
   const j=a.joint_first_event||{};
-  if(a.prognosis){const P=a.prognosis,rows=[["resolved_then_hospital_discharge","수치 해소 · 생존 퇴원","var(--c-res)"],["resolved_then_death","수치 해소 · 사망","var(--accent)"],["resolution_unconfirmed_before_hospital_discharge","미해소 · 생존 퇴원","var(--c-dis)"],["resolution_unconfirmed_before_death","미해소 · 사망","var(--c-death)"]];
+  if(a.prognosis){const P=a.prognosis,rows=[["resolved_then_icu_discharge","수치 해소 · 생존 ICU 퇴실","var(--c-res)"],["resolved_then_death","수치 해소 · 사망","var(--accent)"],["resolution_unconfirmed_before_icu_discharge","미해소 · 생존 ICU 퇴실","var(--c-dis)"],["resolution_unconfirmed_before_death","미해소 · 사망","var(--c-death)"]];
     const top=rows.reduce((b,r)=>(P[r[0]]||0)>(P[b[0]]||0)?r:b,rows[0]);
-    el.innerHTML=agentHead("A2","예후 예측",`학습 모델 · ${a.model_at_hour??""}h 알림 시 1회`)+`<p style="font-size:.8rem">병원 퇴원·사망까지 네 경로 중 어디에 해당할지</p><div class="prog">${rows.map(([k,l,col])=>`<div class="prow ${k===top[0]?"top":""}"><span>${l}</span><div class="pbar"><div style="width:${(P[k]||0)*100}%;background:${col}"></div></div><b class="mono">${pct(P[k],0)}</b></div>`).join("")}</div>`+
+    el.innerHTML=agentHead("A2","예후 예측",`학습 모델 · ${a.model_at_hour??""}h 알림 시 1회`)+`<p style="font-size:.8rem">ICU 퇴실·ICU 사망까지 네 경로 중 어디에 해당할지</p><div class="prog">${rows.map(([k,l,col])=>`<div class="prow ${k===top[0]?"top":""}"><span>${l}</span><div class="pbar"><div style="width:${(P[k]||0)*100}%;background:${col}"></div></div><b class="mono">${pct(P[k],0)}</b></div>`).join("")}</div>`+
     (a.joint_first_event?`<p class="naive">48시간 유사 사례 참고(n=${a.comparable_n}): 경쟁 사건 반영 해소 <b class="mono">${pct(a.joint_first_event.resolution)}</b>, 사망·퇴원을 무시하면 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b></p>`:"")+`<p class="warnline">다항 그래디언트 부스팅. 개인별로 검증된 임상 확률이 아닙니다. 위 그래프의 점선은 향후 24시간 간 수치 예측입니다.</p>`;return}
-  if(a.model_probs){const mp=a.model_probs,m={resolution:mp.resolution||0,death:mp.death_before_resolution||0,hospital_discharge:mp.discharge_before_resolution||0,no_first_event:mp.no_event_observed||0};
+  if(a.model_probs){const mp=a.model_probs,m={resolution:mp.resolution||0,death:mp.death_before_resolution||0,icu_discharge:mp.discharge_before_resolution||0,no_first_event:mp.no_event_observed||0};
     el.innerHTML=agentHead("A2","경과 경로",`학습 모델 · ${a.model_at_hour}h 알림 시 1회 실행`)+`<p style="font-size:.8rem">알림 후 48시간 안에 처음 일어날 사건의 예측 확률</p>`+stackBar(m)+`<p class="naive">유사 사례 참고(n=${a.comparable_n}): 경쟁 사건 반영 해소 <b class="mono">${pct(j.resolution)}</b>, 사망·퇴원을 무시하면 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b></p><p class="warnline">다항 그래디언트 부스팅. 개인별로 검증된 임상 확률이 아닙니다.</p>`;return}
   el.innerHTML=agentHead("A2","경과 경로",`유사 개발 사례 n=${a.comparable_n} · ${a.horizon_hours}h`)+`<p style="font-size:.8rem">알림 후 ${a.horizon_hours}시간 안에 처음 일어나는 사건</p>`+stackBar(j)+
     `<p class="naive">퇴원·사망을 중도절단으로 처리하면 해소 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b>, 경쟁 사건 반영 시 <b class="mono">${pct(j.resolution)}</b></p>${a.comparable_n<30?`<p class="smalln">참고 사례 ${a.comparable_n}명. 개발 집단이 작아 모든 환자에게 거의 같은 집단이 쓰이며, 값이 불안정합니다.</p>`:""}<p class="warnline">탐색적 참고 추정. 개인별로 검증된 확률이 아닙니다.</p>`;
@@ -863,8 +863,8 @@ function cifSVG(cv,label){
   for(let t=0;t<=g[g.length-1];t+=12)s.append(S("text",{x:x(t),y:H-12,"text-anchor":"middle"},t+"h"));
   s.append(S("text",{x:(m.l+W-m.r)/2,y:H-1,"text-anchor":"middle"},"첫 이상 사건 이후 시간"));
   const line=(arr,col,dash,w)=>{let d="";arr.forEach((v,i)=>{d+=(i?`H${x(g[i])}V${y(v)}`:`M${x(g[0])},${y(v)}`)});s.append(S("path",{d,fill:"none",stroke:col,"stroke-width":w||2,"stroke-dasharray":dash||""}))};
-  line(cv.naive_resolution,"var(--c-res)","5 4",1.6);line(cv.cif.resolution,"var(--c-res)");line(cv.cif.death,"var(--c-death)");line(cv.cif.hospital_discharge,"var(--c-dis)");
-  const L=[["해소 (경쟁위험)","var(--c-res)",""],["해소 (단순 중도절단)","var(--c-res)","5 4"],["사망","var(--c-death)",""],["병원 퇴원","var(--c-dis)",""]];
+  line(cv.naive_resolution,"var(--c-res)","5 4",1.6);line(cv.cif.resolution,"var(--c-res)");line(cv.cif.death,"var(--c-death)");line(cv.cif.icu_discharge,"var(--c-dis)");
+  const L=[["해소 (경쟁위험)","var(--c-res)",""],["해소 (단순 중도절단)","var(--c-res)","5 4"],["사망","var(--c-death)",""],["ICU 퇴실","var(--c-dis)",""]];
   L.forEach(([t,c,d],i)=>{const yy=m.t+8+i*14,lx=W-m.r-150;s.append(S("rect",{x:lx-6,y:yy-8,width:156,height:14,fill:"var(--surface)","fill-opacity":.85}));s.append(S("line",{x1:lx,x2:lx+20,y1:yy,y2:yy,stroke:c,"stroke-width":2,"stroke-dasharray":d}));s.append(S("text",{x:lx+25,y:yy+3,class:"ink"},t))});
   return `<div class="plot">${s.outerHTML}</div>`;
 }
@@ -930,7 +930,7 @@ function renderFigures(){
   let f7="";if(D.cif_development||D.outcome_paths){let html="";
     if(D.outcome_paths)html+=hbars(D.outcome_paths,{label:r=>PATH[r.path]||r.path,value:r=>r.n,lw:150,color:r=>/death/.test(r.path)?"var(--c-death)":/resolved_then_hospital/.test(r.path)?"var(--c-res)":"var(--c-dis)"});
     if(D.cif_development)html+=cifSVG(D.cif_development,"개발 집단 누적발생");f7=html}
-  out.push(fig("fig7",7,"관찰 경로와 경쟁 사건 누적발생",f7,"위: 병원 퇴원·사망까지 추적한 관찰 경로. 해소는 사건을 일으킨 모든 항목이 24시간 내 재측정에서 2×ULN 미만인 경우로 정의한 연구용 이상 해소이며 간 기능 회복과 다르다. 아래: 개발 집단 첫 사건의 Aalen-Johansen 누적발생(실선)과 사망·퇴원을 중도절단으로 처리한 1−KM(점선). 점선이 실선보다 높게 나타나는 정도가 경쟁 사건을 무시할 때의 과대추정이다.","10_outcomes_EVALUATION_ONLY.csv → 집계",true));
+  out.push(fig("fig7",7,"관찰 경로와 경쟁 사건 누적발생",f7,"위: ICU 퇴실·ICU 사망까지 추적한 관찰 경로. 해소는 사건을 일으킨 모든 항목이 24시간 내 재측정에서 2×ULN 미만인 경우로 정의한 연구용 이상 해소이며 간 기능 회복과 다르다. 아래: 개발 집단 첫 사건의 Aalen-Johansen 누적발생(실선)과 사망·퇴원을 중도절단으로 처리한 1−KM(점선). 점선이 실선보다 높게 나타나는 정도가 경쟁 사건을 무시할 때의 과대추정이다.","10_outcomes_EVALUATION_ONLY.csv → 집계",true));
   // Fig 8 agent3 calibration
   let f8="";const a3=D.agent3;if(a3&&a3.calibration){const W=360,H=300,m={l:44,r:14,t:14,b:40},mx=Math.max(.5,...a3.calibration.map(r=>Math.max(r.ci_high||0,r.mean_predicted||0)));const x=lin(0,mx,m.l,W-m.r),y=lin(0,mx,H-m.b,m.t),s=svgBox(W,H,"보정");
     niceTicks(mx,5).filter(t=>t<=mx).forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:m.t,y2:H-m.b}));s.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(t),y2:y(t)}));s.append(S("text",{x:x(t),y:H-m.b+14,"text-anchor":"middle"},pct(t)));s.append(S("text",{x:m.l-5,y:y(t)+3,"text-anchor":"end"},pct(t)))});
@@ -977,7 +977,7 @@ function drawLanes(c,h){
 const N=v=>v==null?"<10":(+v).toLocaleString("ko-KR");
 const F2=v=>v==null?null:(+v).toFixed(2);
 const CI=(v,ci,d=3)=>v==null?"–":`${fmt(v,d)}${ci?` <span class="ci">(${fmt(ci[0],d)}–${fmt(ci[1],d)})</span>`:""}`;
-const CLS={resolution:"해소",death_before_resolution:"해소 전 사망",discharge_before_resolution:"해소 전 퇴원",no_event_observed:"48h 내 사건 없음"};
+const CLS={resolution:"해소",death_before_resolution:"해소 전 사망",discharge_before_resolution:"해소 전 ICU 퇴실",no_event_observed:"48h 내 사건 없음"};
 async function loadResults(){
   let R=null,kind=null;
   for(const [f,k] of [["data/results_full.json","full"],["data/results_demo.json","demo"]]){try{const r=await fetch(f,{cache:"no-store"});if(r.ok){R=await r.json();kind=k;break}}catch(e){}}
@@ -1006,7 +1006,7 @@ function renderFlow(R){
   const lc=d3.label_counts||{};
   const left=[["매시간 랜드마크",`${N(d3.landmarks_total)} 시점 · ${N(d3.patients_total)}명`],["세 항목 24h 내 측정 · 모두 기준 미만",`${N(d3.eligible)} 시점`],["다음 24h 결과 확인",`${N(d3.known)} 시점 · ${N(d3.known_patients)}명`],["학습 / 평가",`${N(d3.train_rows)} · ${N(d3.train_patients)}명 / ${N(d3.test_rows)} · ${N(d3.test_patients)}명`]];
   let yl=y;left.forEach(([t,sub],i)=>{box(s,L,yl,bw,44,t,sub);if(i<left.length-1)arrow(s,L+bw/2,yl+44,L+bw/2,yl+62);yl+=62});
-  box(s,L+xo,y+62+44,128,26,`판정 불가 ${N(lc.insufficient_measurement)}`,null,"excl");box(s,L+xo,y+62+74,128,26,`사망·퇴원 먼저 ${N(lc.death_or_hospital_discharge_before_observation_end)}`,null,"excl");
+  box(s,L+xo,y+62+44,128,26,`판정 불가 ${N(lc.insufficient_measurement)}`,null,"excl");box(s,L+xo,y+62+74,128,26,`사망·퇴원 먼저 ${N(lc.death_or_icu_discharge_before_observation_end)}`,null,"excl");
   const ev=d2.events,exc=d2.excluded_insufficient;
   const right=[["첫 이상 사건 (2×ULN)",`${N(ev)} 건`],["Agent 2 분석 (해소 판정 가능)",`${N(ev!=null&&exc!=null?ev-exc:null)} 건`],["Agent 1 평가 사건",`${N(a1.n_eval_events)} 건 · 대리 범주 있음 ${N(a1.n_with_proxy)}`]];
   let yr=y;right.forEach(([t,sub],i)=>{box(s,Rx,yr,bw,44,t,sub);if(i<right.length-1)arrow(s,Rx+bw/2,yr+44,Rx+bw/2,yr+62);yr+=62});
@@ -1088,7 +1088,7 @@ function renderA1fig(R){const ms=(R.agent1_performance||{}).models||[];if(!ms.le
   const rows=[];ms.forEach((m,i)=>["top1","top3"].forEach(k=>rows.push({label:`${m.model.slice(0,18)} · ${k==="top1"?"Top-1":"Top-3"}`,v:m[k]&&m[k].rate,ci:m[k]&&m[k].ci,col:i?"var(--accent)":"var(--alt)"})));
   $("#a1-plot").innerHTML=forest(rows,{lw:190})}
 
-const PROG={resolved_then_hospital_discharge:"해소·생존 퇴원",resolved_then_death:"해소 후 사망",resolution_unconfirmed_before_hospital_discharge:"미해소·생존 퇴원",resolution_unconfirmed_before_death:"미해소·사망"};
+const PROG={resolved_then_icu_discharge:"해소·생존 ICU 퇴실",resolved_then_death:"해소 후 사망",resolution_unconfirmed_before_icu_discharge:"미해소·생존 ICU 퇴실",resolution_unconfirmed_before_death:"미해소·사망"};
 function renderTable3(R){const P=R.trajectory_performance||[];if(!P.length){$("#table3").innerHTML=na("trajectory_performance");return}
   const an=[...new Set(P.map(r=>r.analyte))],hs=[6,12,18,24];
   let h=`<table class="t1"><thead><tr><th>지표</th>${hs.map(x=>`<th>+${x}h 오차 (모델 / 마지막 값)</th>`).join("")}<th>80% 구간 포함률</th></tr></thead><tbody>`;

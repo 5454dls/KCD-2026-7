@@ -14,7 +14,7 @@ class SiteAggregateTests(unittest.TestCase):
 
     def test_naive_censoring_overestimates_resolution(self):
         times = [2, 3, 5, 8, 10, 48]
-        events = ["death", "hospital_discharge", "resolution", "resolution", "death", "censor"]
+        events = ["death", "icu_discharge", "resolution", "resolution", "death", "censor"]
         r = aalen_johansen(times, events, horizon=48)
         self.assertGreater(r["naive_resolution"][-1], r["cif"]["resolution"][-1])
         total = sum(r["cif"][c][-1] for c in r["cif"])

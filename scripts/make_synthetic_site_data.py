@@ -64,7 +64,7 @@ def agent2_estimate(mix: dict[str, float], n=50):
         t = 48.0 if e == "censor" else float(RNG.uniform(4, 47))
         events.append(e), times.append(t)
     aj = aalen_johansen(times, events, 48)
-    cif = {c: aj["cif"][c][-1] for c in ("resolution", "death", "hospital_discharge")}
+    cif = {c: aj["cif"][c][-1] for c in ("resolution", "death", "icu_discharge")}
     cif.update({"no_first_event": round(1 - sum(cif.values()), 4), "n": n})
     return {"status": "exploratory_reference_estimate", "refresh_policy": "first-alert landmark; cached thereafter",
             "horizon_hours": 48, "comparable_n": n, "joint_first_event": cif,
@@ -102,8 +102,8 @@ CASES = [
                 cand("congestive", [("CREAT", 0, "크레아티닌 1.9, 저관류 동반 가능")], ["심부전 병력 코드 없음"]),
                 cand("drug_related", [], ["t0 이전 48시간 내 간독성 약물 투여 기록 없음"])],
      "uncertainty": "허혈성 간손상 패턴과 시간 관계가 일치. 영상·노트 부재로 울혈 기여는 배제 불가.",
-     "agent2_mix": {"resolution": .58, "death": .12, "hospital_discharge": .08, "censor": .22},
-     "observed": {"observed_path": "resolved_then_hospital_discharge", "first_event_48h": "no_event_observed"},
+     "agent2_mix": {"resolution": .58, "death": .12, "icu_discharge": .08, "censor": .22},
+     "observed": {"observed_path": "resolved_then_icu_discharge", "first_event_48h": "no_event_observed"},
      "stress": True},
     {"key": "Patient-02", "group": "incident", "max_hour": 96, "t0": 53,
      "story": "정상으로 관찰되다 패혈증 경과 중 빌리루빈 상승",
@@ -118,7 +118,7 @@ CASES = [
                 cand("biliary", [("ALP", 52, "ALP 1.9×ULN 동반 상승")], ["영상 판독 없음, ALP 상승 폭 작음"]),
                 cand("drug_related", [], ["t0 전 투약 기록 없음"])],
      "uncertainty": "담즙정체 우세 패턴. 담도 원인 감별을 위한 영상 정보 부족.",
-     "agent2_mix": {"resolution": .22, "death": .30, "hospital_discharge": .10, "censor": .38},
+     "agent2_mix": {"resolution": .22, "death": .30, "icu_discharge": .10, "censor": .38},
      "observed": {"observed_path": "resolution_unconfirmed_before_death", "first_event_48h": "death_before_resolution"},
      "agent3_curve": [(0, .04), (24, .07), (36, .15), (44, .27), (50, .38)]},
     {"key": "Patient-03", "group": "normal", "max_hour": 96, "t0": None,
@@ -137,8 +137,8 @@ CASES = [
                 cand("other_hepatic", [("ALP", 30, "ALP 1.6×ULN")], ["바이러스·자가면역 검사 없음"]),
                 cand("unknown", [], ["기저치 부재로 신규 손상 여부 판단 불가"])],
      "uncertainty": "발생 시점 불명 사례. 약물 관련 가능성은 시간 관계만으로 제시.",
-     "agent2_mix": {"resolution": .30, "death": .05, "hospital_discharge": .25, "censor": .40},
-     "observed": {"observed_path": "resolution_unconfirmed_before_hospital_discharge", "first_event_48h": "discharge_before_resolution"}},
+     "agent2_mix": {"resolution": .30, "death": .05, "icu_discharge": .25, "censor": .40},
+     "observed": {"observed_path": "resolution_unconfirmed_before_icu_discharge", "first_event_48h": "discharge_before_resolution"}},
 ]
 
 
@@ -204,13 +204,13 @@ def build_summary():
     cols = ["ALT_ratio", "ALP_ratio", "TBIL_ratio", "ALT_slope24", "ALP_slope24", "TBIL_slope24"]
     feats = pd.DataFrame([np.array(centers[k]) * RNG.lognormal(0, .25, 6) for k in cl], columns=cols)
     feats["cluster"], feats["split"], feats["case_id"] = cl, split, events.case_id
-    paths = RNG.choice(["resolved_then_hospital_discharge", "resolution_unconfirmed_before_hospital_discharge",
+    paths = RNG.choice(["resolved_then_icu_discharge", "resolution_unconfirmed_before_icu_discharge",
                         "resolution_unconfirmed_before_death", "resolved_then_death"], n_ev, p=[.41, .33, .19, .07])
     first = RNG.choice(["resolution", "no_event_observed", "insufficient_measurement", "death_before_resolution",
                         "discharge_before_resolution"], n_ev, p=[.31, .14, .29, .12, .14])
     outcomes = pd.DataFrame({"observed_path": paths, "first_event_48h": first})
     dev = events[events.split.eq("development")].copy()
-    ev = RNG.choice(["resolution", "death", "hospital_discharge", "censor"], len(dev), p=[.38, .11, .15, .36])
+    ev = RNG.choice(["resolution", "death", "icu_discharge", "censor"], len(dev), p=[.38, .11, .15, .36])
     dev["first_event"] = ev
     dev["follow_hours"] = np.where(ev == "censor", 48.0, RNG.gamma(2.2, 9, len(dev)).clip(1, 47.5))
     cause_validation = pd.DataFrame([
@@ -243,7 +243,7 @@ def build_summary():
     y = RNG.random(n3) < risk * 1.15
     truth = np.where(y, "abnormal_observed", "no_abnormality_observed").astype(object)
     unknown = RNG.random(n3) < .32
-    truth[unknown] = RNG.choice(["insufficient_measurement", "death_or_hospital_discharge_before_observation_end"], unknown.sum(), p=[.8, .2])
+    truth[unknown] = RNG.choice(["insufficient_measurement", "death_or_icu_discharge_before_observation_end"], unknown.sum(), p=[.8, .2])
     agent3 = pd.DataFrame({"risk": risk, "truth": truth})
     threshold = pd.DataFrame({"cutoff_fold_uln": [1.5, 2, 3, 5], "n_patients_flagged": [884, 612, 371, 198]})
     alerts = pd.DataFrame({"comparison": ["raw_abnormal_lab_records", "first_patient_event_alerts"], "n": [4876, 612]})

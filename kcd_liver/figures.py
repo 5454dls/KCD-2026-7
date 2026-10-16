@@ -19,8 +19,8 @@ from matplotlib import font_manager
 PALETTE = {"ALT": "#0e7a84", "ALP": "#6a4cb0", "TBIL": "#c0850b", "res": "#2e7a4c", "death": "#b53636",
            "dis": "#3d6fb0", "muted": "#56686d", "accent": "#a8660e", "crit": "#b53636", "ok": "#2e7a4c", "line": "#d3dedb"}
 GROUP_KO = {"initial_abnormal": "입실 초기", "incident": "신규", "onset_unknown": "시점 불명"}
-PATH_KO = {"resolved_then_hospital_discharge": "해소 후 생존 퇴원",
-           "resolution_unconfirmed_before_hospital_discharge": "해소 확인 전 퇴원",
+PATH_KO = {"resolved_then_icu_discharge": "해소 후 생존 ICU 퇴실",
+           "resolution_unconfirmed_before_icu_discharge": "해소 확인 전 ICU 퇴실",
            "resolution_unconfirmed_before_death": "해소 확인 전 사망", "resolved_then_death": "해소 후 사망"}
 STEP_KO = {"all_icu_stays": "전체 ICU 입실", "first_icu_per_patient": "환자별 첫 ICU 입실", "adult_valid_stay": "성인·유효 입실",
            "analysis_sample": "분석 표본", "first_abnormal_event": "첫 이상 사건"}
@@ -163,7 +163,7 @@ def fig7_outcomes(agg, axes):
         op = op[::-1]
         cols = [PALETTE["death"] if "death" in r["path"] else PALETTE["res"] if r["path"].startswith("resolved_then_hosp") else PALETTE["dis"] for r in op]
         a.barh([PATH_KO.get(r["path"], r["path"]) for r in op], [r["n"] or 0 for r in op], color=cols)
-        a.set_title("Figure 7a. 관찰 경로 (병원 퇴원·사망까지)")
+        a.set_title("Figure 7a. 관찰 경로 (ICU 퇴실·ICU 사망까지)")
     else:
         _na(a, "10_outcomes_EVALUATION_ONLY.csv")
     cif = agg.get("cif_development")
@@ -172,7 +172,7 @@ def fig7_outcomes(agg, axes):
         b.step(g, cif["cif"]["resolution"], where="post", color=PALETTE["res"], label="해소 (경쟁위험)")
         b.step(g, cif["naive_resolution"], where="post", color=PALETTE["res"], ls="--", label="해소 (단순 중도절단, 1−KM)")
         b.step(g, cif["cif"]["death"], where="post", color=PALETTE["death"], label="사망")
-        b.step(g, cif["cif"]["hospital_discharge"], where="post", color=PALETTE["dis"], label="병원 퇴원")
+        b.step(g, cif["cif"]["icu_discharge"], where="post", color=PALETTE["dis"], label="ICU 퇴실")
         b.set_xlabel("첫 이상 사건 이후 시간 (h)")
         b.set_ylabel("누적발생")
         b.set_ylim(0, 1)

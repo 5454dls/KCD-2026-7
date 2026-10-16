@@ -31,7 +31,7 @@ def _records(df: pd.DataFrame | None) -> list[dict] | None:
 
 
 def aalen_johansen(times: Iterable[float], events: Iterable[str], horizon: float = 48,
-                   causes=("resolution", "death", "hospital_discharge"), grid_step: float = 1.0) -> dict:
+                   causes=("resolution", "death", "icu_discharge"), grid_step: float = 1.0) -> dict:
     """Cumulative incidence per competing cause on a regular grid (same estimator as the notebook's competing_cif)."""
     d = pd.DataFrame({"time": list(times), "event": list(events)}).dropna(subset=["time"])
     grid = np.arange(0, horizon + grid_step / 2, grid_step)
