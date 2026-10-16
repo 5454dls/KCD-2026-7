@@ -852,9 +852,10 @@ def _suppress_counts(o, min_cell, key=None):
                 out[k] = _suppress_counts(v, min_cell, k)
             if k in ("k", "n", "events", "adopted") and small(v):
                 out["_suppressed"] = True
-        if out.get("_suppressed"):
-            for r in ("rate", "ci", "observed", "ci_low", "ci_high", "adoption_rate", "prevalence"):
-                if r in out:
+        if out.get("_suppressed") or any(small(v) for k, v in o.items() if k not in NOT_COUNTS):
+            # a rate next to a hidden count would reveal it: hide every rate/share in the same record
+            for r in list(out):
+                if r in ("rate", "ci", "observed", "ci_low", "ci_high", "adoption_rate", "prevalence") or r.endswith("_rate") or r.endswith("_share"):
                     out[r] = None
         return out
     if isinstance(o, list):
