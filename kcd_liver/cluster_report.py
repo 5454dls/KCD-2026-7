@@ -67,8 +67,7 @@ def _name(prof, dom):
         return f"{PATTERN_KO.get(dom, dom)} · 소수"
     top = max(["ALT_ratio", "AST_ratio", "ALP_ratio", "TBIL_ratio"], key=lambda c: prof.get(c) or 0)
     v = prof.get(top) or 0
-    level = "고도" if v >= 10 else "중등도" if v >= 5 else "경도"
-    return f"{PATTERN_KO.get(dom, dom)} · {LABEL[top]} {level}"
+    return f"{PATTERN_KO.get(dom, dom)} · {LABEL[top]} {v:.0f}×" if v >= 10 else f"{PATTERN_KO.get(dom, dom)} · {LABEL[top]} {v:.1f}×"
 
 
 def _rate(k, n, min_cell):
@@ -94,38 +93,52 @@ def _auc(y, p):
 
 
 def added_value(dev, ev, target, n_boot=500, seed=0):
-    """Evaluation AUROC of a logistic model on R pattern alone vs R pattern + cluster (both fitted on development)."""
+    """Evaluation AUROC: R pattern; R pattern + the four log2 x ULN values (severity); R pattern + cluster; all three."""
     from sklearn.linear_model import LogisticRegression
-    cols = lambda d, use: pd.get_dummies(d[use].astype(str))
-    out = {}
     if dev[target].nunique() < 2 or ev[target].nunique() < 2:
         return None
-    for name, use in [("pattern", ["liver_pattern"]), ("pattern_cluster", ["liver_pattern", "cluster"])]:
-        Xd = cols(dev, use)
-        Xe = cols(ev, use).reindex(columns=Xd.columns, fill_value=0)
-        m = LogisticRegression(max_iter=1000).fit(Xd, dev[target])
-        out[name] = m.predict_proba(Xe)[:, 1]
+    sev = [c for c in FEATS if c in dev]
+
+    def design(d, use_cluster, use_sev, cols=None):
+        parts = [pd.get_dummies(d["liver_pattern"].astype(str), prefix="p")]
+        if use_cluster:
+            parts.append(pd.get_dummies(d["cluster"].astype(str), prefix="c"))
+        if use_sev:
+            v = d[sev].apply(pd.to_numeric, errors="coerce").apply(lambda x: np.log2(x.clip(lower=.05)))
+            parts.append(v.fillna(v.median() if cols is None else 0))
+        X = pd.concat(parts, axis=1).astype(float)
+        return X if cols is None else X.reindex(columns=cols, fill_value=0)
+    out = {}
+    for name, uc, us in [("pattern", False, False), ("pattern_severity", False, True), ("pattern_cluster", True, False), ("pattern_severity_cluster", True, True)]:
+        Xd = design(dev, uc, us)
+        Xe = design(ev, uc, us, Xd.columns)
+        out[name] = LogisticRegression(max_iter=2000).fit(Xd, dev[target]).predict_proba(Xe)[:, 1]
     y = ev[target].to_numpy()
-    a0, a1 = _auc(y, out["pattern"]), _auc(y, out["pattern_cluster"])
     rng = np.random.default_rng(seed)
-    diffs = []
-    for _ in range(n_boot):
-        i = rng.integers(0, len(y), len(y))
-        if len(set(y[i])) == 2:
-            diffs.append(_auc(y[i], out["pattern_cluster"][i]) - _auc(y[i], out["pattern"][i]))
-    lo, hi = np.quantile(diffs, [.025, .975]) if diffs else (None, None)
-    return {"n": int(len(y)), "events": int(y.sum()), "auroc_pattern": a0, "auroc_pattern_cluster": a1,
-            "difference": a1 - a0, "difference_ci": [float(lo), float(hi)] if diffs else None}
+    idx = [i for i in (rng.integers(0, len(y), len(y)) for _ in range(n_boot)) if len(set(y[i])) == 2]
+
+    def diff(a, b):
+        d = [_auc(y[i], out[a][i]) - _auc(y[i], out[b][i]) for i in idx]
+        return {"difference": _auc(y, out[a]) - _auc(y, out[b]), "ci": [float(q) for q in np.quantile(d, [.025, .975])] if d else None}
+    return {"n": int(len(y)), "events": int(y.sum()), **{f"auroc_{k}": _auc(y, v) for k, v in out.items()},
+            "cluster_vs_pattern": diff("pattern_cluster", "pattern"), "cluster_vs_severity": diff("pattern_cluster", "pattern_severity"),
+            "cluster_added_to_severity": diff("pattern_severity_cluster", "pattern_severity")}
 
 
-def run(features, outcomes, exclude_cases=(), min_cell=10, seed=20261016, n_boot=30, ks=range(2, 13), log=print):
-    """features: 08_features.csv (one row per first event); outcomes: 10_outcomes_EVALUATION_ONLY.csv."""
+def run(features, outcomes, extra=None, exclude_cases=(), min_cell=10, seed=20261016, n_boot=30, ks=range(2, 13), log=print):
+    """features: 08_features.csv (one row per first event); outcomes: 10_outcomes_EVALUATION_ONLY.csv; extra: case_id + more columns."""
     f = features[~features.case_id.isin(set(exclude_cases))].copy()
+    if extra is not None and len(extra):
+        f = f.merge(extra.drop_duplicates("case_id"), on="case_id", how="left", suffixes=("", "_extra"))
     feats = [c for c in FEATS if c in f and pd.to_numeric(f[c], errors="coerce").notna().mean() >= .5]
     f["liver_pattern"] = [r_pattern(a, b, c, d) for a, b, c, d in
                           zip(f.get("ALT_ratio"), f.get("ALP_ratio"), f.get("TBIL_ratio"), f.get("R_ratio", pd.Series(np.nan, index=f.index)))]
     dev, ev = f[f.split.eq("development")].copy(), f[f.split.eq("evaluation")].copy()
     prep = _prep_params(dev, feats)
+    prep["log_cols"] = list(feats)
+    Xl = dev[feats].apply(pd.to_numeric, errors="coerce").apply(lambda v: np.log2(v.clip(lower=.05)))
+    prep.update(median=Xl.median().to_dict(), mean=Xl.fillna(Xl.median()).mean().to_dict(),
+                sd=Xl.fillna(Xl.median()).std(ddof=0).replace(0, 1).to_dict())
     Xd, Xe = _apply_params(dev, prep), _apply_params(ev, prep)
     grid, pick = select_model(Xd, ks=ks, seed=seed, n_boot=n_boot, log=log)
     gmm = _fit(pick["k"], Xd, pick["covariance"], seed)
@@ -160,10 +173,93 @@ def run(features, outcomes, exclude_cases=(), min_cell=10, seed=20261016, n_boot
     da, ea = dm[~dm.observed_path.str.startswith("unassessable")], em[~em.observed_path.str.startswith("unassessable")]
     av["recovered"] = added_value(da, ea, "recovered", seed=seed)
     dens = _density(dev, min_cell)
-    return {"method": "GaussianMixture on log2 x ULN of ALT, AST, ALP, TBIL (R left out: log R = log ALT - log ALP)",
+    log("cluster characterisation over all curated variables")
+    char = characterize(dev, min_cell)
+    return {"characterization": char, "method": "GaussianMixture on log2 x ULN of ALT, AST, ALP, TBIL (R left out: log R = log ALT - log ALP)",
             "features": feats, "n_dev": int(len(dev)), "n_eval": int(len(ev)), "min_cell_suppression": min_cell,
             "grid": grid, "selected": pick, "profiles": profiles, "outcomes": res, "added_value": av,
             "density_alt_alp": dens, "ellipses_alt_alp": _ellipses(gmm, prep, feats, relabel)}
+
+
+VAR_KO = {"age": "나이", "female": "여성", "hours_since_icu": "ICU 입실 후 시간", "pressor_record6": "승압제 기록 수 (6h)",
+          "urine_recorded_sum6": "소변량 (6h)", "history_liver": "이전 간질환", "history_viral_hepatitis": "이전 바이러스 간염",
+          "history_heart_failure": "이전 심부전", "history_ckd": "이전 만성 신질환", "history_diabetes": "이전 당뇨",
+          "history_cancer": "이전 암", "group_initial_abnormal": "입실 초기 이상", "group_incident": "관찰 중 신규",
+          "group_onset_unknown": "시점 불명", "ALBUMIN": "알부민", "BICARB": "중탄산", "BUN": "BUN", "CK": "CK", "CREAT": "크레아티닌",
+          "DBIL": "직접 빌리루빈", "FIBRINOGEN": "피브리노겐", "FIO2": "FiO2", "GGT": "GGT", "GLUCOSE": "혈당", "HEMOGLOBIN": "혈색소",
+          "HR": "심박", "INR": "INR", "LACTATE": "젖산", "LDH": "LDH", "MAP": "평균동맥압", "DBP": "이완기압", "SBP": "수축기압",
+          "PEEP": "PEEP", "PH": "pH", "PLATELET": "혈소판", "PO2_UNSPECIFIED": "PO2", "POTASSIUM": "칼륨", "PT": "PT", "PTT": "PTT",
+          "RR": "호흡수", "SODIUM": "나트륨", "SPO2": "SpO2", "TEMP_C": "체온", "WBC": "백혈구", "ALT": "ALT", "AST": "AST", "ALP": "ALP",
+          "TBIL": "총빌리루빈", "NTPROBNP": "NT-proBNP", "HAPTO": "합토글로빈"}
+CAUSE_KO = {"hypoxic_hepatitis": "저산소성 간염", "congestive_hepatopathy": "울혈성 간병증", "sepsis_cholestasis": "패혈증 담즙정체",
+            "dili": "DILI", "pn_associated": "정맥영양 관련", "biliary_obstruction_cholangitis": "담도폐쇄·담관염",
+            "cholecystitis": "담낭염", "hemolysis": "용혈", "viral_hepatitis": "바이러스 간염", "others": "기타"}
+SKEWED = {"ALT", "AST", "ALP", "TBIL", "DBIL", "GGT", "LDH", "CK", "CREAT", "BUN", "LACTATE", "INR", "PT", "PTT", "WBC",
+          "NTPROBNP", "GLUCOSE", "FIBRINOGEN", "urine_recorded_sum6", "hours_since_icu"}
+
+
+def var_label(c):
+    if c.startswith("flag_"):
+        return "규칙 판정: " + CAUSE_KO.get(c[5:], c[5:])
+    for suf, ko in [("_latest", ""), ("_delta24", " 24h 변화"), ("_slope24", " 24h 기울기")]:
+        if c.endswith(suf):
+            b = c[: -len(suf)]
+            return VAR_KO.get(b, b) + ko
+    return VAR_KO.get(c, c)
+
+
+def candidate_vars(d):
+    """Curated variables: context, history, every analyte's latest value, liver 24 h changes, Agent 1 rule flags."""
+    base = [c for c in ["age", "female", "hours_since_icu", "pressor_record6", "urine_recorded_sum6"] if c in d]
+    hist = [c for c in d if c.startswith("history_") and c != "history_available"]
+    labs = [c for c in d if c.endswith("_latest")]
+    change = [f"{a}_delta24" for a in ["ALT", "AST", "ALP", "TBIL"] if f"{a}_delta24" in d]
+    flags = [c for c in d if c.startswith("flag_")]
+    groups = [c for c in d if c.startswith("group_")]
+    return base + groups + hist + labs + change + flags
+
+
+def _binary(x):
+    v = x.dropna().unique()
+    return len(v) <= 2 and set(np.round(v.astype(float), 6)) <= {0.0, 1.0}
+
+
+def characterize(dev, min_cell, top=6):
+    """Per-cluster summary of every curated variable and its standardized difference against the other clusters."""
+    if "group" in dev and dev.group.notna().any():
+        for g in ["initial_abnormal", "incident", "onset_unknown"]:
+            dev[f"group_{g}"] = dev.group.eq(g).astype(float)
+    rows, ks = [], sorted(dev.cluster.unique())
+    for c in candidate_vars(dev):
+        x = pd.to_numeric(dev[c], errors="coerce")
+        if x.notna().mean() < .3 or x.nunique() < 2:
+            continue
+        b = _binary(x)
+        base = c.split("_latest")[0].split("_delta24")[0]
+        t = np.log2(x.clip(lower=1e-3)) if (not b and base in SKEWED and c.endswith("_latest")) else x
+        for k in ks:
+            m = dev.cluster.eq(k)
+            a, r = t[m].dropna(), t[~m].dropna()
+            if len(a) < min_cell or len(r) < min_cell:
+                continue
+            sd = math.sqrt((a.var() + r.var()) / 2) or 1.0
+            row = {"cluster": int(k), "variable": c, "label": var_label(c), "binary": b, "observed": float(x[m].notna().mean()),
+                   "smd": float((a.mean() - r.mean()) / sd)}
+            if b:
+                cnt = int(x[m].sum())
+                row.update(share=float(cnt / x[m].notna().sum()) if cnt >= min_cell and x[m].notna().sum() - cnt >= min_cell else None,
+                           share_rest=float(x[~m].mean()))
+                if row["share"] is None:
+                    row["smd"] = None
+            else:
+                row.update(median=float(x[m].median()), q1=float(x[m].quantile(.25)), q3=float(x[m].quantile(.75)), median_rest=float(x[~m].median()))
+            rows.append(row)
+    tops = {}
+    for k in ks:
+        cand = [r for r in rows if r["cluster"] == k and r["smd"] is not None and r["observed"] >= .5 and not r["variable"].endswith("_ratio")]
+        tops[int(k)] = [r["variable"] for r in sorted(cand, key=lambda r: -abs(r["smd"]))[:top]]
+    return {"variables": rows, "top_by_cluster": tops,
+            "note": "SMD = (cluster mean - other clusters mean) / pooled SD; skewed labs on log2 scale. Binary shares with counts < min_cell are hidden."}
 
 
 def _density(dev, min_cell, bins=24):
@@ -285,26 +381,46 @@ def fig_outcomes(R, ax, split="evaluation"):
 
 def fig_added(R, ax):
     av = R["added_value"]
-    labels, a0, a1, txt = [], [], [], []
-    for key, lab in [("icu_death", "ICU 사망"), ("recovered", "ICU 퇴실 시 회복")]:
-        v = av.get(key)
-        if not v:
-            continue
-        labels.append(lab)
-        a0.append(v["auroc_pattern"])
-        a1.append(v["auroc_pattern_cluster"])
-        ci = v["difference_ci"]
-        txt.append(f"차이 {v['difference']:+.3f}" + (f" ({ci[0]:+.3f} ~ {ci[1]:+.3f})" if ci else ""))
-    x = np.arange(len(labels))
-    ax.bar(x - .18, a0, .34, color=GRID, edgecolor=MUTED, label="R 비 패턴만")
-    ax.bar(x + .18, a1, .34, color=REC, label="R 비 패턴 + 군집")
-    for i, t in enumerate(txt):
-        ax.text(i, max(a0[i], a1[i]) + .02, t, ha="center", fontsize=8, color=INK)
-    ax.set_xticks(x, labels)
+    models = [("auroc_pattern", "R 비 패턴", GRID), ("auroc_pattern_severity", "패턴 + 수치 크기", "#9fb7d6"),
+              ("auroc_pattern_cluster", "패턴 + 군집", REC), ("auroc_pattern_severity_cluster", "패턴 + 수치 + 군집", INK)]
+    keys = [(k, lab) for k, lab in [("icu_death", "ICU 사망"), ("recovered", "ICU 퇴실 시 회복")] if av.get(k)]
+    w = .2
+    for j, (m, lab, col) in enumerate(models):
+        ax.bar(np.arange(len(keys)) + (j - 1.5) * w, [av[k][m] for k, _ in keys], w * .92, color=col, edgecolor=MUTED if j == 0 else col, label=lab)
+    for i, (k, _) in enumerate(keys):
+        d = av[k]["cluster_added_to_severity"]
+        ci = d["ci"]
+        ax.text(i, max(av[k][m] for m, _, _ in models) + .02, f"수치에 군집을 더하면 {d['difference']:+.3f}" + (f"\n({ci[0]:+.3f} ~ {ci[1]:+.3f})" if ci else ""),
+                ha="center", fontsize=8, color=INK)
+    ax.set_xticks(range(len(keys)), [lab for _, lab in keys])
     ax.set_ylim(.5, 1)
     ax.set_ylabel("평가 집단 AUROC")
-    ax.legend(frameon=False, fontsize=8, loc="upper right")
-    ax.set_title("E. 군집이 예후 정보를 더하는가")
+    ax.legend(frameon=False, fontsize=7.5, loc="upper right", ncol=2)
+    ax.set_title("E. 군집이 예후 정보를 더하는가 (수치 크기와 공정 비교)")
+
+
+def fig_characterize(R, ax, max_vars=30):
+    C = R["characterization"]
+    order = []
+    for k, vs in C["top_by_cluster"].items():
+        for v in vs[:4]:
+            if v not in order:
+                order.append(v)
+    order = order[:max_vars]
+    ks = [p["cluster"] for p in R["profiles"]]
+    look = {(r["cluster"], r["variable"]): r for r in C["variables"]}
+    M = np.array([[(look.get((k, v)) or {}).get("smd") if (look.get((k, v)) or {}).get("smd") is not None else np.nan for k in ks] for v in order])
+    im = ax.imshow(np.clip(M, -1.5, 1.5), cmap="PuOr_r", vmin=-1.5, vmax=1.5, aspect="auto")
+    for i in range(len(order)):
+        for j in range(len(ks)):
+            if not np.isnan(M[i, j]) and abs(M[i, j]) >= .5:
+                ax.text(j, i, f"{M[i, j]:+.1f}", ha="center", va="center", fontsize=7, color="white" if abs(M[i, j]) > 1.1 else INK)
+    ax.set_xticks(range(len(ks)), [f"C{k}" for k in ks])
+    ax.set_yticks(range(len(order)), [var_label(v) for v in order])
+    ax.grid(False)
+    ax.set_title("F. 군집을 가르는 변수 (군집 대 나머지 표준화 차이, |SMD| ≥ 0.5 표시)")
+    cb = ax.figure.colorbar(im, ax=ax, fraction=.035, pad=.02)
+    cb.set_label("SMD (주황 = 더 높음, 보라 = 더 낮음)")
 
 
 def render(R, out_dir):
@@ -315,7 +431,8 @@ def render(R, out_dir):
     files = []
     for name, fn, size in [("c1_selection", fig_selection, (6, 3.6)), ("c2_profiles", fig_profiles, (7.5, .45 * len(R["profiles"]) + 1.4)),
                            ("c3_map", fig_map, (6.4, 5)), ("c4_outcomes", fig_outcomes, (7.5, .5 * len(R["profiles"]) + 1.4)),
-                           ("c5_added_value", fig_added, (5.5, 3.6))]:
+                           ("c5_added_value", fig_added, (5.5, 3.6)),
+                           ("c6_characterization", fig_characterize, (.55 * len(R["profiles"]) + 4.5, 8.5))]:
         fig, ax = plt.subplots(figsize=size)
         fn(R, ax)
         fig.text(.01, -.01, f"n<{R['min_cell_suppression']} 칸 가림 · 개발 {R['n_dev']:,}건, 평가 {R['n_eval']:,}건", fontsize=7, color=MUTED)

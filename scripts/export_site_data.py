@@ -94,11 +94,13 @@ def export_cases(db_path: Path, site_data: Path) -> list[dict]:
     con = sqlite3.connect(db_path.resolve().as_uri() + "?mode=ro", uri=True)
     cols = [r[1] for r in con.execute("PRAGMA table_info(cases)")]
     extra = ", cohort_group" if "cohort_group" in cols else ""
+    extra += ", story" if "story" in cols else ", NULL"
     cases = []
     (site_data / "cases").mkdir(parents=True, exist_ok=True)
     for row in con.execute(f"SELECT case_key, max_hour{extra} FROM cases ORDER BY case_key").fetchall():
         key, max_hour = row[0], int(row[1])
-        group = row[2] if extra else None
+        group = row[2] if "cohort_group" in cols else None
+        story = row[-1] or None
         fcols = [r[1] for r in con.execute("PRAGMA table_info(frames)")]
         fc = ", forecast_json" if "forecast_json" in fcols else ", NULL"
         frames = [{"hour": r[0], "labs": json.loads(r[1]), "agent1": json.loads(r[2]),
@@ -115,12 +117,12 @@ def export_cases(db_path: Path, site_data: Path) -> list[dict]:
         obs = con.execute("SELECT outcome_json FROM observed_outcomes WHERE case_key=?", (key,)).fetchone()
         has_de = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='data_errors'").fetchone()
         de = con.execute("SELECT result_json FROM data_errors WHERE case_key=?", (key,)).fetchone() if has_de else None
-        doc = {"case_key": key, "max_hour": max_hour, "group": group, "frames": frames,
+        doc = {"case_key": key, "max_hour": max_hour, "group": group, "story": story, "frames": frames,
                "stress": stress, "observed": json.loads(obs[0]) if obs else None,
                "data_errors": json.loads(de[0]) if de else None}
         (site_data / "cases" / f"{key}.json").write_text(
             json.dumps(clean(doc), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-        cases.append({"case_key": key, "max_hour": max_hour, "group": group})
+        cases.append({"case_key": key, "max_hour": max_hour, "group": group, "story": story})
     con.close()
     return cases
 
