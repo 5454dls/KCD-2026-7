@@ -42,14 +42,18 @@ ev = pd.read_csv(OUT / '05_events_private.csv', low_memory=False, usecols=lambda
 extra = ev[['case_id', 'group']].copy() if 'group' in ev else ev[['case_id']].copy()
 pred = OUT / '09_agent_predictions.jsonl'
 if pred.exists():
-    fl = []
+    fl, conds = [], {}
     for line in pred.read_text(encoding='utf-8').splitlines():
         r = json.loads(line)
-        if r.get('condition', 'base') != 'base':
-            continue
-        flags = (r.get('answer') or {}).get('flags') or {}
-        fl.append({'case_id': r['case_id'], **{f'flag_{k}': float(bool((v or {}).get('present'))) for k, v in flags.items()}})
+        a = r.get('answer') or {}
+        flags = a.get('flags') or next((v.get('flags') for v in a.values() if isinstance(v, dict) and v.get('flags')), None) or {}
+        conds[r.get('condition')] = conds.get(r.get('condition'), 0) + 1
+        if flags:
+            fl.append({'case_id': r.get('case_id'), 'base': r.get('condition', 'base') == 'base',
+                       **{f'flag_{k}': float(bool((v or {}).get('present'))) for k, v in flags.items()}})
+    print('규칙 판정 기록:', conds, '· 원인 플래그가 있는 기록', len(fl))
     if fl:
+        fl = pd.DataFrame(fl).sort_values('base', ascending=False).drop(columns='base').to_dict('records')
         extra = extra.merge(pd.DataFrame(fl).drop_duplicates('case_id'), on='case_id', how='left')
 exclude = set(ev.loc[ev.subject_id.isin(DEMO_IDS), 'case_id']) if 'subject_id' in ev else set()
 print(f'첫 사건 {len(feat):,}건, 결과 {len(outc):,}건, 공개 데모 제외 {len(exclude)}건, 추가 변수 {extra.shape[1] - 1}개')"""),

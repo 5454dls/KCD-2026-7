@@ -93,28 +93,36 @@ def _auc(y, p):
 
 
 def added_value(dev, ev, target, n_boot=500, seed=0):
-    """Evaluation AUROC of a logistic model on R pattern alone vs R pattern + cluster (both fitted on development)."""
+    """Evaluation AUROC: R pattern; R pattern + the four log2 x ULN values (severity); R pattern + cluster; all three."""
     from sklearn.linear_model import LogisticRegression
-    cols = lambda d, use: pd.get_dummies(d[use].astype(str))
-    out = {}
     if dev[target].nunique() < 2 or ev[target].nunique() < 2:
         return None
-    for name, use in [("pattern", ["liver_pattern"]), ("pattern_cluster", ["liver_pattern", "cluster"])]:
-        Xd = cols(dev, use)
-        Xe = cols(ev, use).reindex(columns=Xd.columns, fill_value=0)
-        m = LogisticRegression(max_iter=1000).fit(Xd, dev[target])
-        out[name] = m.predict_proba(Xe)[:, 1]
+    sev = [c for c in FEATS if c in dev]
+
+    def design(d, use_cluster, use_sev, cols=None):
+        parts = [pd.get_dummies(d["liver_pattern"].astype(str), prefix="p")]
+        if use_cluster:
+            parts.append(pd.get_dummies(d["cluster"].astype(str), prefix="c"))
+        if use_sev:
+            v = d[sev].apply(pd.to_numeric, errors="coerce").apply(lambda x: np.log2(x.clip(lower=.05)))
+            parts.append(v.fillna(v.median() if cols is None else 0))
+        X = pd.concat(parts, axis=1).astype(float)
+        return X if cols is None else X.reindex(columns=cols, fill_value=0)
+    out = {}
+    for name, uc, us in [("pattern", False, False), ("pattern_severity", False, True), ("pattern_cluster", True, False), ("pattern_severity_cluster", True, True)]:
+        Xd = design(dev, uc, us)
+        Xe = design(ev, uc, us, Xd.columns)
+        out[name] = LogisticRegression(max_iter=2000).fit(Xd, dev[target]).predict_proba(Xe)[:, 1]
     y = ev[target].to_numpy()
-    a0, a1 = _auc(y, out["pattern"]), _auc(y, out["pattern_cluster"])
     rng = np.random.default_rng(seed)
-    diffs = []
-    for _ in range(n_boot):
-        i = rng.integers(0, len(y), len(y))
-        if len(set(y[i])) == 2:
-            diffs.append(_auc(y[i], out["pattern_cluster"][i]) - _auc(y[i], out["pattern"][i]))
-    lo, hi = np.quantile(diffs, [.025, .975]) if diffs else (None, None)
-    return {"n": int(len(y)), "events": int(y.sum()), "auroc_pattern": a0, "auroc_pattern_cluster": a1,
-            "difference": a1 - a0, "difference_ci": [float(lo), float(hi)] if diffs else None}
+    idx = [i for i in (rng.integers(0, len(y), len(y)) for _ in range(n_boot)) if len(set(y[i])) == 2]
+
+    def diff(a, b):
+        d = [_auc(y[i], out[a][i]) - _auc(y[i], out[b][i]) for i in idx]
+        return {"difference": _auc(y, out[a]) - _auc(y, out[b]), "ci": [float(q) for q in np.quantile(d, [.025, .975])] if d else None}
+    return {"n": int(len(y)), "events": int(y.sum()), **{f"auroc_{k}": _auc(y, v) for k, v in out.items()},
+            "cluster_vs_pattern": diff("pattern_cluster", "pattern"), "cluster_vs_severity": diff("pattern_cluster", "pattern_severity"),
+            "cluster_added_to_severity": diff("pattern_severity_cluster", "pattern_severity")}
 
 
 def run(features, outcomes, extra=None, exclude_cases=(), min_cell=10, seed=20261016, n_boot=30, ks=range(2, 13), log=print):
@@ -127,6 +135,10 @@ def run(features, outcomes, extra=None, exclude_cases=(), min_cell=10, seed=2026
                           zip(f.get("ALT_ratio"), f.get("ALP_ratio"), f.get("TBIL_ratio"), f.get("R_ratio", pd.Series(np.nan, index=f.index)))]
     dev, ev = f[f.split.eq("development")].copy(), f[f.split.eq("evaluation")].copy()
     prep = _prep_params(dev, feats)
+    prep["log_cols"] = list(feats)
+    Xl = dev[feats].apply(pd.to_numeric, errors="coerce").apply(lambda v: np.log2(v.clip(lower=.05)))
+    prep.update(median=Xl.median().to_dict(), mean=Xl.fillna(Xl.median()).mean().to_dict(),
+                sd=Xl.fillna(Xl.median()).std(ddof=0).replace(0, 1).to_dict())
     Xd, Xe = _apply_params(dev, prep), _apply_params(ev, prep)
     grid, pick = select_model(Xd, ks=ks, seed=seed, n_boot=n_boot, log=log)
     gmm = _fit(pick["k"], Xd, pick["covariance"], seed)
@@ -169,7 +181,7 @@ def run(features, outcomes, extra=None, exclude_cases=(), min_cell=10, seed=2026
             "density_alt_alp": dens, "ellipses_alt_alp": _ellipses(gmm, prep, feats, relabel)}
 
 
-VAR_KO = {"age": "나이", "female": "여성", "hours_since_icu": "ICU 입실 후 시간", "pressor_record6": "승압제 (6h)",
+VAR_KO = {"age": "나이", "female": "여성", "hours_since_icu": "ICU 입실 후 시간", "pressor_record6": "승압제 기록 수 (6h)",
           "urine_recorded_sum6": "소변량 (6h)", "history_liver": "이전 간질환", "history_viral_hepatitis": "이전 바이러스 간염",
           "history_heart_failure": "이전 심부전", "history_ckd": "이전 만성 신질환", "history_diabetes": "이전 당뇨",
           "history_cancer": "이전 암", "group_initial_abnormal": "입실 초기 이상", "group_incident": "관찰 중 신규",
@@ -369,26 +381,22 @@ def fig_outcomes(R, ax, split="evaluation"):
 
 def fig_added(R, ax):
     av = R["added_value"]
-    labels, a0, a1, txt = [], [], [], []
-    for key, lab in [("icu_death", "ICU 사망"), ("recovered", "ICU 퇴실 시 회복")]:
-        v = av.get(key)
-        if not v:
-            continue
-        labels.append(lab)
-        a0.append(v["auroc_pattern"])
-        a1.append(v["auroc_pattern_cluster"])
-        ci = v["difference_ci"]
-        txt.append(f"차이 {v['difference']:+.3f}" + (f" ({ci[0]:+.3f} ~ {ci[1]:+.3f})" if ci else ""))
-    x = np.arange(len(labels))
-    ax.bar(x - .18, a0, .34, color=GRID, edgecolor=MUTED, label="R 비 패턴만")
-    ax.bar(x + .18, a1, .34, color=REC, label="R 비 패턴 + 군집")
-    for i, t in enumerate(txt):
-        ax.text(i, max(a0[i], a1[i]) + .02, t, ha="center", fontsize=8, color=INK)
-    ax.set_xticks(x, labels)
+    models = [("auroc_pattern", "R 비 패턴", GRID), ("auroc_pattern_severity", "패턴 + 수치 크기", "#9fb7d6"),
+              ("auroc_pattern_cluster", "패턴 + 군집", REC), ("auroc_pattern_severity_cluster", "패턴 + 수치 + 군집", INK)]
+    keys = [(k, lab) for k, lab in [("icu_death", "ICU 사망"), ("recovered", "ICU 퇴실 시 회복")] if av.get(k)]
+    w = .2
+    for j, (m, lab, col) in enumerate(models):
+        ax.bar(np.arange(len(keys)) + (j - 1.5) * w, [av[k][m] for k, _ in keys], w * .92, color=col, edgecolor=MUTED if j == 0 else col, label=lab)
+    for i, (k, _) in enumerate(keys):
+        d = av[k]["cluster_added_to_severity"]
+        ci = d["ci"]
+        ax.text(i, max(av[k][m] for m, _, _ in models) + .02, f"수치에 군집을 더하면 {d['difference']:+.3f}" + (f"\n({ci[0]:+.3f} ~ {ci[1]:+.3f})" if ci else ""),
+                ha="center", fontsize=8, color=INK)
+    ax.set_xticks(range(len(keys)), [lab for _, lab in keys])
     ax.set_ylim(.5, 1)
     ax.set_ylabel("평가 집단 AUROC")
-    ax.legend(frameon=False, fontsize=8, loc="upper right")
-    ax.set_title("E. 군집이 예후 정보를 더하는가")
+    ax.legend(frameon=False, fontsize=7.5, loc="upper right", ncol=2)
+    ax.set_title("E. 군집이 예후 정보를 더하는가 (수치 크기와 공정 비교)")
 
 
 def fig_characterize(R, ax, max_vars=30):

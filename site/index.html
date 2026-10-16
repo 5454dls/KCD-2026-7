@@ -511,7 +511,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 <section id="demo"><div class="wrap">
   <div class="sec-head">
     <h2><span class="seq">시연 1</span>같은 환자를 시간순으로 다시 재생합니다</h2>
-    <p>재생을 누르면 ICU 입실 후 시간이 흐릅니다. 그래프에는 그 시각까지 결과가 나온 검사만 보이고, 오른쪽 모델들은 환자 상태에 따라 켜지고 꺼집니다. 간 수치가 2×ULN을 넘는 순간 잠깐 멈췄다가 원인과 예후가 뜹니다. 단축키: Space 재생, ←/→ 한 시간, 1–4 환자 선택.</p>
+    <p>재생을 누르면 ICU 입실 후 시간이 흐릅니다. 그래프에는 그 시각까지 결과가 나온 검사만 보이고, 오른쪽 모델들은 환자 상태에 따라 켜지고 꺼집니다. 간 수치가 2×ULN을 넘는 순간 잠깐 멈췄다가 원인과 예후가 뜹니다. 단축키: Space 재생, ←/→ 한 시간, 1–5 환자 선택.</p>
   </div>
   <div class="console-bezel"><div class="console monitor" id="console">
     <div class="console-top">
@@ -685,7 +685,7 @@ async function load(){
   $("#syn-banner").hidden=src!=="synthetic";
   renderMeta();renderFigures();loadResults();
   const cs=st.manifest.cases||[];
-  $("#cases").innerHTML=cs.map((c,i)=>{const g=GROUP[c.group]||[c.group||"",""];return `<button class="case-btn" data-key="${esc(c.case_key)}" aria-pressed="false" title="${esc(c.story||"")}"><b>${i+1} · ${esc(c.case_key)}</b><span>${esc(g[0])}</span></button>`}).join("");
+  $("#cases").innerHTML=cs.map((c,i)=>{const g=GROUP[c.group]||[c.group||"",""];const short=(c.story||"").split(":").pop().trim();return `<button class="case-btn" data-key="${esc(c.case_key)}" aria-pressed="false" title="${esc(c.story||"")}"><b>${i+1} · ${esc(short||c.case_key)}</b><span>${esc(g[0])}</span></button>`}).join("");
   $("#cases").querySelectorAll("button").forEach(b=>b.onclick=()=>selectCase(b.dataset.key));
   if(cs.length){await selectCase(cs[0].case_key);heroMonitor(st.cases[cs[0].case_key])}
   wire();
@@ -736,11 +736,11 @@ function render(){
 function drawTrend(c,h){
   const svg=$("#trend");svg.innerHTML="";const W=640,H=260,m={l:40,r:14,t:14,b:26};
   const hasFc=c.frames.some(f=>f.forecast&&Object.keys(f.forecast).length),X1=c.max_hour+(hasFc?24:0);
-  const x=lin(0,X1,m.l,W-m.r);st.xs=x;st.xr=W-m.r;const lmin=Math.log10(.3),lmax=Math.log10(60);
-  const y=v=>lin(lmin,lmax,H-m.b,m.t)(Math.log10(Math.max(.3,Math.min(60,v))));
+  const x=lin(0,X1,m.l,W-m.r);st.xs=x;st.xr=W-m.r;const rmax=Math.max(60,...TRIG.flatMap(t=>c.points[t].map(p=>p.r*1.4)));const lmin=Math.log10(.3),lmax=Math.log10(Math.min(1000,rmax));
+  const y=v=>lin(lmin,lmax,H-m.b,m.t)(Math.log10(Math.max(.3,Math.min(10**lmax,v))));
   svg.append(S("rect",{class:"future",x:x(st.playing?st.t:h),y:m.t,width:Math.max(0,W-m.r-x(h)),height:H-m.t-m.b,fill:"var(--sunk)"}));
   if(h<c.max_hour)svg.append(S("text",{x:(x(h)+W-m.r)/2,y:m.t+14,"text-anchor":"middle"},hasFc?"아직 공개되지 않은 시간 · 점선과 띠는 예측":"아직 공개되지 않은 시간"));
-  for(const v of [.5,1,2,5,10,20,50]){svg.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)}));svg.append(S("text",{x:m.l-6,y:y(v)+3,"text-anchor":"end"},v+"×"))}
+  for(const v of [.5,1,2,5,10,20,50,100,200,500].filter(v=>Math.log10(v)<=lmax)){svg.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)}));svg.append(S("text",{x:m.l-6,y:y(v)+3,"text-anchor":"end"},v+"×"))}
   const step=X1>72?24:12;for(let t=0;t<=X1;t+=step)svg.append(S("text",{x:x(t),y:H-8,"text-anchor":"middle"},t+"h"));
   svg.append(S("line",{class:"thr",x1:m.l,x2:W-m.r,y1:y(2),y2:y(2),stroke:"var(--crit)"}));
   svg.append(S("text",{x:W-m.r,y:y(2)-5,"text-anchor":"end",style:"fill:var(--crit)"},"2×ULN 알림 기준"));

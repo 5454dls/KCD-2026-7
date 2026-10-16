@@ -3,23 +3,33 @@
  "cases": [
   {
    "case_key": "Patient-01",
-   "max_hour": 53,
-   "group": "initial_abnormal"
+   "max_hour": 120,
+   "group": "initial_abnormal",
+   "story": "입실 때 ALT 169×·AST 201×, 젖산 5.5, INR 3.0, 승압제: 대량 간세포 손상"
   },
   {
    "case_key": "Patient-02",
    "max_hour": 120,
-   "group": "incident"
+   "group": "initial_abnormal",
+   "story": "AST 19×가 ALT보다 높고 젖산 8.5, 승압제: 쇼크 간 양상, ICU 사망"
   },
   {
    "case_key": "Patient-03",
-   "max_hour": 120,
-   "group": "normal"
+   "max_hour": 53,
+   "group": "initial_abnormal",
+   "story": "이전 간질환, 총빌리루빈 2.9× 단독, INR 1.8: 기저 간질환형"
   },
   {
    "case_key": "Patient-04",
    "max_hour": 120,
-   "group": "normal"
+   "group": "initial_abnormal",
+   "story": "ALP 2.2× 우세(R 0.8): 담즙정체형"
+  },
+  {
+   "case_key": "Patient-05",
+   "max_hour": 115,
+   "group": "incident",
+   "story": "정상 측정 뒤 관찰 중 새로 발생: Agent 3가 미리 보는지, ICU 사망"
   }
  ],
  "config": {
@@ -32,13 +42,13 @@
   "cluster_k": null,
   "backend": "csv",
   "m4_reviewed_commit": "f3c434205e36966409af0ec33a0379f4813db58e",
-  "python": "3.11.15",
-  "pandas": "2.3.3",
+  "python": "3.13.16",
+  "pandas": "3.0.5",
   "installed_versions": {
    "m4-infra": "not installed",
    "gradio": "not installed",
-   "numpy": "2.4.6",
-   "scikit-learn": "1.9.0"
+   "numpy": "2.5.3",
+   "scikit-learn": "1.9.1"
   }
  },
  "summaries": {
@@ -47,6 +57,6 @@
    "built_at": "2026-10-16T15:43:58+00:00"
   }
  },
- "built_at": "2026-10-16T15:43:58+00:00",
+ "built_at": "2026-10-16T17:37:02+00:00",
  "git_commit": null
 }

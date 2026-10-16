@@ -36,6 +36,13 @@ class ClusterReportTest(unittest.TestCase):
         self.assertIn("R_ratio", cr.PROFILE)
         self.assertNotIn("R_ratio", R["features"])
         self.assertIsNotNone(R["added_value"]["icu_death"])
+        self.assertIn("cluster_added_to_severity", R["added_value"]["icu_death"])
+
+    def test_zero_values_still_logged(self):
+        f, o = synthetic()
+        f.loc[0, "ALT_ratio"] = 0.0
+        R = cr.run(f, o, n_boot=2, ks=range(2, 4), log=lambda *_: None)
+        self.assertLess(max(e["mean"][0] for e in R["ellipses_alt_alp"]), 10)
         for r in R["outcomes"]["evaluation"]["by_cluster"]:
             v = r["icu_death"]
             self.assertTrue(v["k"] is None or v["k"] >= 10)
