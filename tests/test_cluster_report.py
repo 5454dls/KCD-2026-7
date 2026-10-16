@@ -29,7 +29,7 @@ class ClusterReportTest(unittest.TestCase):
     def test_run_and_render(self):
         f, o = synthetic()
         extra = pd.DataFrame({"case_id": f.case_id, "group": np.where(f.index % 2, "incident", "initial_abnormal"),
-                              "flag_hypoxic_hepatitis": (f.ALT_ratio > 8).astype(float)})
+                              "flag_hypoxic_hepatitis": (f.ALT_ratio > 8).astype(float), "icd_hypoxic_hepatitis": (f.ALT_ratio > 12).astype(float)})
         R = cr.run(f, o, extra=extra, n_boot=3, ks=range(2, 5), log=lambda *_: None)
         self.assertTrue(any(r["variable"] == "LACTATE_latest" for r in R["characterization"]["variables"]))
         self.assertEqual(len(R["profiles"]), R["selected"]["k"])
@@ -37,6 +37,7 @@ class ClusterReportTest(unittest.TestCase):
         self.assertNotIn("R_ratio", R["features"])
         self.assertIsNotNone(R["added_value"]["icu_death"])
         self.assertIn("cluster_added_to_severity", R["added_value"]["icu_death"])
+        self.assertEqual({r["source"] for r in R["causes"]["rows"]}, {"rule", "icd"})
 
     def test_zero_values_still_logged(self):
         f, o = synthetic()
@@ -47,7 +48,7 @@ class ClusterReportTest(unittest.TestCase):
             v = r["icu_death"]
             self.assertTrue(v["k"] is None or v["k"] >= 10)
         with tempfile.TemporaryDirectory() as d:
-            self.assertEqual(len(cr.render(R, d)), 6)
+            self.assertEqual(len(cr.render(R, d)), 7)
 
 
 if __name__ == "__main__":

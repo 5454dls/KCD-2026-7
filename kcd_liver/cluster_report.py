@@ -175,7 +175,8 @@ def run(features, outcomes, extra=None, exclude_cases=(), min_cell=10, seed=2026
     dens = _density(dev, min_cell)
     log("cluster characterisation over all curated variables")
     char = characterize(dev, min_cell)
-    return {"characterization": char, "method": "GaussianMixture on log2 x ULN of ALT, AST, ALP, TBIL (R left out: log R = log ALT - log ALP)",
+    causes = cause_table(pd.concat([dev, ev]), min_cell)
+    return {"causes": causes, "characterization": char, "method": "GaussianMixture on log2 x ULN of ALT, AST, ALP, TBIL (R left out: log R = log ALT - log ALP)",
             "features": feats, "n_dev": int(len(dev)), "n_eval": int(len(ev)), "min_cell_suppression": min_cell,
             "grid": grid, "selected": pick, "profiles": profiles, "outcomes": res, "added_value": av,
             "density_alt_alp": dens, "ellipses_alt_alp": _ellipses(gmm, prep, feats, relabel)}
@@ -260,6 +261,26 @@ def characterize(dev, min_cell, top=6):
         tops[int(k)] = [r["variable"] for r in sorted(cand, key=lambda r: -abs(r["smd"]))[:top]]
     return {"variables": rows, "top_by_cluster": tops,
             "note": "SMD = (cluster mean - other clusters mean) / pooled SD; skewed labs on log2 scale. Binary shares with counts < min_cell are hidden."}
+
+
+CAUSE_ORDER = list(CAUSE_KO)
+
+
+def cause_table(d, min_cell):
+    """Per cluster: share of events with each of the 10 rule flags (Agent 1) and each discharge-ICD proxy, all events."""
+    rows = []
+    for k, g in d.groupby("cluster"):
+        for c in CAUSE_ORDER:
+            for src, col in [("rule", f"flag_{c}"), ("icd", f"icd_{c}")]:
+                if col not in g or g[col].notna().sum() == 0:
+                    continue
+                x = pd.to_numeric(g[col], errors="coerce").dropna()
+                cnt, nn = int(x.sum()), int(len(x))
+                ok = nn >= min_cell and (cnt == 0 or (cnt >= min_cell and nn - cnt >= min_cell))
+                rows.append({"cluster": int(k), "cause": c, "source": src, "n": nn if nn >= min_cell else None,
+                             "k": cnt if ok else None, "share": cnt / nn if ok and nn else None})
+    return {"rows": rows, "note": "rule = Agent 1 rule model at the first event (point-in-time); icd = same-admission discharge codes "
+                                  "(no timestamp, may predate or follow the ICU stay)"}
 
 
 def _density(dev, min_cell, bins=24):
@@ -423,6 +444,36 @@ def fig_characterize(R, ax, max_vars=30):
     cb.set_label("SMD (주황 = 더 높음, 보라 = 더 낮음)")
 
 
+def fig_causes(R, ax):
+    rows = (R.get("causes") or {}).get("rows") or []
+    ks = [p["cluster"] for p in R["profiles"]]
+    srcs = [s for s in ["rule", "icd"] if any(r["source"] == s for r in rows)]
+    if not srcs:
+        ax.axis("off")
+        ax.text(.5, .5, "원인 판정이 입력되지 않았습니다", ha="center", va="center", color=MUTED)
+        return
+    look = {(r["cluster"], r["cause"], r["source"]): r for r in rows}
+    cols = [(c, s) for s in srcs for c in CAUSE_ORDER]
+    M = np.array([[(look.get((k, c, s)) or {}).get("share") for c, s in cols] for k in ks], dtype=float)
+    im = ax.imshow(M, cmap="Blues", vmin=0, vmax=max(.5, np.nanmax(M) if np.isfinite(M).any() else .5), aspect="auto")
+    for i in range(len(ks)):
+        for j, (c, s) in enumerate(cols):
+            r = look.get((ks[i], c, s))
+            t = "–" if not r else ("<10" if r["share"] is None else f"{r['share'] * 100:.0f}")
+            ax.text(j, i, t, ha="center", va="center", fontsize=7, color="white" if (r and r["share"] and r["share"] > .35) else INK)
+    ax.set_xticks(range(len(cols)), [CAUSE_KO[c] for c, _ in cols], rotation=60, ha="right", fontsize=8)
+    names = {p["cluster"]: f"C{p['cluster']} {p['name']}" for p in R["profiles"]}
+    ax.set_yticks(range(len(ks)), [names[k] for k in ks])
+    if len(srcs) == 2:
+        ax.axvline(len(CAUSE_ORDER) - .5, color=INK, lw=2)
+        ax.text(len(CAUSE_ORDER) / 2 - .5, -.8, "규칙 판정 (첫 사건 시점)", ha="center", fontsize=9, fontweight="bold")
+        ax.text(len(CAUSE_ORDER) * 1.5 - .5, -.8, "퇴원 진단 코드 (시각 없음)", ha="center", fontsize=9, fontweight="bold")
+    ax.grid(False)
+    ax.set_title("G. 군집별 원인 10개 해당 비율 (%)", pad=22)
+    cb = ax.figure.colorbar(im, ax=ax, fraction=.025, pad=.01)
+    cb.set_label("해당 비율")
+
+
 def render(R, out_dir):
     import matplotlib.pyplot as plt
     _style()
@@ -432,7 +483,8 @@ def render(R, out_dir):
     for name, fn, size in [("c1_selection", fig_selection, (6, 3.6)), ("c2_profiles", fig_profiles, (7.5, .45 * len(R["profiles"]) + 1.4)),
                            ("c3_map", fig_map, (6.4, 5)), ("c4_outcomes", fig_outcomes, (7.5, .5 * len(R["profiles"]) + 1.4)),
                            ("c5_added_value", fig_added, (5.5, 3.6)),
-                           ("c6_characterization", fig_characterize, (.55 * len(R["profiles"]) + 4.5, 8.5))]:
+                           ("c6_characterization", fig_characterize, (.55 * len(R["profiles"]) + 4.5, 8.5)),
+                           ("c7_causes", fig_causes, (13, .55 * len(R["profiles"]) + 3))]:
         fig, ax = plt.subplots(figsize=size)
         fn(R, ax)
         fig.text(.01, -.01, f"n<{R['min_cell_suppression']} 칸 가림 · 개발 {R['n_dev']:,}건, 평가 {R['n_eval']:,}건", fontsize=7, color=MUTED)
