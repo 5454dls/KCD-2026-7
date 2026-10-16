@@ -37,7 +37,7 @@ PN_PATTERN = r"parenteral|\btpn\b|\bppn\b|clinimix|kabiven|intralipid|smoflipid|
 # serology: markers of current infection vs markers that only show past or chronic exposure
 SERO_ACTIVE = r"surface antigen|hbsag|igm|viral load|rna|dna|e antigen"
 SERO_EXPOSURE = r"hepatitis c virus antibody|hcv ab|anti-hcv|core antibody"
-VERSION = "rule_baseline_v2.0"  # v2.0: ten causes per team decision; frozen before the full MIMIC-IV evaluation
+VERSION = "rule_baseline_v2.1"  # v2.1: NT-proBNP for congestive hepatopathy; frozen before the full MIMIC-IV evaluation
 
 
 def _num(x):
@@ -138,10 +138,20 @@ def rule_agent1(payload: dict) -> dict:
             add("hypoxic_hepatitis", 1 if lac >= 4 else .5, _sup(labs["LACTATE"], f"젖산 {lac:.1f} mmol/L"))
         if pressor:
             add("hypoxic_hepatitis", 1, _sup(pressor[-1], "승압제 주입 기록"))
-    # 2 congestive hepatopathy
-    if hist.get("history_heart_failure") and ((tb or 0) >= 2 or (alp or 0) >= 2 or (alt or 0) >= 2):
+    # 2 congestive hepatopathy: heart-failure history and/or raised NT-proBNP with a liver-test rise
+    liver_up = (tb or 0) >= 2 or (alp or 0) >= 2 or (alt or 0) >= 2
+    if liver_up and hist.get("history_heart_failure"):
         add("congestive_hepatopathy", 1.2, {"analyte_or_label": "history_heart_failure", "measured_at": None,
                                             "reason": "이전 입원 심부전 코드"}, "심초음파·중심정맥압 정보 없음")
+    bnp = val("NTPROBNP")
+    if liver_up and bnp is not None:
+        age = _num((payload.get("demographics") or {}).get("age"))
+        # age-stratified rule-in cut-offs for acute heart failure (ICON: 450 / 900 / 1800 pg/mL); 900 when age unknown
+        cut = 900 if age is None else 450 if age < 50 else 900 if age <= 75 else 1800
+        if bnp >= cut:
+            add("congestive_hepatopathy", 1.0, _sup(labs["NTPROBNP"], f"NT-proBNP {bnp:.0f} pg/mL (기준 {cut})"))
+        else:
+            add("congestive_hepatopathy", 0, against=f"NT-proBNP {bnp:.0f} pg/mL, 기준 {cut} 미만")
     # 3 sepsis-associated cholestasis
     if cholestatic:
         lead = "TBIL" if (tb or 0) >= (alp or 0) else "ALP"

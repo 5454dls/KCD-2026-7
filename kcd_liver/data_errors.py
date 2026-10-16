@@ -21,7 +21,7 @@ CURRENT_BOUNDS = {"ALBUMIN": (.1, 10), "SODIUM": (80, 200), "CREAT": (.05, 150),
                   "WBC": (0, 500), "GLUCOSE": (1, 2000)}
 HARD_RANGE = {"ALT": (1, 20000), "AST": (1, 30000), "ALP": (5, 5000), "TBIL": (.05, 60), "CREAT": (.1, 25),
               "LACTATE": (.1, 30), "ALBUMIN": (.5, 7), "INR": (.5, 20), "PLATELET": (1, 2000), "WBC": (.05, 500),
-              "SODIUM": (90, 190), "GLUCOSE": (10, 2000), "BUN": (1, 300), "HEMOGLOBIN": (2, 25), "BICARB": (2, 60)}
+              "SODIUM": (90, 190), "GLUCOSE": (10, 2000), "NTPROBNP": (5, 70000), "BUN": (1, 300), "HEMOGLOBIN": (2, 25), "BICARB": (2, 60)}
 VITAL_RANGE = {"TEMP_C": (25, 45), "MAP": (15, 250), "HR": (10, 300), "RR": (2, 80), "SPO2": (40, 100)}
 AGE_RANGE = (18, 120)
 JUMP_UP = {"ALT": 20, "AST": 20, "TBIL": 8, "CREAT": 5, "ALBUMIN": 2.5, "INR": 6}

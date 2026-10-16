@@ -42,7 +42,7 @@ from .site_aggregates import aalen_johansen, auroc as _auroc, average_precision 
 
 TRIGGERS = ["ALT", "ALP", "TBIL"]
 RATIO_FEATS = ["ALT", "AST", "ALP", "TBIL"]
-VALUE_FEATS = ["INR", "ALBUMIN", "LACTATE", "CREAT", "BUN", "PLATELET", "WBC", "SODIUM", "GLUCOSE", "BICARB", "HEMOGLOBIN"]
+VALUE_FEATS = ["INR", "ALBUMIN", "LACTATE", "CREAT", "BUN", "PLATELET", "WBC", "SODIUM", "GLUCOSE", "BICARB", "HEMOGLOBIN", "NTPROBNP"]
 VITALS = ["MAP", "HR", "RR", "SPO2", "TEMP_C"]
 PRESSORS = "norepinephrine|epinephrine|vasopressin|phenylephrine|dopamine"
 # Agent 3 target (team decision): any of ALT/ALP/TBIL >= 5x ULN within 24 h; eligibility stays all three < 2x
@@ -340,8 +340,8 @@ def preprocessing_report(X: pd.DataFrame, cols, dev_mask, lr_pipeline=None) -> d
 
 
 def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) -> list[dict]:
-    """First event at 2/3/4/5x ULN (any of ALT/ALP/TBIL) during ICU monitoring, with recovery (all three < 2x,
-    measured within 24 h, before ICU discharge) and death within 1 year (MIMIC-IV deathtime or dod)."""
+    """First event at 2/3/4/5x ULN (any of ALT/ALP/TBIL) during ICU monitoring, with recovery judged at ICU discharge
+    (last value of all three after the event < 2x), not assessable when a trigger was not re-measured, and death within 1 year."""
     thresholds = THRESHOLDS if thresholds is None else thresholds
     c = cohort.set_index("stay_id")
     trig = lab[lab.analyte.isin(TRIGGERS) & lab.ratio.notna()].sort_values("charttime")
@@ -359,14 +359,15 @@ def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) ->
             t0 = hit.available_at.min()
             n += 1
             after = g[(g.charttime > t0) & (g.available_at <= r.monitor_end)]
-            unass += after.empty  # no ALT/ALP/TBIL after the event before ICU discharge
             icu_death += bool(r.get("icu_death")) if "icu_death" in c else 0
-            last = {}
-            for row in after.itertuples():
-                last[row.analyte] = (row.charttime, row.ratio)
-                if len(last) == len(TRIGGERS) and all(row.charttime - tt <= pd.Timedelta(hours=24) and v < 2 for tt, v in last.values()):
-                    rec += 1
-                    break
+            # status at ICU discharge: last value of each trigger after the event
+            lastv = after.drop_duplicates("analyte", keep="last").set_index("analyte").ratio
+            if (lastv >= 2).any():
+                pass  # unrecovered
+            elif set(TRIGGERS) <= set(lastv.index):
+                rec += 1
+            else:
+                unass += 1
             year = t0 + pd.Timedelta(days=365)
             dt, dod = r.get("deathtime"), r.get("dod")
             died += bool((pd.notna(dt) and pd.Timestamp(dt) <= year) or (pd.notna(dod) and pd.Timestamp(dod) <= year.normalize()))
@@ -898,7 +899,7 @@ def group_of(col: str) -> str:
         return "measurement"
     if base in RATIO_FEATS:
         return "liver_change" if col.endswith("_delta24") else "liver_level"
-    if base in ("MAP", "HR", "LACTATE") or col == "pressor_6h":
+    if base in ("MAP", "HR", "LACTATE", "NTPROBNP") or col == "pressor_6h":
         return "perfusion"
     if base in ("WBC", "TEMP", "PLATELET"):
         return "inflammation"
@@ -1164,7 +1165,7 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
         ev2 = ev_all[ev_all.observed_path.isin(PROGNOSIS)]  # recovery assessable
         R["prognosis_development"] = {"events": int(len(ev_all)), "assessable": int(len(ev2)),
                                       "label_counts": ev_all.observed_path.value_counts().to_dict(),
-                                      "definition": "recovery = all three < 2x (24 h) before ICU discharge; unassessable = no trigger lab after the event; death = within 1 year"}
+                                      "definition": "recovery = at ICU discharge the last ALT/ALP/TBIL after the event are all < 2x; unrecovered = any last >= 2x; unassessable = not all re-measured; death = within 1 year"}
         death_bundle = None
         if "died_1y" in ev_all and ev_all.split.eq("evaluation").any() and ev_all[ev_all.split.eq("development")].died_1y.astype(bool).nunique() == 2:
             # 1-year death on ALL events, including those whose recovery cannot be assessed

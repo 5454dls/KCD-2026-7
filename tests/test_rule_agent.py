@@ -110,3 +110,12 @@ class DataErrorTests(unittest.TestCase):
         kept, q = guard_lab(lab)
         self.assertEqual(set(q.analyte), {"ALT", "CREAT"})  # ALT discordant with AST; creatinine out of range
         self.assertEqual(dict(zip(q.analyte, q.reason))["ALT"], "discordant_partner")
+
+
+class CongestiveTests(unittest.TestCase):
+    def test_ntprobnp_supports_congestive(self):
+        snap = {"labs": [lab("TBIL", 2.5, 3.0), lab("ALP", 1.5), lab("ALT", 1.2), lab("NTPROBNP", None, 5200)], "context": [],
+                "demographics": {"age": 70}}
+        self.assertEqual(rule_agent1(snap)["flags"]["congestive_hepatopathy"]["present"], 1)
+        snap["labs"][-1] = lab("NTPROBNP", None, 300)
+        self.assertEqual(rule_agent1(snap)["flags"]["congestive_hepatopathy"]["present"], 0)
