@@ -77,6 +77,17 @@ def flat_tables(R: dict, out: Path):
     pd.DataFrame(rows).to_csv(out / "table2_performance.csv", index=False, encoding="utf-8-sig")
     sh = {k: v for k, v in R.items() if k.startswith("shadow_")}
     (out / "shadow_before_after.json").write_text(json.dumps(sh, ensure_ascii=False, indent=1), encoding="utf-8")
+    # paper tables the team asked for: flowchart, 2/3/4/5x basic counts, Agent 3 by target, death model, preprocessing
+    for name, key in [("flowchart.csv", "flow"), ("basic_counts_by_threshold.csv", "event_thresholds"),
+                      ("agent3_by_threshold.csv", "agent3_by_threshold")]:
+        if R.get(key):
+            pd.DataFrame(R[key]).to_csv(out / name, index=False, encoding="utf-8-sig")
+    if R.get("death_1y_performance"):
+        pd.DataFrame([{k: v for k, v in R["death_1y_performance"].items() if not isinstance(v, (list, dict))}]).to_csv(
+            out / "death_1y_performance.csv", index=False, encoding="utf-8-sig")
+    pre = (R.get("preprocessing") or {}).get("variables")
+    if pre:
+        pd.DataFrame(pre).to_csv(out / "preprocessing_variables.csv", index=False, encoding="utf-8-sig")
 
 
 def main(argv=None):

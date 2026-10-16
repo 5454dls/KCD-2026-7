@@ -102,6 +102,13 @@ def validate(out_dir, model_dir, admissions=None, diagnoses=None, boot=200, min_
             res["accuracy"] = float(np.mean(pred == y))
             res["confusion"] = {f"{a}|{b}": int(((y == a) & (pred == b)).sum()) for a in PROGNOSIS for b in PROGNOSIS}
             R["prognosis"] = res
+        if pb.get("death_model") is not None and "died_1y" in outcomes:
+            ea = events.merge(outcomes[["case_id", "died_1y"]], on="case_id", how="inner")
+            if len(ea):
+                Xd = build_features(ea.rename(columns={"t0": "t"})[["stay_id", "t"]], lab, context, cohort, hist)
+                yd = ea.died_1y.astype(str).str.lower().isin(["true", "1"]).astype(int).to_numpy()
+                pdx = pb["death_model"].predict_proba(Xd.reindex(columns=pb["death_features"]).astype(float))[:, 1]
+                R["death_1y"] = binary_metrics(yd, pdx, ea.subject_id.to_numpy(), boot)
 
     # 3 causes: rule code (no training) vs discharge-ICD proxy; supplementary clustering transported
     if len(events):

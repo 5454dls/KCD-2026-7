@@ -204,9 +204,20 @@ def build_features(rows: pd.DataFrame, lab: pd.DataFrame, context: pd.DataFrame,
     X = _asof(X, p.assign(seen=1.0), "available_at", ["seen", "charttime"], "pr__")
     X["pressor_6h"] = (((X.t - X["pr__charttime"]).dt.total_seconds() / 3600) <= 6).astype(float)
     X = X.drop(columns=[c for c in X.columns if c.startswith("pr__")])
-    c = cohort[["stay_id", "age", "gender", "intime"]].drop_duplicates("stay_id").copy()
+    cc = ["stay_id", "age", "gender", "intime"] + (["admittime"] if "admittime" in cohort else [])
+    c = cohort[cc].drop_duplicates("stay_id").copy()
     c["stay_id"] = c["stay_id"].astype("int64")
     c["intime"] = pd.to_datetime(c["intime"]).astype("datetime64[ns]")
+    # pre-ICU ward measurements of the same admission: last and highest x ULN before ICU admission (constant per stay)
+    pre = lab[lab.analyte.isin(RATIO_FEATS)].merge(c[["stay_id", "intime"]], on="stay_id")
+    pre = pre[(pre.charttime < pre.intime) & (pre.available_at <= pre.intime) & pre.ratio.notna()].sort_values("charttime")
+    for a in RATIO_FEATS:
+        g = pre[pre.analyte.eq(a)].groupby("stay_id").ratio
+        c[f"{a}_preicu_last"] = c.stay_id.map(g.last())
+        c[f"{a}_preicu_max"] = c.stay_id.map(g.max())
+    if "admittime" in c:
+        c["hours_admit_to_icu"] = (c.intime - pd.to_datetime(c.admittime)).dt.total_seconds() / 3600
+        c = c.drop(columns=["admittime"])
     X = X.merge(c, on="stay_id", how="left")
     X["female"] = (X.gender == "F").astype(float)
     X["hours_since_icu"] = (X.t - X.intime).dt.total_seconds() / 3600
@@ -302,6 +313,32 @@ def agent2_follow(events: pd.DataFrame, outcomes: pd.DataFrame, horizon=48) -> p
 
 
 # ------------------------------------------------------------------ models
+def preprocessing_report(X: pd.DataFrame, cols, dev_mask, lr_pipeline=None) -> dict:
+    """Per-variable missingness (development vs evaluation) and the imputation/scaling learned on development only."""
+    dev_mask = np.asarray(dev_mask, bool)
+    A = X[cols].apply(pd.to_numeric, errors="coerce")
+    rows = []
+    imp = sc = None
+    if lr_pipeline is not None:
+        steps = dict(lr_pipeline.named_steps)
+        imp, sc = steps.get("simpleimputer"), steps.get("standardscaler")
+    for i, c in enumerate(cols):
+        d, e = A.loc[dev_mask, c], A.loc[~dev_mask, c]
+        rows.append({"variable": c, "group": group_of(c), "missing_dev": float(d.isna().mean()), "missing_eval": float(e.isna().mean()),
+                     "median_dev": None if d.dropna().empty else float(d.median()),
+                     "q1_dev": None if d.dropna().empty else float(d.quantile(.25)), "q3_dev": None if d.dropna().empty else float(d.quantile(.75)),
+                     "impute_value": float(imp.statistics_[i]) if imp is not None and i < len(imp.statistics_) else None,
+                     "scale_mean": float(sc.mean_[i]) if sc is not None and i < len(sc.mean_) else None,
+                     "scale_sd": float(sc.scale_[i]) if sc is not None and i < len(sc.scale_) else None})
+    return {"rules": ["모든 값은 그 시각까지 보고된 결과만 사용 (max(charttime, storetime))",
+                      "단위 통일(µmol/L→mg/dL 등), 생리적 범위 밖 값 제거, 간 수치는 행별 참고범위 상한으로 나눈 ULN 배수",
+                      "최근값은 검사 24시간·활력징후 6시간 안의 값만 사용, 그보다 오래되면 결측",
+                      "그래디언트 부스팅: 결측을 그대로 두고 분기에서 처리, 정규화 불필요",
+                      "로지스틱 회귀: 개발 집단 중앙값으로 대체 + 변수별 결측 지시자, 개발 집단 평균·표준편차로 표준화 (평가 집단은 같은 값 적용)",
+                      "평가 집단 정보는 어떤 전처리 값에도 쓰지 않음"],
+            "variables": rows}
+
+
 def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) -> list[dict]:
     """First event at 2/3/4/5x ULN (any of ALT/ALP/TBIL) during ICU monitoring, with recovery (all three < 2x,
     measured within 24 h, before ICU discharge) and death within 1 year (MIMIC-IV deathtime or dod)."""
@@ -311,7 +348,7 @@ def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) ->
     by = {k: g for k, g in trig.groupby("stay_id")}
     out = []
     for k in thresholds:
-        n = rec = died = 0
+        n = rec = died = unass = icu_death = 0
         for s_, g in by.items():
             if s_ not in c.index:
                 continue
@@ -322,6 +359,8 @@ def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) ->
             t0 = hit.available_at.min()
             n += 1
             after = g[(g.charttime > t0) & (g.available_at <= r.monitor_end)]
+            unass += after.empty  # no ALT/ALP/TBIL after the event before ICU discharge
+            icu_death += bool(r.get("icu_death")) if "icu_death" in c else 0
             last = {}
             for row in after.itertuples():
                 last[row.analyte] = (row.charttime, row.ratio)
@@ -331,7 +370,9 @@ def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) ->
             year = t0 + pd.Timedelta(days=365)
             dt, dod = r.get("deathtime"), r.get("dod")
             died += bool((pd.notna(dt) and pd.Timestamp(dt) <= year) or (pd.notna(dod) and pd.Timestamp(dod) <= year.normalize()))
-        out.append({"threshold_x_uln": k, "patients_with_event": n, "recovered_before_icu_discharge": rec, "died_within_1y": died,
+        out.append({"threshold_x_uln": k, "patients_with_event": n, "recovered_before_icu_discharge": rec,
+                    "unrecovered_before_icu_discharge": n - rec - unass, "recovery_unassessable": unass,
+                    "icu_death": icu_death, "alive_icu_discharge": n - icu_death, "died_within_1y": died,
                     "recovered_rate": rec / n if n else None, "died_1y_rate": died / n if n else None})
     return out
 
@@ -666,6 +707,7 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
             perf3["models"].append({"model": name, **binary_metrics(y[te], p, g[te], boot)})
             perf3["curves"][name] = curves(y[te], p)
             fitted[name] = m
+        R["preprocessing"] = preprocessing_report(X, cols, tr, fitted.get("로지스틱 회귀"))
         prev = y[tr].mean()
         perf3["models"].append({"model": "기준선 (개발 집단 발생률)", **binary_metrics(y[te], np.full(te.sum(), prev), g[te], 0)})
         # one predeclared landmark per evaluation patient (first eligible after 24 h, else first)
@@ -847,7 +889,7 @@ TRAJ_ANALYTES = ["ALT", "AST", "ALP", "TBIL"]
 TRAJ_HORIZONS = [6, 12, 18, 24]
 TRAJ_QUANTILES = [0.1, 0.5, 0.9]
 PROGNOSIS = ["recovered_alive_1y", "recovered_died_1y",
-             "unrecovered_alive_1y", "unrecovered_died_1y"]
+             "unrecovered_alive_1y", "unrecovered_died_1y"]  # recovery-assessable events; unassessable_* kept for death only
 
 
 def group_of(col: str) -> str:
@@ -1118,9 +1160,23 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
 
     # ---- Agent 2: 4-class prognosis (resolution x death)
     if len(outcomes):
-        ev2 = events.merge(outcomes[["case_id", "observed_path"]], on="case_id", how="inner")
-        ev2 = ev2[ev2.observed_path.isin(PROGNOSIS)]
-        R["prognosis_development"] = {"events": int(len(ev2)), "label_counts": ev2.observed_path.value_counts().to_dict()}
+        ev_all = events.merge(outcomes[["case_id", "observed_path"] + (["died_1y"] if "died_1y" in outcomes else [])], on="case_id", how="inner")
+        ev2 = ev_all[ev_all.observed_path.isin(PROGNOSIS)]  # recovery assessable
+        R["prognosis_development"] = {"events": int(len(ev_all)), "assessable": int(len(ev2)),
+                                      "label_counts": ev_all.observed_path.value_counts().to_dict(),
+                                      "definition": "recovery = all three < 2x (24 h) before ICU discharge; unassessable = no trigger lab after the event; death = within 1 year"}
+        death_bundle = None
+        if "died_1y" in ev_all and ev_all.split.eq("evaluation").any() and ev_all[ev_all.split.eq("development")].died_1y.astype(bool).nunique() == 2:
+            # 1-year death on ALL events, including those whose recovery cannot be assessed
+            Xd = build_features(ev_all.rename(columns={"t0": "t"})[["stay_id", "t"]], lab, context, cohort, hist)
+            trd = ev_all.split.eq("development").to_numpy()
+            cold = feature_columns(Xd, trd)
+            yd = ev_all.died_1y.astype(str).str.lower().isin(["true", "1"]).astype(int).to_numpy()
+            _, gbm_d = _models()
+            md = gbm_d(0.05, 15).fit(Xd[cold].astype(float)[trd], yd[trd])
+            pdx = md.predict_proba(Xd[cold].astype(float)[~trd])[:, 1]
+            R["death_1y_performance"] = {"n_events": int(len(ev_all)), **binary_metrics(yd[~trd], pdx, ev_all.subject_id.to_numpy()[~trd], boot)}
+            death_bundle = {"death_model": md, "death_features": cold}
         perf = {"models": []}
         if len(ev2) and ev2.split.eq("evaluation").any() and ev2[ev2.split.eq("development")].observed_path.nunique() >= 2:
             from sklearn.base import clone
@@ -1145,7 +1201,7 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
                 perf["models"].append(res)
                 if name == "그래디언트 부스팅" and model_dir:
                     joblib.dump({"model": m, "features": cols2, "kind": "prognosis_gbm", "classes": cls,
-                                 "trained_on": R["meta"]["source"]}, Path(model_dir) / "prognosis_gbm.joblib")
+                                 "trained_on": R["meta"]["source"], **(death_bundle or {})}, Path(model_dir) / "prognosis_gbm.joblib")
         R["prognosis_performance"] = perf
 
     # ---- Agent 1: 0/1 flags
