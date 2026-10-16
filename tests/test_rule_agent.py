@@ -62,6 +62,11 @@ class RuleAgentTests(unittest.TestCase):
         self.assertTrue(serology_positive("POSITIVE"))
         self.assertFalse(serology_positive("NON-REACTIVE"))
         self.assertFalse(serology_positive("NOT DETECTED"))
+        # real MIMIC-IV strings: boilerplate mentions POSITIVE inside a negative result
+        self.assertFalse(serology_positive("NEGATIVE.  RECOMMENDED FOLLOW-UP FOR POSITIVE HCV ANTIBODY: HCV VIRAL LOAD."))
+        self.assertTrue(serology_positive("POSITIVE*.  RECOMMENDED FOLLOW-UP FOR POSITIVE HCV ANTIBODY: HCV VIRAL LOAD."))
+        self.assertFalse(serology_positive("NEG."))
+        self.assertFalse(serology_positive("___"))
         ctx = [{"kind": "serology_record", "label": "Hepatitis B Surface Antigen", "value": "POSITIVE",
                 "charttime": "2150-01-01T00:00:00", "available_at": "2150-01-01T02:00:00"},
                {"kind": "infusion_record", "label": "Parenteral Nutrition", "value": "recorded",

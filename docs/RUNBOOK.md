@@ -2,13 +2,13 @@
 
 전체 MIMIC-IV는 기관 PC에서만 실행합니다. 이 저장소에는 집계 결과만 들어옵니다.
 
-## 가장 쉬운 방법: 노트북 하나
+## 가장 쉬운 방법: 노트북 파일 하나
 
 ```powershell
 pip install pandas numpy scikit-learn matplotlib joblib nbformat nbclient ipykernel
 ```
 
-`notebooks/KCD_RUN_ALL.ipynb`를 열고 첫 셀의 `MIMIC_ROOT`만 확인한 뒤 위에서부터 끝까지 실행합니다. 인터넷이 막힌 PC라면 FHIR 데모를 미리 받아 `DEMO_FHIR_DIR`에 그 `fhir` 폴더를 적습니다.
+`notebooks/KCD_ONE.ipynb` 파일 하나만 있으면 됩니다(코드가 안에 들어 있어 저장소가 필요 없습니다). 아무 폴더에 두고 열어 첫 셀의 `MIMIC_ROOT`만 확인한 뒤 위에서부터 끝까지 실행합니다. 코드와 중간 산출물은 노트북 옆 `kcd_work/`에 생기고, 돌려줄 zip은 노트북 옆에 생깁니다. 새 버전 노트북을 받으면 `RUN_STEPS['full'] = False`로 가장 오래 걸리는 1단계를 건너뛸 수 있습니다(단, 추출 항목이 바뀐 버전이면 1단계부터 다시). 인터넷이 막힌 PC라면 FHIR 데모를 미리 받아 `DEMO_FHIR_DIR`에 그 `fhir` 폴더를 적습니다.
 
 끝나면 저장소 폴더에 `kcd_return_package_<날짜>.zip`이 생깁니다. 이 zip 하나를 대화에 올려주시면 사이트와 발표 자료 숫자를 교체합니다.
 
