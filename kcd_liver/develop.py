@@ -139,8 +139,14 @@ def _asof(rows: pd.DataFrame, ev: pd.DataFrame, time_col: str, take: list[str], 
         return rows
     right = ev[["stay_id", time_col] + [c for c in take if c != time_col]].dropna(subset=[time_col]).sort_values(time_col)
     right = right.rename(columns={c: prefix + c for c in right.columns if c != "stay_id"})
-    left = rows.sort_values(at)
+    left = rows.copy()
+    # merge_asof needs identical key dtypes (notebook frames may carry object ids or us-resolution times)
+    for d, col in ((left, at), (right, prefix + time_col)):
+        d["stay_id"] = pd.to_numeric(d["stay_id"], errors="coerce").astype("float64")
+        d[col] = pd.to_datetime(d[col], errors="coerce").astype("datetime64[ns]")
+    left, right = left.dropna(subset=["stay_id", at]).sort_values(at), right.dropna(subset=["stay_id"])
     m = pd.merge_asof(left, right, left_on=at, right_on=prefix + time_col, by="stay_id", direction="backward")
+    m["stay_id"] = m["stay_id"].astype("int64")
     return m
 
 
