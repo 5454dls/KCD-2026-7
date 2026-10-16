@@ -161,6 +161,18 @@ def experiment(rows: pd.DataFrame, lab, context, cohort, hist, a3=None, traj=Non
                scenarios=SCENARIOS, high_risk_quantile=0.9, max_rule_rows=500, per_row=False, events=None, log=print):
     """Run every scenario on the same rows under four conditions; return a JSON-ready summary."""
     from .develop import build_features, RATIO_FEATS
+    def _ids(d):  # notebook frames can carry stay_id as object; merge_asof needs one integer type
+        d = d.copy()
+        d["stay_id"] = pd.to_numeric(d["stay_id"], errors="coerce")
+        d = d.dropna(subset=["stay_id"])
+        d["stay_id"] = d["stay_id"].astype("int64")
+        for c in ("charttime", "available_at", "t", "intime"):
+            if c in d:
+                d[c] = pd.to_datetime(d[c], errors="coerce").astype("datetime64[ns]")
+        return d
+    rows, lab, context, cohort = _ids(rows), _ids(lab), _ids(context), _ids(cohort)
+    if hist is not None and len(hist):
+        hist = _ids(hist)
     rows = rows[["stay_id", "t"]].reset_index(drop=True)
     cost_lab = apply_current_bounds(lab)  # guard cost is measured on all supplied records
     keep = set(rows.stay_id)
