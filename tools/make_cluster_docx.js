@@ -73,6 +73,7 @@ function P_(t) { return P(t); }
 body.push(H1("1. 요약", true));
 body.push(L(`군집 수는 미리 정한 규칙으로 K=${S.k}(완전 공분산)가 선택되었습니다. 부트스트랩 ARI 중앙값 ${f3(S.ari_median, 2)}로 안정적이고, 가장 작은 군집도 ${n(S.smallest)}건입니다.`));
 body.push(L("다섯 군집은 임상적으로 해석됩니다: 허혈성 간세포 손상형, 경도 혼합형, 순수 담즙정체형, 황달 동반 혼합형, 기저 간질환형."));
+if ((R.causes || {}).rows) body.push(L("퇴원 진단 코드와 맞춰 보면 허혈성 간세포형에 저산소성 간염·심부전, 황달 동반 혼합형에 담도폐쇄·담관염, 기저 간질환형에 만성 간질환·바이러스 간염이 몰립니다. 규칙의 담도폐쇄 판정은 모든 군집에서 63-73%로 같아 구분력이 없습니다."));
 body.push(L("개발 집단과 평가 집단에서 군집별 ICU 사망률과 회복률이 거의 같아 재현됩니다."));
 body.push(L(`R 비 패턴과 비교하면 군집이 예후 판별을 크게 올리는 것처럼 보이지만(회복 AUROC +${(AV.recovered.cluster_vs_pattern.difference).toFixed(3)}), 수치 크기를 함께 넣은 공정 비교에서는 더하는 정보가 미미했습니다(ICU 사망 ${ci(AV.icu_death.cluster_added_to_severity)}, 회복 ${ci(AV.recovered.cluster_added_to_severity)}).`));
 body.push(L("결론: 군집은 환자 유형을 사람이 이해할 수 있게 요약하는 도구로는 쓸 만하지만, 예후를 더 잘 맞히는 도구는 아닙니다."));
@@ -126,7 +127,25 @@ body.push(table(["군집", "ICU 사망 개발", "ICU 사망 평가", "회복 개
 }), [3, 1.5, 1.5, 1.5, 1.5]));
 body.push(P("개발과 평가 집단의 값이 거의 같아 군집별 예후 차이는 재현됩니다."));
 
-body.push(H1("6. 군집이 예후 정보를 더하는가"));
+const CK = { hypoxic_hepatitis: "저산소성 간염", congestive_hepatopathy: "울혈성 간병증", sepsis_cholestasis: "패혈증 담즙정체", dili: "DILI", pn_associated: "정맥영양 관련", biliary_obstruction_cholangitis: "담도폐쇄·담관염", cholecystitis: "담낭염", hemolysis: "용혈", viral_hepatitis: "바이러스 간염", others: "기타" };
+const CR = {}; for (const r of ((R.causes || {}).rows || [])) CR[`${r.cluster}|${r.cause}|${r.source}`] = r;
+const cs = (k, c, src) => { const r = CR[`${k}|${c}|${src}`]; return !r ? "–" : r.share == null ? "<10" : (r.share * 100).toFixed(0) + "%"; };
+if (Object.keys(CR).length) {
+  body.push(H1("6. 군집별 원인 10개"));
+  body.push(P("첫 사건마다 그 시점까지 공개된 자료로 규칙 모델(Agent 1)이 원인 10개를 각각 0/1로 판정했고, 같은 입원의 퇴원 진단 코드(ICD 대리 기준)를 함께 붙였습니다. 개발과 평가 집단을 합친 전체 사건 기준입니다."));
+  body.push(...img("c7_causes", 16.5, "그림 G. 군집별 원인 10개 해당 비율. 왼쪽 = 규칙 판정(첫 사건 시점), 오른쪽 = 퇴원 진단 코드(시각 없음, ICU 전후 구분 불가)."));
+  for (const [src, title] of [["rule", "규칙 판정 (첫 사건 시점)"], ["icd", "퇴원 진단 코드"]]) {
+    body.push(H2(title));
+    body.push(table(["원인", ...PR.map(p => `C${p.cluster}`)], Object.keys(CK).map(c => [CK[c], ...PR.map(p => cs(p.cluster, c, src))]), [2.4, 1, 1, 1, 1, 1]));
+  }
+  body.push(H2("판단"));
+  body.push(L([B("군집과 진단 코드는 의미 있게 맞물립니다. "), "C0(허혈성 간세포형)은 저산소성 간염 코드 59%로 가장 높고 심부전 코드도 34%로 가장 높습니다. C3(황달 동반 혼합형)은 담도폐쇄·담관염 코드가 30%로 다른 군집(3-8%)의 4-10배이고 담낭염도 9%로 가장 높습니다. C4(기저 간질환형)는 바이러스 간염 16%, 기타(간경변·알코올) 50%로 만성 간질환이 모입니다. C2(순수 담즙정체형)는 패혈증 코드 44%입니다. C1(경도 혼합형)은 특정 원인이 두드러지지 않습니다."]));
+  body.push(L([B("규칙 판정은 군집과 지나치게 잘 맞습니다. "), "저산소성 간염 95%(C0), 패혈증 담즙정체 71-84%(C2-C4)는 규칙이 군집과 같은 간 수치 모양을 보고 판정하기 때문입니다. 이것은 원인을 맞혔다는 근거가 아니라 같은 정보를 두 번 본 결과입니다."]));
+  body.push(L([B("규칙의 담도폐쇄 판정은 쓸모가 없습니다. "), "모든 군집에서 63-73%로 거의 같아 군집을 구분하지 못합니다. 진단 코드로는 C3에만 몰려 있으므로, 규칙의 담도 기준(빌리루빈·백혈구 중심)을 영상·담관 확장 정보가 없을 때는 낮춰야 합니다. 이전에 확인한 특이도 32%와 같은 문제입니다."]));
+  body.push(L([B("규칙이 놓치는 것. "), "C4에서 진단 코드상 만성 간질환(기타 50%, 바이러스 16%)이 많지만 규칙 판정은 기타 22%, 바이러스 0%입니다. 규칙은 이전 입원 진단과 혈청 검사가 있을 때만 이를 잡습니다."]));
+  body.push(L([B("해석의 한계. "), "퇴원 진단 코드는 시각이 없고 입원 단위라 ICU 전후에 생긴 문제와 기저질환이 섞입니다. 쇼크 코드를 저산소성 간염, 심부전 코드를 울혈성 간병증으로 넓게 잡아서 비율이 실제보다 높습니다. 정맥영양은 코드가 없어 0%, 담낭염 규칙 판정은 설계상 판단하지 않아 0%입니다."]));
+}
+body.push(H1(Object.keys(CR).length ? "7. 군집이 예후 정보를 더하는가" : "6. 군집이 예후 정보를 더하는가"));
 body.push(...img("c5_added_value", 12, "그림 E. 평가 집단 AUROC. 회색 = R 비 패턴, 연한 파랑 = 패턴 + 수치 크기, 파랑 = 패턴 + 군집, 검정 = 셋 모두."));
 const row = (k, lab) => [lab, f3(AV[k].auroc_pattern), f3(AV[k].auroc_pattern_severity), f3(AV[k].auroc_pattern_cluster), f3(AV[k].auroc_pattern_severity_cluster)];
 body.push(table(["결과", "패턴", "패턴 + 수치", "패턴 + 군집", "셋 모두"], [row("icu_death", `ICU 사망 (${n(AV.icu_death.events)}/${n(AV.icu_death.n)})`), row("recovered", `퇴실 시 회복 (${n(AV.recovered.events)}/${n(AV.recovered.n)})`)], [3, 1.5, 1.5, 1.5, 1.5]));
@@ -141,8 +160,8 @@ body.push(L("수치 크기와 비교하면 회복은 수치 크기 쪽이 더 �
 body.push(L("수치 크기에 군집을 더하면 두 결과 모두 약 0.01 오릅니다. 통계적으로 유의하지만 임상적으로는 미미합니다."));
 body.push(L("간 수치만으로 ICU 사망을 판별하는 능력은 AUROC 0.59 수준입니다. 모든 변수를 쓴 ICU 사망 모델(0.83)과 비교하면, 사망은 간 수치 모양보다 전신 상태가 결정합니다."));
 
-body.push(H1("7. 한계와 다음 단계"));
-body.push(L("군집은 원인 진단이 아닙니다. 규칙 원인 판정(Agent 1)과 군집의 연결은 이번 실행에 원인 판정 기록이 붙지 않아 확인하지 못했습니다."));
+body.push(H1(Object.keys(CR).length ? "8. 한계와 다음 단계" : "7. 한계와 다음 단계"));
+body.push(L(Object.keys(CR).length ? "군집은 원인 진단이 아닙니다. 진단 코드와의 연결은 시각 없는 대리 기준이므로 전문의 판정으로 확인해야 합니다." : "군집은 원인 진단이 아닙니다. 규칙 원인 판정(Agent 1)과 군집의 연결은 이번 실행에 원인 판정 기록이 붙지 않아 확인하지 못했습니다."));
 body.push(L("간 수치 4개만 썼습니다. 임상 표현형 군집(20개 변수)은 이전 실행에서 불안정했습니다(ARI 0.34)."));
 body.push(L("한 기관 자료입니다. 모델 묶음의 군집 모형을 외부 기관에 그대로 적용해 군집 비율과 군집별 예후가 재현되는지 확인할 수 있습니다."));
 body.push(L("발표에서는 '패턴만과 비교하면 좋아 보이지만 공정하게 비교하면 대부분 수치 크기 효과'라는 결과를 그림자 사례로 쓸 수 있습니다."));

@@ -466,10 +466,10 @@ def fig_causes(R, ax):
     ax.set_yticks(range(len(ks)), [names[k] for k in ks])
     if len(srcs) == 2:
         ax.axvline(len(CAUSE_ORDER) - .5, color=INK, lw=2)
-        ax.text(len(CAUSE_ORDER) / 2 - .5, -.8, "규칙 판정 (첫 사건 시점)", ha="center", fontsize=9, fontweight="bold")
-        ax.text(len(CAUSE_ORDER) * 1.5 - .5, -.8, "퇴원 진단 코드 (시각 없음)", ha="center", fontsize=9, fontweight="bold")
+        ax.text(len(CAUSE_ORDER) / 2 - .5, -.65, "규칙 판정 (첫 사건 시점)", ha="center", va="bottom", fontsize=9, fontweight="bold")
+        ax.text(len(CAUSE_ORDER) * 1.5 - .5, -.65, "퇴원 진단 코드 (시각 없음)", ha="center", va="bottom", fontsize=9, fontweight="bold")
     ax.grid(False)
-    ax.set_title("G. 군집별 원인 10개 해당 비율 (%)", pad=22)
+    ax.set_title("G. 군집별 원인 10개 해당 비율 (%)", pad=30)
     cb = ax.figure.colorbar(im, ax=ax, fraction=.025, pad=.01)
     cb.set_label("해당 비율")
 
@@ -487,7 +487,7 @@ def render(R, out_dir):
                            ("c7_causes", fig_causes, (13, .55 * len(R["profiles"]) + 3))]:
         fig, ax = plt.subplots(figsize=size)
         fn(R, ax)
-        fig.text(.01, -.01, f"n<{R['min_cell_suppression']} 칸 가림 · 개발 {R['n_dev']:,}건, 평가 {R['n_eval']:,}건", fontsize=7, color=MUTED)
+        fig.text(.995, .995, f"n<{R['min_cell_suppression']} 칸 가림 · 개발 {R['n_dev']:,}건, 평가 {R['n_eval']:,}건", ha="right", va="bottom", fontsize=7, color=MUTED)
         p = out / f"{name}.png"
         fig.savefig(p)
         plt.close(fig)
