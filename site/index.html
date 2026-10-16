@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KCD 간 감시 에이전트</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="MIMIC-IV ICU 환자의 간 검사 이상을 시간순으로 재생하며 원인 후보, 경과, 24시간 위험을 제시하는 세 에이전트의 시연과 단계별 결과 그림">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --paper:#f3f6f5; --surface:#ffffff; --sunk:#e9efed; --ink:#13232a; --muted:#56686d; --line:#d3dedb;
+  --accent:#a8660e; --accent-soft:#f6e7cf;
+  --alt:#0e7a84; --alp:#6a4cb0; --tbil:#c0850b;
+  --ok:#2e7a4c; --warn:#ad6300; --crit:#b53636; --ok-soft:#e1f0e6; --warn-soft:#f8ead5; --crit-soft:#f7e0de;
+  --c-res:#2e7a4c; --c-death:#b53636; --c-dis:#3d6fb0; --c-none:#b9c5c2;
+  --shadow:0 1px 2px rgba(19,35,42,.06),0 8px 24px -12px rgba(19,35,42,.18);
+  --f-display:"Hahmlet","Noto Serif KR","AppleMyungjo",Georgia,serif;
+  --f-body:"Pretendard Variable","Pretendard","IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:10px; --ease:cubic-bezier(.16,1,.3,1);
+  --mon-bg:#0b1416; --mon-surface:#101c1f; --mon-sunk:#0a1315; --mon-ink:#e4ece9; --mon-muted:#9fb1b2; --mon-line:#213337;
+  --mon-shell:#cfdad7; --mon-glow:rgba(226,164,62,.16);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0d1618; --surface:#132024; --sunk:#0a1214; --ink:#e2ebe9; --muted:#93a6a8; --line:#24363a;
+  --accent:#e3a541; --accent-soft:#3a2c14;
+  --alt:#4bc2cb; --alp:#a88ff0; --tbil:#e7b440;
+  --ok:#5fc08a; --warn:#e6a04a; --crit:#ef7b72; --ok-soft:#173326; --warn-soft:#3a2a14; --crit-soft:#3d1c1a;
+  --c-res:#5fc08a; --c-death:#ef7b72; --c-dis:#79a6e6; --c-none:#3a4d50;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#0d1618; --surface:#132024; --sunk:#0a1214; --ink:#e2ebe9; --muted:#93a6a8; --line:#24363a;
+  --accent:#e3a541; --accent-soft:#3a2c14;
+  --alt:#4bc2cb; --alp:#a88ff0; --tbil:#e7b440;
+  --ok:#5fc08a; --warn:#e6a04a; --crit:#ef7b72; --ok-soft:#173326; --warn-soft:#3a2a14; --crit-soft:#3d1c1a;
+  --c-res:#5fc08a; --c-death:#ef7b72; --c-dis:#79a6e6; --c-none:#3a4d50;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6); color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font:15.5px/1.7 var(--f-body);-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word;caret-color:var(--accent)}
+::selection{background:var(--accent-soft);color:var(--ink)}
+html{scrollbar-color:color-mix(in srgb,var(--muted) 45%,transparent) transparent}
+a{text-underline-offset:3px}
+.monitor{--surface:var(--mon-surface);--sunk:var(--mon-sunk);--ink:var(--mon-ink);--muted:var(--mon-muted);--line:var(--mon-line);--paper:var(--mon-bg);
+  --accent:#e3a541;--accent-soft:#3a2c14;--alt:#4fc6cf;--alp:#ab93f2;--tbil:#e8b543;--ok:#62c48d;--warn:#e8a24c;--crit:#f07f75;
+  --ok-soft:#163126;--warn-soft:#382912;--crit-soft:#3b1b19;--c-res:#62c48d;--c-death:#f07f75;--c-dis:#7eaae8;--c-none:#33474a;
+  background:var(--mon-surface);color:var(--mon-ink);color-scheme:dark}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--paper)}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.3;letter-spacing:-.02em}
+h2{font-size:clamp(1.6rem,1.1rem + 1.7vw,2.4rem);font-weight:800}
+.seq{color:var(--accent);margin-right:.35em}
+h3{font-size:1.08rem;font-weight:700}
+p{margin:0}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+a{color:var(--alt)}
+button,select,input{font:inherit;color:inherit}
+button,a,.case-btn,.tab,.node{transition:transform .45s var(--ease),background-color .3s var(--ease),border-color .3s var(--ease),box-shadow .45s var(--ease),color .3s var(--ease)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+.bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:20;margin-top:10px}
+.bar .wrap{display:flex}
+.pill{display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;padding:8px 10px 8px 16px;border-radius:999px;background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid color-mix(in srgb,var(--line) 80%,transparent);box-shadow:0 10px 30px -18px rgba(19,35,42,.35)}
+.brand{display:flex;align-items:center;gap:10px;font:700 1rem/1 var(--f-display);white-space:nowrap}
+.brand-mark{width:22px;height:22px}
+.nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.nav a{color:var(--muted);text-decoration:none;font-size:.86rem;padding:6px 10px;border-radius:999px}
+.nav a:hover{background:var(--sunk);color:var(--ink)}
+.src{font:600 .74rem/1 var(--f-body);padding:6px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.src[data-kind="synthetic"]{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.src[data-kind="mimic-iv-demo"]{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+
+.hero{padding-block:clamp(40px,6vw,84px) 32px;background:radial-gradient(60% 70% at 85% 30%,var(--accent-soft),transparent 70%),radial-gradient(50% 60% at 0% 100%,color-mix(in srgb,var(--alt) 10%,transparent),transparent 70%)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(28px,4vw,56px);align-items:center}
+.hero h1{font-size:clamp(2.1rem,1.2rem + 3.2vw,3.7rem);font-weight:800;line-height:1.22;letter-spacing:-.03em}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.lede{margin-top:20px;font-size:1.08rem;max-width:56ch;color:var(--muted)}
+.qstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2.4vw,32px);margin-top:clamp(36px,5vw,64px);padding-top:22px;border-top:1px solid var(--line)}
+.q{display:grid;gap:4px;font-size:.92rem;line-height:1.55}
+.q b{font:800 1.5rem/1 var(--f-display);color:var(--accent)}
+.cta{display:flex;gap:10px;margin-top:30px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);padding:10px 18px;border-radius:999px;cursor:pointer;text-decoration:none;color:var(--ink);font-weight:600;font-size:.94rem;min-height:44px}
+.btn:hover{border-color:var(--ink);transform:scale(1.02)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);padding:8px 8px 8px 22px;font-size:1rem;min-height:52px;box-shadow:0 14px 30px -16px color-mix(in srgb,var(--ink) 70%,transparent)}
+.btn-ico{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--paper) 16%,transparent)}
+.btn-ico svg{width:16px;height:16px;transition:transform .45s var(--ease)}
+.btn.primary:hover .btn-ico svg{transform:translateX(3px)}
+.bezel{padding:7px;border-radius:26px;background:linear-gradient(160deg,color-mix(in srgb,var(--mon-shell) 70%,var(--surface)),color-mix(in srgb,var(--mon-shell) 35%,var(--paper)));box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 30px 60px -30px rgba(11,20,22,.55),0 12px 24px -18px rgba(11,20,22,.4)}
+.device{border-radius:20px;padding:16px 18px 14px;box-shadow:inset 0 1px 1px rgba(255,255,255,.08);display:grid;gap:10px;min-height:340px;position:relative;overflow:hidden}
+.device::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(80% 60% at 70% 0%,var(--mon-glow),transparent 70%)}
+.dev-top{display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--muted)}
+.dev-top b{color:var(--ink);font-weight:600}
+.dev-clock{margin-left:auto;font:600 1.05rem var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:beat 2.4s var(--ease) infinite}
+@keyframes beat{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+#hm-trace{width:100%;height:auto;display:block}
+#hm-trace text{fill:var(--muted);font:500 10px var(--f-mono)}
+.dev-alert{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:var(--crit-soft);color:var(--crit);font-size:.86rem;font-weight:600;opacity:.25;transform:translateY(4px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+.dev-alert.on{opacity:1;transform:none}
+.dev-alert svg{width:18px;height:18px;flex:none}
+.dev-cands{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.dev-cands li{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:baseline;padding:8px 12px;border-radius:10px;background:var(--sunk);font-size:.86rem;opacity:0;transform:translateY(8px);filter:blur(3px);transition:opacity .7s var(--ease),transform .7s var(--ease),filter .7s var(--ease);transition-delay:calc(var(--i) * 140ms)}
+.dev-cands.on li{opacity:1;transform:none;filter:none}
+.dev-cands b{font:800 .95rem var(--f-display);color:var(--alt)}
+.dev-cands small{color:var(--muted);font-size:.74rem}
+.dev-foot{font-size:.72rem;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}
+.notice{margin-top:22px;font-size:.82rem;color:var(--muted);max-width:56ch}
+.synthetic-banner{background:var(--warn-soft);color:var(--warn);font-size:.85rem}
+.synthetic-banner .wrap{padding-block:9px}
+
+section{padding-block:clamp(56px,7vw,104px)}
+section,figure{scroll-margin-top:84px}
+.sec-head{display:grid;gap:12px;margin-bottom:clamp(24px,3vw,40px);max-width:72ch}
+.sec-head p{color:var(--muted)}
+.rule{border:0;border-top:1px solid var(--line);margin:0}
+
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;position:relative}
+.stage{display:grid;gap:8px;align-content:start;position:relative}
+.stage-h{font:700 .82rem var(--f-body);color:var(--muted);display:flex;gap:8px;align-items:center}
+.stage-h i{font:700 .72rem var(--f-body);font-style:normal;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper)}
+.node{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;font-size:.86rem;line-height:1.45;text-decoration:none;color:var(--ink);display:block;transition:border-color .15s,transform .15s}
+a.node:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 12px 24px -18px rgba(19,35,42,.45)}
+.node b{display:block;font-size:.9rem;margin-bottom:2px}
+.node small{color:var(--muted);display:block}
+.node .fig{font:600 .74rem var(--f-body);color:var(--accent);margin-top:6px;display:inline-flex;gap:4px;align-items:center}
+.node .fig svg{width:12px;height:12px}
+.node.agent{border-width:1.5px}
+.node.a1{border-color:var(--alt)} .node.a2{border-color:var(--c-dis)} .node.a3{border-color:var(--alp)}
+.node.guard{background:var(--sunk);border-style:dashed}
+.stage:not(:last-child)::after{content:"";position:absolute;top:34px;right:-12px;width:10px;height:10px;border-top:2px solid var(--muted);border-right:2px solid var(--muted);transform:rotate(45deg);opacity:.5}
+.pipe-cap{margin-top:18px;font-size:.84rem;color:var(--muted);max-width:90ch}
+.pipe-cap b{color:var(--ink);font-family:var(--f-display)}
+.pipe-foot{margin-top:12px;display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.pipe-foot span{display:inline-flex;gap:6px;align-items:center}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+.console-bezel{padding:7px;border-radius:24px;background:linear-gradient(160deg,color-mix(in srgb,var(--mon-shell) 70%,var(--surface)),color-mix(in srgb,var(--mon-shell) 35%,var(--paper)));box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 40px 80px -40px rgba(11,20,22,.55)}
+.console{border-radius:18px;overflow:hidden;box-shadow:inset 0 1px 1px rgba(255,255,255,.07)}
+.console-top{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.cases{display:flex;gap:6px;flex-wrap:wrap}
+.case-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 11px;cursor:pointer;text-align:left;display:grid;gap:1px;min-width:0}
+.case-btn b{font:700 .84rem var(--f-body);font-variant-numeric:tabular-nums}
+.case-btn span{font-size:.72rem;color:var(--muted)}
+.case-btn:hover{transform:translateY(-1px)}
+.case-btn[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.transport{display:flex;gap:10px;align-items:center;margin-left:auto;flex-wrap:wrap}
+.play{width:48px;height:48px;border-radius:50%;border:0;background:var(--accent);color:#1a1205;cursor:pointer;display:grid;place-items:center;box-shadow:0 8px 22px -10px var(--accent)}
+.play:hover{transform:scale(1.06)}.play:active{transform:scale(.96)}
+.play svg{width:16px;height:16px;fill:currentColor}
+.clock{display:grid;line-height:1.1}
+.clock b{font:600 1.35rem var(--f-mono);font-variant-numeric:tabular-nums}
+.clock span{font-size:.7rem;color:var(--muted)}
+.speed{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:.8rem}
+.scrub{padding:10px 16px 0;display:grid;gap:4px}
+.scrub input{width:100%;accent-color:var(--accent)}
+.ticks{position:relative;height:16px;font:500 .66rem var(--f-mono);color:var(--muted)}
+.ticks .t0 svg{width:10px;height:8px;fill:var(--crit)}
+.ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.ticks .t0{color:var(--crit);font-weight:600}
+.console-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:0}
+.pane{padding:16px;min-width:0}
+.pane+.pane{border-left:1px solid var(--line)}
+.state{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:600 .76rem var(--f-body);padding:4px 10px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.crit{background:var(--crit-soft);color:var(--crit)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font:500 10px var(--f-mono)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .thr{stroke:var(--crit);stroke-dasharray:5 4;stroke-width:1.3}
+.chart .now{stroke:var(--ink);stroke-width:1.2}
+.chart .future{fill:var(--sunk)}
+.chart .lbl-ink{fill:var(--ink);font-weight:600}
+.labs{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:10px}
+.labs th{font:600 .68rem var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+.labs th:first-child,.labs td:first-child{text-align:left}
+.labs td{padding:4px 6px;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line)}
+.labs tr.hi td{color:var(--crit);font-weight:600}
+.labs tr.stale td{color:var(--muted)}
+.labs-wrap{overflow-x:auto;max-height:230px;overflow-y:auto}
+.log{margin-top:12px;display:grid;gap:4px;font-size:.78rem;max-height:150px;overflow:auto}
+.log div{display:grid;grid-template-columns:44px 1fr;gap:8px;color:var(--muted)}
+.log div b{font:600 .74rem var(--f-mono);color:var(--ink)}
+.log div.alert{color:var(--crit)}
+.agents{display:grid;gap:12px}
+.agent{border:1px solid var(--line);border-radius:12px;padding:12px 13px;position:relative;transition:opacity .25s,border-color .25s}
+.agent[data-active="false"]{opacity:.55}
+.agent[data-active="true"]{border-color:var(--agent-c)}
+.agent.a1{--agent-c:var(--alt)} .agent.a2{--agent-c:var(--c-dis)} .agent.a3{--agent-c:var(--alp)}
+.agent-h{display:flex;gap:8px;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.agent-h h3{font-size:.98rem;display:flex;gap:8px;align-items:center}
+.agent-h h3 i{font:700 .7rem var(--f-body);font-style:normal;color:var(--mon-bg);background:var(--agent-c);padding:2px 6px;border-radius:5px}
+.agent-h small{font-size:.74rem;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:.72rem}
+.seg button{border:0;background:transparent;padding:3px 8px;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.cand{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:7px 0;border-top:1px dashed var(--line)}
+.cand:first-of-type{border-top:0}
+.rank{font:800 .95rem var(--f-display);color:var(--agent-c)}
+.rank svg{width:15px;height:15px}
+.cand b{font-size:.88rem}
+.cand ul{margin:3px 0 0;padding-left:16px;font-size:.78rem}
+.cand li.sup::marker{content:"+ ";color:var(--ok)}
+.cand li.ag::marker{content:"− ";color:var(--crit)}
+.cand .ev{font:500 .68rem var(--f-mono);color:var(--muted)}
+.unc{font-size:.78rem;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.empty-agent{font-size:.82rem;color:var(--muted)}
+.stack{display:flex;height:22px;border-radius:6px;overflow:hidden;margin:6px 0 4px}
+.stack div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.72rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.naive{font-size:.76rem;margin-top:6px}
+.gauge{position:relative;height:24px;background:var(--sunk);border-radius:6px;margin:8px 0 4px;overflow:hidden}
+.gauge .ci{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--alp) 28%,transparent)}
+.gauge .pt{position:absolute;top:3px;bottom:3px;width:3px;background:var(--alp);border-radius:2px}
+.model-tag{font-size:.72rem;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.smalln{font-size:.76rem;margin-top:6px;padding:6px 9px;border-radius:8px;background:var(--warn-soft);color:var(--warn)}
+.big.thin{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+.fig-source{font-size:.88rem;padding:10px 14px;border-radius:12px;background:var(--sunk);color:var(--ink);max-width:90ch}
+.big{font:700 1.6rem var(--f-body);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.warnline{font-size:.7rem;color:var(--muted);margin-top:6px}
+.reveal{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.reveal-out{font-size:.84rem;padding:8px 12px;border-radius:8px;background:var(--sunk)}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.tab{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;cursor:pointer;font-size:.88rem;font-weight:600}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tab small{font-size:.74rem;font-weight:500;opacity:.7;margin-right:6px}
+.tab:hover{transform:translateY(-1px)}
+.panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;min-width:0;box-shadow:0 18px 40px -34px rgba(19,35,42,.45)}
+.card h3{margin-bottom:6px}
+.card>p{font-size:.88rem;color:var(--muted);margin-bottom:12px}
+.grid8{width:100%;border-collapse:separate;border-spacing:6px;font-size:.8rem}
+.grid8 th{font-size:.78rem;color:var(--muted);text-align:left;font-weight:600}
+.grid8 td{background:var(--sunk);border-radius:8px;padding:8px 9px;vertical-align:top}
+.grid8 td.adopted{background:var(--crit-soft);color:var(--crit)}
+.grid8 td.kept{background:var(--ok-soft);color:var(--ok)}
+.grid8 td b{display:block;font-size:.8rem}
+.grid8 td span{font-size:.7rem;opacity:.85}
+.quote{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:.84rem;padding:10px 12px;background:var(--crit-soft);color:var(--ink);margin-bottom:12px;border-radius:10px}
+.quote svg{width:18px;height:18px;fill:var(--crit);margin-top:2px}
+
+.figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 40px -34px rgba(19,35,42,.45);padding:18px 18px 14px;position:relative;min-width:0;display:flex;flex-direction:column;gap:10px}
+figure.wide{grid-column:1/-1}
+figure .plot{overflow-x:auto}
+figure svg,.card svg{width:100%;height:auto;display:block;margin-inline:auto}
+figure svg text{fill:var(--muted);font:500 10.5px var(--f-mono)}
+figure svg .ink{fill:var(--ink)}
+figure svg .t-title{fill:var(--ink);font:600 11px var(--f-body)}
+figure svg .axis{stroke:var(--ink);stroke-width:1}
+figure svg .grid{stroke:var(--line);stroke-width:1}
+figcaption{font-size:.84rem;line-height:1.6;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;max-width:90ch}
+figcaption b{color:var(--ink);font-family:var(--f-display)}
+figcaption code{font:500 .76rem var(--f-mono);background:var(--sunk);padding:1px 5px;border-radius:4px;color:var(--ink)}
+.fig-title{font:700 1rem/1.35 var(--f-display)}
+.fig-title span{font:800 .8rem var(--f-display);color:var(--accent);display:block;margin-bottom:2px}
+.paper{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.res-src{font-size:.86rem;padding:8px 12px;border-radius:10px;background:var(--sunk)}
+.res-src[data-kind="full"]{background:var(--ok-soft);color:var(--ok)}
+.res-src[data-kind="demo"]{background:var(--warn-soft);color:var(--warn)}
+.t1{width:100%;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
+.t1 th,.t1 td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.t1 th{font-weight:700;color:var(--ink);border-bottom:1.5px solid var(--ink);vertical-align:bottom}
+.t1 th:first-child,.t1 td:first-child{text-align:left;white-space:normal}
+.t1 tr.grp td{font-weight:700;background:var(--sunk);text-align:left}
+.t1 td.smd-hi{color:var(--warn);font-weight:600}
+.t1 td.best{font-weight:700;color:var(--ink)}
+.t1 .ci{color:var(--muted);font-size:.78rem}
+.lanes{margin-top:12px;display:grid;gap:4px}
+.lane{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;font-size:.74rem;color:var(--muted)}
+.lane svg{width:100%;height:16px;display:block}
+.light{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:26px}
+.light div{padding:16px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.light b{display:block;font:800 clamp(1.5rem,1rem + 1.6vw,2.2rem)/1.1 var(--f-display);color:var(--accent);font-variant-numeric:tabular-nums}
+.light span{font-size:.82rem;color:var(--muted)}
+.turn{margin:0 0 30px;padding:20px 24px;border-radius:18px;background:var(--ink);color:var(--paper);font:600 clamp(1rem,.9rem + .4vw,1.2rem)/1.7 var(--f-display);max-width:72ch}
+.ba-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.ba-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:36px}
+.ba{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--line);background:var(--surface);padding:20px;display:grid;gap:12px;min-width:0}
+.ba h4{margin:0;font:800 1.05rem/1.4 var(--f-display)}
+.ba .q{font-size:.86rem;color:var(--muted)}
+.ba .flip{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ba .side{border-radius:14px;padding:14px;display:grid;gap:4px;transition:opacity .6s var(--ease),transform .6s var(--ease),filter .6s var(--ease)}
+.ba .side.before{background:var(--crit-soft)}
+.ba .side.after{background:var(--ok-soft)}
+.ba .side small{font-size:.76rem;font-weight:700}
+.ba .side.before small{color:var(--crit)} .ba .side.after small{color:var(--ok)}
+.ba .side b{font:800 clamp(1.7rem,1.1rem + 2vw,2.6rem)/1.05 var(--f-display);font-variant-numeric:tabular-nums;color:var(--ink)}
+.ba .side span{font-size:.78rem;color:var(--muted)}
+.ba[data-state="before"] .side.after{opacity:.18;filter:blur(6px);transform:scale(.97)}
+.ba .delta{font-size:.9rem;font-weight:700;color:var(--ink)}
+.ba .why{font-size:.82rem;color:var(--muted)}
+.ba .src-line{font:500 .72rem var(--f-mono);color:var(--muted)}
+.ba .toggle{justify-self:start}
+.ba.pending .flip{opacity:.5}
+.sub-h{margin:8px 0 14px}
+.flag-sum{font-size:.8rem;color:var(--muted);margin-bottom:6px}
+.flags{display:grid;gap:4px}
+.flag{display:grid;grid-template-columns:26px 170px 1fr;gap:8px;align-items:baseline;font-size:.8rem;padding:4px 6px;border-radius:8px;color:var(--muted)}
+.flag b{font-weight:600}
+.flag .bit{font:700 .8rem var(--f-mono);text-align:center;border-radius:5px;background:var(--sunk);padding:1px 0}
+.flag.on{background:color-mix(in srgb,var(--alt) 14%,transparent);color:var(--ink)}
+.flag.on .bit{background:var(--alt);color:var(--mon-bg)}
+.flag .why{font-size:.74rem;color:var(--muted);min-width:0}
+.flag.na{opacity:.7;font-style:italic}
+.flag.na .bit{background:transparent;border:1px dashed var(--muted)}
+.prog{display:grid;gap:6px;margin:6px 0}
+.prow{display:grid;grid-template-columns:120px 1fr 44px;gap:8px;align-items:center;font-size:.8rem;color:var(--muted)}
+.prow.top{color:var(--ink);font-weight:600}
+.pbar{height:12px;border-radius:6px;background:var(--sunk);overflow:hidden}.pbar div{height:100%}
+.shap{margin-top:8px;display:grid;gap:4px}
+.shap p{font-size:.74rem;color:var(--muted)}
+.srow{display:grid;grid-template-columns:110px 1fr 58px;gap:8px;align-items:center;font-size:.76rem}
+.sbar{position:relative;height:10px;background:var(--sunk);border-radius:5px}
+.sbar div{position:absolute;top:0;bottom:0;border-radius:5px}
+.sbar .up{background:var(--crit)}.sbar .down{background:var(--ok)}
+.srow b{text-align:right;font-size:.74rem}
+.steps{margin:0;padding:0;list-style:none;display:grid;gap:8px;counter-reset:st}
+.steps li{display:grid;grid-template-columns:28px 92px 1fr;gap:10px;align-items:baseline;font-size:.86rem;padding:8px 0;border-bottom:1px solid var(--line);counter-increment:st}
+.steps li::before{content:counter(st);font:800 .9rem var(--f-display);color:var(--accent)}
+.steps b{font-weight:700}
+.steps span{color:var(--muted)}
+.trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.checks,.nots{margin:0;padding-left:0;list-style:none;display:grid;gap:8px;font-size:.86rem}
+.checks li{display:grid;grid-template-columns:20px 1fr;gap:8px}
+.checks li svg{width:18px;height:18px;color:var(--ok)}
+.checks li.todo svg{color:var(--warn)}
+.nots li{padding-left:14px;position:relative}
+.nots li::before{content:"";position:absolute;left:0;top:.65em;width:6px;height:6px;border-radius:50%;background:var(--crit)}
+.refs{margin:0;padding-left:18px;display:grid;gap:8px;font-size:.82rem}
+.stamp.demo{color:var(--ok);border-color:var(--ok);transform:none}
+.stamp{position:absolute;top:14px;right:14px;font:700 .7rem var(--f-body);color:var(--warn);border:1px solid var(--warn);padding:2px 6px;border-radius:4px;transform:rotate(2deg);background:var(--surface)}
+.na{display:grid;place-items:center;text-align:center;min-height:160px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:.85rem;padding:16px;gap:4px}
+.na code{font:500 .74rem var(--f-mono)}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:4px}
+.metrics div{background:var(--sunk);border-radius:8px;padding:8px 10px}
+.metrics b{display:block;font:700 1.15rem var(--f-body);font-variant-numeric:tabular-nums;color:var(--ink)}
+.metrics span{font-size:.7rem;color:var(--muted)}
+
+.repro{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px}
+pre{background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font:500 .8rem/1.6 var(--f-mono);margin:0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.84rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--f-mono);word-break:break-all}
+footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--line)}
+
+@media (max-width:980px){
+  .hero-grid,.console-body,.panel,.repro{grid-template-columns:1fr}
+  .qstrip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pane+.pane{border-left:0;border-top:1px solid var(--line)}
+  .pipe{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stage:not(:last-child)::after{display:none}
+  .figs,.paper,.ba-grid,.trust{grid-template-columns:1fr}
+  .light{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .pipe{grid-template-columns:1fr}
+  .nav{display:none}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .transport{margin-left:0}
+  .qstrip{grid-template-columns:1fr}
+  .pill{border-radius:20px}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap"><div class="pill">
+    <div class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15c0-6 5-10 11-10 4 0 7 2 7 5 0 5-6 9-12 9-4 0-6-1.6-6-4z" fill="var(--accent)"/><path d="M5 14h3l2-4 3 7 2-4h4" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>KCD 간 감시 에이전트</div>
+    <nav class="nav" aria-label="섹션">
+      <a href="#methods">연구 설계</a><a href="#results">결과</a><a href="#demo">시연</a><a href="#shadow">빛과 그림자</a><a href="#trust">근거</a><a href="#repro">재현</a>
+    </nav>
+    <span class="src" id="src-badge" data-kind="">데이터 확인 중</span>
+  </div></div>
+</header>
+<div class="synthetic-banner" id="syn-banner" hidden><div class="wrap">지금은 <b>합성 예시 데이터</b>로 화면을 그리고 있습니다. 숫자와 에이전트 출력은 레이아웃 확인용이며 실제 MIMIC 결과나 LLM 결과가 아닙니다. 노트북을 MIMIC-IV Demo로 실행한 뒤 <code>scripts/export_site_data.py</code>로 교체하세요.</div></div>
+
+<main>
+<section class="hero"><div class="wrap">
+  <div class="hero-grid">
+  <div>
+    <h1>간 검사 이상이 보이는 순간, 원인과 경과를 함께 읽는 세 에이전트</h1>
+    <p class="lede">ICU 환자의 ALT·ALP·총빌리루빈을 한 시간 단위로 다시 재생합니다. 2×ULN 알림이 뜨면 그 시점까지 공개된 자료만으로 원인 후보와 근거를 정리하고, 해소·퇴원·사망의 경쟁 경로를 함께 보여줍니다. 아직 정상인 환자에게는 다음 24시간 이상 발생 가능성을 참고값으로 제시합니다.</p>
+    <div class="cta"><a class="btn primary" href="#demo">시연 시작<span class="btn-ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a><a class="btn" href="#methods">연구 설계</a><a class="btn" href="#results">모델 성능</a></div>
+    <p class="notice">Korea Clinical Datathon 2026 연구용 시연입니다. 원인 후보는 확진이 아니며, 경과와 24시간 값은 검증된 개인 위험 확률이 아닙니다. 임상 의사결정에 사용하지 마십시오.</p>
+  </div>
+  <div class="bezel"><div class="device monitor" aria-label="첫 시연 환자의 자동 재생">
+    <div class="dev-top"><span class="live-dot" aria-hidden="true"></span><span>후향적 재생</span><b id="hm-id">환자 불러오는 중</b><span class="dev-clock" id="hm-clock">0 h</span></div>
+    <svg id="hm-trace" viewBox="0 0 520 190" role="img" aria-label="간 검사 배수 추이"></svg>
+    <div class="dev-alert" id="hm-alert"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 18.5 17h-17z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 8v4.2M10 14.6v.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><span id="hm-alert-t">2×ULN 도달을 기다리는 중</span></div>
+    <ol class="dev-cands" id="hm-cands"></ol>
+    <div class="dev-foot"><span id="hm-foot">Agent 1 원인 후보 · 공개된 자료만 사용</span><span id="hm-src">MIMIC-IV · ICU</span></div>
+  </div></div>
+  </div>
+  <div class="qstrip" aria-label="프로젝트가 답할 질문">
+    <div class="q"><b>Q1</b><span>어떤 검사 변화가, 언제 공개되었는가?</span></div>
+    <div class="q"><b>Q2</b><span>가능한 원인은 무엇이고 근거는 어느 기록에 있는가?</span></div>
+    <div class="q"><b>Q3</b><span>해소를 기다리는 동안 ICU에서 퇴실하거나 사망하면 해석은 어떻게 바뀌는가?</span></div>
+    <div class="q"><b>Q4</b><span>잘못된 주장 한 문장이 들어가면 결론은 얼마나 흔들리는가?</span></div>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="methods"><div class="wrap">
+  <div class="sec-head">
+    <h2>연구 설계</h2>
+    <p>성인 첫 ICU 입실 환자를 환자 단위로 개발·평가 집단에 나누고, 네 모델을 개발 집단에서만 학습한 뒤 평가 집단에서 검증했습니다. 공개 시연에 쓰는 MIMIC-IV Demo 100명은 학습과 평가에서 모두 제외했습니다.</p>
+    <p class="res-src" id="res-src"></p>
+  </div>
+  <div class="paper">
+    <figure class="wide" id="fig-flow"><div class="fig-title"><span>FIGURE 1</span>연구 대상 흐름도</div><div class="plot" id="flow-plot"></div>
+      <figcaption><b>Figure 1.</b> 연구 대상 선정과 분석 단위. 왼쪽은 매시간 실행되는 Agent 3의 랜드마크(환자·시각), 오른쪽은 첫 이상 사건마다 한 번 실행되는 Agent 1·2의 분석 단위입니다. 결과를 확인할 수 없는 시점은 음성으로 바꾸지 않고 제외하며 그 수를 보고합니다.</figcaption></figure>
+    <figure class="wide" id="tab1"><div class="fig-title"><span>TABLE 1</span>기초 특성</div><div class="plot" id="table1"></div>
+      <figcaption><b>Table 1.</b> 연속형은 중앙값 [사분위범위], 범주형은 n (%). SMD는 표준화 평균차이이며 0.1 미만이면 두 집단이 비슷하다고 봅니다. 이전 입원 진단 코드는 ICU 입실 전에 퇴원이 끝난 입원만 사용했습니다.</figcaption></figure>
+    <figure id="fig-sched"><div class="fig-title"><span>FIGURE 2</span>네 모델이 실행되는 시점</div><div class="plot" id="sched-plot"></div>
+      <figcaption><b>Figure 2.</b> 한 ICU 재원의 도식. Agent 3은 세 항목이 최근 24시간 안에 측정되어 모두 기준 미만인 매시간 실행되고, 2×ULN 알림이 뜨는 순간 멈춥니다. Agent 1·2는 알림 시점에 한 번 실행되며, Agent 1은 간 패널이나 새 약물이 공개될 때만 다시 실행합니다.</figcaption></figure>
+    <figure id="fig-dev"><div class="fig-title"><span>FIGURE 3</span>모델 개발 과정</div><div class="plot" id="dev-plot"></div>
+      <figcaption><b>Figure 3.</b> TRIPOD+AI 보고 항목에 맞춘 개발 절차. 하이퍼파라미터는 개발 집단 안에서 환자 단위 3겹 교차검증으로 고르고, 평가 집단은 최종 한 번만 사용했습니다. 신뢰구간은 같은 환자의 반복 시점을 한 묶음으로 뽑는 환자 군집 부트스트랩으로 계산했습니다.</figcaption></figure>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="results"><div class="wrap">
+  <div class="sec-head">
+    <h2>모델 성능</h2>
+    <p>평가 집단 환자에서 측정한 결과입니다. 평가 환자는 학습에 한 번도 쓰이지 않았습니다.</p>
+  </div>
+  <div class="paper">
+    <figure class="wide" id="tab2"><div class="fig-title"><span>TABLE 2</span>네 모델의 평가 집단 성능</div><div class="plot" id="table2"></div>
+      <figcaption><b>Table 2.</b> 괄호는 95% 신뢰구간. Agent 3은 환자 군집 부트스트랩, Agent 1은 Wilson 구간입니다. Agent 1의 기준은 같은 입원의 퇴원 진단 코드로 만든 대리 범주이며 전문의 참조 판정이 아닙니다. 전문의 판정은 별도 행으로 채웁니다.</figcaption></figure>
+    <figure id="fig-roc"><div class="fig-title"><span>FIGURE 4</span>Agent 3 판별: ROC 곡선</div><div class="plot" id="roc-plot"></div>
+      <figcaption><b>Figure 4.</b> 평가 집단의 매시간 랜드마크에서 다음 24시간 내 5×ULN 이상 관찰을 예측한 ROC 곡선. 점선은 무작위 판별.</figcaption></figure>
+    <figure id="fig-cal"><div class="fig-title"><span>FIGURE 5</span>Agent 3 보정</div><div class="plot" id="cal-plot"></div>
+      <figcaption><b>Figure 5.</b> 예측 위험 10분위별 평균 예측값과 관찰 비율(95% Wilson CI). 점선은 완전 보정선입니다. 보정 기울기 1, 절편 0이 이상적입니다.</figcaption></figure>
+    <figure id="fig-a2"><div class="fig-title"><span>FIGURE 6</span>Agent 2: 예후 네 경로 판별</div><div class="plot" id="a2-plot"></div>
+      <figcaption><b>Figure 6.</b> 첫 알림 시점에 예측한 예후 네 경로(수치 해소 여부 × ICU 사망 여부, 추적은 ICU 퇴실까지)별 일대다 AUROC. 회복 = ICU 퇴실 시점 마지막 ALT·ALP·총빌리루빈이 모두 2×ULN 미만, 사망 = ICU 퇴실 후 24시간 이내 사망까지. 사건 뒤 다시 재지 않은 항목이 있어 회복을 판정할 수 없는 사건은 이 모델에서 빼고, ICU 사망 모델에는 넣었습니다.</figcaption></figure>
+    <figure id="fig-a1"><div class="fig-title"><span>FIGURE 7</span>Agent 1: 원인 후보 일치</div><div class="plot" id="a1-plot"></div>
+      <figcaption><b>Figure 7.</b> 대리 범주가 하나 이상 있는 평가 사건에서 1순위 또는 3순위 안에 대리 범주가 포함된 비율. 규칙 모델과 LLM은 같은 사례에서 비교하며 짝지은 McNemar 검정을 함께 표시합니다.</figcaption></figure>
+    <figure class="wide" id="tab3"><div class="fig-title"><span>TABLE 3</span>향후 24시간 간 수치 궤적 예측</div><div class="plot" id="table3"></div>
+      <figcaption><b>Table 3.</b> 평가 환자의 4시간 간격 시점에서 6·12·18·24시간 뒤 실제 측정값(±3시간)과 비교. 오차는 log₂(값/ULN)의 평균 절대 오차이며 1.0은 두 배 차이입니다. 비교 기준은 마지막 측정값을 그대로 유지하는 예측입니다. 80% 구간 포함률이 80%에 가까울수록 구간이 정직합니다.</figcaption></figure>
+    <figure id="fig-shap"><div class="fig-title"><span>FIGURE 8</span>Agent 3이 기대는 것: 그룹 Shapley</div><div class="plot" id="shap-plot"></div>
+      <figcaption><b>Figure 8.</b> 평가 시점별로 9개 임상 그룹의 정확한 Shapley 값을 계산한 뒤 절댓값 평균. 서로 상관된 지표를 그룹으로 묶어 기여도가 임의로 쪼개지지 않게 했습니다. ‘측정 패턴’이 크면 모델이 질병보다 검사를 얼마나 자주 했는지를 배우고 있다는 경고입니다.</figcaption></figure>
+    <figure id="tab2b"><div class="fig-title"><span>TABLE 2B</span>이상 기준 2·3·4·5배</div><div class="plot" id="table2b"></div>
+      <figcaption><b>Table 2B.</b> 위: 기준별 첫 이상 사건 환자 수와 그 뒤 경과(회복 = ICU 퇴실 시점 마지막 ALT·ALP·총빌리루빈이 모두 2×ULN 미만; 미회복 = 하나라도 2×ULN 이상; 회복 판정 불가 = 사건 이후 다시 재지 않은 항목이 있음; 사망 = ICU 퇴실 후 24시간 이내 사망). ICU 입실 전 병동에서 이미 2×ULN 이상이던 환자는 제외했습니다. 아래: 같은 조기 예측 모델을 기준별로 학습했을 때의 평가 집단 성능. 주 모델은 5×ULN이며, 원인 10개와 예후 4경로는 2×ULN 첫 사건에서 실행합니다.</figcaption></figure>
+    <figure id="tab4"><div class="fig-title"><span>TABLE 4</span>원인 10개, 각각 0/1 판정</div><div class="plot" id="table4"></div>
+      <figcaption><b>Table 4.</b> 평가 사건마다 10개 원인을 독립적으로 판정하고 같은 입원의 퇴원 진단 대리 범주와 비교한 민감도·특이도(95% Wilson CI). 한 사건에 여러 원인이 동시에 해당할 수 있습니다. 대리 기준은 전문의 판정이 아닙니다. 정맥영양 관련 간기능 이상은 해당 ICD 코드가 없어 대리 기준이 없고, 담낭염은 국소 소견과 영상이 없어 구조화 자료로는 판단하지 않습니다.</figcaption></figure>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="pipeline"><div class="wrap">
+  <div class="sec-head">
+    <h2>시스템 구조: 원자료에서 시연 화면까지</h2>
+    <p>각 상자를 누르면 그 단계의 결과 그림으로 이동합니다. 점선 상자는 미래 정보가 현재 판단에 섞이지 않도록 막는 장치입니다.</p>
+  </div>
+  <div class="pipe">
+    <div class="stage">
+      <div class="stage-h"><i>1</i>데이터</div>
+      <a class="node" href="#fig2"><b>MIMIC-IV v3.1</b><small>hosp · icu 모듈, CSV 또는 M4(DuckDB)</small><span class="fig">Fig 2<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <div class="node"><b>MIMIC-IV Demo</b><small>공개 100명 (ODbL). github.io 시연 전용</small></div>
+    </div>
+    <div class="stage">
+      <div class="stage-h"><i>2</i>정제와 코호트</div>
+      <a class="node" href="#fig3"><b>단위·ULN 품질 관리</b><small>행별 ref_range_upper, 단위 변환, 범위 검사</small><span class="fig">Fig 3<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node" href="#fig2"><b>성인 첫 ICU 입실</b><small>환자 단위 개발 70% / 평가 30% 분할</small><span class="fig">Fig 2<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node" href="#fig4"><b>첫 이상 사건</b><small>ALT·ALP·TBIL 중 하나 ≥2×ULN. 초기·신규·시점 불명</small><span class="fig">Fig 4<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+    </div>
+    <div class="stage">
+      <div class="stage-h"><i>3</i>시점 고정</div>
+      <div class="node guard"><b>공개 시각 = max(charttime, storetime)</b><small>그 시각까지 보고된 검사·투약·활력징후만 스냅샷에 포함</small></div>
+      <a class="node" href="#fig5"><b>간 손상 패턴 (고정 범주)</b><small>ACG R 비 4범주 · 보조 GMM은 안정할 때만</small><span class="fig">Fig 5<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <div class="node guard"><b>평가 전용 금고</b><small>퇴원·사망·이후 검사는 에이전트가 접근 불가</small></div>
+    </div>
+    <div class="stage">
+      <div class="stage-h"><i>4</i>세 에이전트</div>
+      <a class="node agent a1" href="#fig6"><b>Agent 1 · 원인 후보</b><small>LLM이 최대 3개 후보와 근거·반대 근거, 판단 보류 출력</small><span class="fig">Fig 6<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node agent a2" href="#fig7"><b>Agent 2 · 경과 경로</b><small>유사 개발 사례 50명의 해소·ICU 사망·ICU 퇴실 누적발생 (경쟁위험)</small><span class="fig">Fig 7<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node agent a3" href="#fig8"><b>Agent 3 · 정상 환자 24시간</b><small>최근 24시간 세 항목 모두 기준 미만일 때만, 유사 사례 비율</small><span class="fig">Fig 8<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+    </div>
+    <div class="stage">
+      <div class="stage-h"><i>5</i>검증과 공개</div>
+      <a class="node" href="#fig6"><b>전문의 1인 눈가림 참조</b><small>Top-1·Top-3, Wilson CI, 짝지은 McNemar</small><span class="fig">Fig 6<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node" href="#fig9"><b>그림자 시험</b><small>잘못된 주장·설명 × 방어 문구 8조건</small><span class="fig">Fig 9<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node" href="#repro"><b>replay.sqlite → JSON → github.io</b><small>LLM 출력은 사전 계산 캐시. 화면은 네트워크 호출 없음</small></a>
+    </div>
+  </div>
+  <p class="pipe-cap"><b>Figure S0.</b> 전체 처리 과정. 매시간 ① 결과 공개 시각까지의 자료를 공개하고 ② 단위·ULN을 확인한 뒤 ③ 사건 상태를 갱신하며, 새 알림이나 간 패널·투약 정보 변화가 있을 때만 원인 추정을 다시 실행합니다.</p>
+  <div class="pipe-foot">
+    <span><i class="sw" style="background:var(--alt)"></i>ALT</span><span><i class="sw" style="background:var(--alp)"></i>ALP</span><span><i class="sw" style="background:var(--tbil)"></i>총빌리루빈</span>
+    <span><i class="sw" style="border:1.5px dashed var(--muted)"></i>시점 누출 차단 장치</span>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="demo"><div class="wrap">
+  <div class="sec-head">
+    <h2><span class="seq">시연 1</span>같은 환자를 시간순으로 다시 재생합니다</h2>
+    <p>재생 버튼을 누르면 한 시간씩 진행됩니다. 그래프에는 그 시각까지 공개된 검사만 나타나고, 오른쪽 세 에이전트는 환자 상태에 따라 켜지고 꺼집니다. 단축키: Space 재생, ←/→ 한 시간, 1–4 환자 선택.</p>
+  </div>
+  <div class="console-bezel"><div class="console monitor" id="console">
+    <div class="console-top">
+      <div class="cases" id="cases" role="group" aria-label="시연 환자"></div>
+      <div class="transport">
+        <button class="play" id="play" aria-label="재생"><svg viewBox="0 0 16 16" id="play-ico"><path d="M4 2l10 6-10 6z"/></svg></button>
+        <div class="clock"><b id="clock">0 h</b><span>ICU 입실 후 · 시뮬레이션</span></div>
+        <label class="muted" style="font-size:.75rem" for="speed">속도</label>
+        <select class="speed" id="speed"><option value="900">1×</option><option value="450" selected>2×</option><option value="180">5×</option></select>
+      </div>
+    </div>
+    <div class="scrub">
+      <input type="range" id="hour" min="0" max="96" value="0" step="1" aria-label="시뮬레이션 시각">
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <div class="console-body">
+      <div class="pane">
+        <div class="state" id="state"></div>
+        <svg class="chart" id="trend" viewBox="0 0 640 260" role="img" aria-label="간 검사 배수 추이"></svg>
+        <div class="labs-wrap"><table class="labs" id="labs"><thead><tr><th>검사</th><th>값</th><th>단위</th><th>ULN</th><th>×ULN</th><th>측정 후</th></tr></thead><tbody></tbody></table></div>
+        <div class="lanes" id="lanes" aria-label="모델 실행 기록"></div>
+        <div class="log" id="log" aria-live="polite"></div>
+      </div>
+      <div class="pane">
+        <div class="agents">
+          <article class="agent a1" id="ag1"></article>
+          <article class="agent a2" id="ag2"></article>
+          <article class="agent a3" id="ag3"></article>
+        </div>
+        <div class="reveal"><button class="btn" id="reveal-btn">실제 관찰 결과 공개</button><span class="reveal-out" id="reveal-out" hidden></span></div>
+      </div>
+    </div>
+  </div></div>
+</div></section>
+
+<hr class="rule">
+<section id="shadow"><div class="wrap">
+  <div class="sec-head">
+    <h2><span class="seq">시연 2</span>작동하는 도구를 만든 뒤, 스스로 시험한 네 가지 질문</h2>
+    <p>현재 시연 환자 하나로 장면을 보여주고, 바로 옆에 평가 집단 전체의 결과를 붙였습니다. 한 사례의 인상과 집단 수치를 구분하기 위해서입니다.</p>
+  </div>
+  <div class="light" id="light"></div>
+  <blockquote class="turn">그런데 이 화면을 실제 병원에서 쓴다고 상상하니 질문이 생겼습니다. 측정하지 않은 환자는 정상일까요? 회복을 기다리는 동안 퇴원하거나 사망하는 환자는 어떻게 설명할까요? 잘못된 추정 한 문장으로 원인 후보가 바뀐다면요? 그래서 저희는 직접 시험했습니다.</blockquote>
+  <div class="ba-head"><h3>전과 후</h3><button class="btn" id="ba-all">모두 뒤집기</button></div>
+  <div class="ba-grid" id="ba-grid"></div>
+  <h3 class="sub-h">같은 장면을 한 환자로 보기</h3>
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" aria-selected="true" data-tab="t-stress"><small>그림자 1</small>잘못된 값</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="t-compete"><small>그림자 2</small>경쟁 사건</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="t-ground"><small>그림자 3</small>근거 검증</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="t-alert"><small>그림자 4</small>알림 통합</button>
+  </div>
+  <div class="panel" id="t-stress" role="tabpanel">
+    <div class="card"><h3>이 환자의 값 하나를 잘못 적으면</h3><p>정상 구간의 한 시각을 미리 정해 두고, 값 하나만 흔한 입력 오류로 바꿔 세 에이전트에 다시 넣었습니다. 전은 현재 파이프라인, 후는 값 검증 규칙을 더한 결과입니다.</p><div id="stress-case"></div></div>
+    <div class="card"><h3>평가 집단 전체에서</h3><p>평가 환자마다 한 시각을 무작위로 정해 같은 오류를 넣었습니다. 오류 차단율과, 오류가 없는 실제 값을 잘못 보류한 비율(규칙의 비용)을 함께 봅니다.</p><div id="stress-cohort"></div></div>
+  </div>
+  <div class="panel" id="t-compete" role="tabpanel" hidden>
+    <div class="card"><h3>해소만 세면 생기는 착시</h3><p>ICU 퇴실·사망을 단순 중도절단으로 처리하면(점선) 해소 확률이 실제보다 커집니다. 경쟁 사건을 남긴 Aalen-Johansen 추정(실선)과 비교합니다.</p><div id="compete-case"></div></div>
+    <div class="card"><h3>개발 집단 전체 첫 사건 누적발생</h3><p>첫 이상 사건 이후 48시간 동안의 해소·사망·ICU 퇴실. 진단이 아닌 관찰 경로입니다.</p><div id="compete-cohort"></div></div>
+  </div>
+  <div class="panel" id="t-ground" role="tabpanel" hidden>
+    <div class="card"><h3>에이전트가 인용한 근거는 실제로 있었나</h3><p>원인 후보마다 인용한 검사가 그 시각의 스냅샷에 존재하는지 기계적으로 대조합니다. LLM 평가자 없이 계산되는 지표입니다.</p><div id="ground-case"></div></div>
+    <div class="card"><h3>평가 집단 근거 확인율</h3><p>인용 항목 중 스냅샷에서 확인된 비율. 확인되지 않은 항목은 환각 또는 미래 정보 후보로 전문의가 검토합니다.</p><div id="ground-cohort"></div></div>
+  </div>
+  <div class="panel" id="t-alert" role="tabpanel" hidden>
+    <div class="card"><h3>검사 한 건마다 울리면</h3><p>2×ULN 이상 검사 기록 수와, 환자당 첫 사건 하나로 묶은 알림 수의 기계적 비교입니다. 업무 부담 감소를 입증한 것은 아닙니다.</p><div id="alert-agg"></div></div>
+    <div class="card"><h3>왜 2배인가: 임계값 민감도</h3><p>1.5·2·3·5×ULN에서 알림 대상 환자 수. 임계값은 팀의 운영 선택이며 진단 기준이 아닙니다.</p><div id="alert-thr"></div></div>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="figures"><div class="wrap">
+  <div class="sec-head">
+    <h2>보충 그림: 각 단계가 제대로 작동했는가</h2>
+    <p>모든 그림은 집단 수준 집계만 사용합니다. 전체 MIMIC-IV 결과는 10 미만의 칸을 가린 뒤에만 이 페이지에 올립니다. 아직 계산하지 않은 그림은 비워 두고 생성할 파일 이름을 표시합니다.</p>
+  </div>
+  <p class="fig-source" id="fig-source" hidden></p>
+  <div class="figs" id="figs"></div>
+</div></section>
+
+<hr class="rule">
+<section id="trust"><div class="wrap">
+  <div class="sec-head">
+    <h2>이 결과를 믿을 수 있는 이유</h2>
+    <p>주장마다 근거를 붙였고, 검증하지 않은 것은 주장하지 않습니다.</p>
+  </div>
+  <div class="trust">
+    <div class="card"><h3>시점 누출을 막은 장치</h3><ul class="checks" id="checks"></ul></div>
+    <div class="card"><h3>근거 문헌</h3><ol class="refs">
+      <li>Kwo PY, Cohen SM, Lim JK. ACG Clinical Guideline: Evaluation of Abnormal Liver Chemistries. <i>Am J Gastroenterol</i> 2017;112:18–35. <a href="https://doi.org/10.1038/ajg.2016.517">doi:10.1038/ajg.2016.517</a> · R 비와 간세포형·담즙정체형 분류</li>
+      <li>van Geloven N, et al. Validation of prediction models in the presence of competing risks. <i>BMJ</i> 2022;377:e069249. <a href="https://doi.org/10.1136/bmj-2021-069249">doi:10.1136/bmj-2021-069249</a> · 사망·퇴원을 경쟁 사건으로 다룬 근거</li>
+      <li>Collins GS, et al. TRIPOD+AI statement. <i>BMJ</i> 2024;385:e078378. <a href="https://doi.org/10.1136/bmj-2023-078378">doi:10.1136/bmj-2023-078378</a> · 예측 모델 개발·검증 보고 기준</li>
+      <li>Johnson AEW, et al. MIMIC-IV, a freely accessible electronic health record dataset. <i>Sci Data</i> 2023;10:1. <a href="https://doi.org/10.1038/s41597-022-01899-x">doi:10.1038/s41597-022-01899-x</a> · 데이터 출처</li>
+      <li>Zheng L, et al. Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena. arXiv:2306.05685 · LLM 평가자의 한계</li>
+    </ol></div>
+    <div class="card"><h3>주장하지 않는 것</h3><ul class="nots">
+      <li>원인 후보는 확진이 아닙니다. 대리 기준은 퇴원 진단 코드이며 전문의 판정이 아닙니다.</li>
+      <li>Agent 2·3의 값은 개인별로 검증된 임상 위험 확률이 아닙니다. 외부 기관에서 검증하지 않았습니다.</li>
+      <li>후향적 재생이며 실시간 배포나 예후 개선을 입증하지 않았습니다.</li>
+      <li>Agent 3 성능은 다음 24시간 재검으로 결과를 확인할 수 있었던 시점에서만 계산했습니다. 선택 편향이 남습니다.</li>
+    </ul></div>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="repro"><div class="wrap">
+  <div class="sec-head">
+    <h2>같은 화면을 다시 만드는 방법</h2>
+  </div>
+  <div class="repro">
+<pre><code># 1) 공개 데모 데이터로 노트북 실행 (자격 인증 불필요)
+pip install m4-infra pandas numpy scikit-learn matplotlib
+m4 init mimic-iv-demo          # 또는 PhysioNet에서 CSV 내려받기
+#    노트북 설정: ROOT=데모 폴더, DATA_SOURCE='mimic-iv-demo'
+#    마지막 셀이 40_site_aggregates.json 과 figures/*.png 생성
+
+# 2) 시연 JSON 내보내기 (환자 단위 화면은 데모 데이터만 허용)
+python scripts/export_site_data.py --out-dir notebooks/kcd_liver_v2_outputs --source mimic-iv-demo
+
+# 3) 전체 MIMIC-IV는 집계만, 10 미만 칸 가림
+python scripts/export_site_data.py --out-dir OUT --source mimic-iv \
+       --aggregates-only --summary-name summary_full.json
+
+# 4) main에 push하면 GitHub Actions가 site/ 를 Pages로 배포</code></pre>
+    <div class="card"><h3>이 화면의 출처</h3><dl class="kv" id="meta"></dl></div>
+  </div>
+</div></section>
+</main>
+<footer><div class="wrap">KCD 2026 팀 프로젝트 · 코드와 평가 절차 공개 · MIMIC-IV Demo는 ODbL v1.0, 전체 MIMIC-IV는 PhysioNet 자격 인증 데이터로 환자 단위 자료를 공개하지 않습니다. M4(hannesill/m4)를 데이터 계층으로 사용했습니다.</div></footer>
+
+<script>
+"use strict";
+const CAUSE={hypoxic_hepatitis:"저산소성 간염",congestive_hepatopathy:"울혈성 간병증",sepsis_cholestasis:"패혈증 유발 담즙정체",dili:"약물 유발 간손상 (DILI)",pn_associated:"정맥영양 관련 간기능 이상",biliary_obstruction_cholangitis:"담도폐쇄·담관염",cholecystitis:"담낭염",hemolysis:"용혈",viral_hepatitis:"바이러스 간염",others:"기타",unknown:"원인 불명",hypoxic_ischemic:"저산소·허혈",drug_related:"약물 관련",biliary:"담도",congestive:"울혈",baseline_liver:"기저 간질환",other_hepatic:"기타 간성",nonhepatic:"비간성"};
+const FLAG_ORDER=["hypoxic_hepatitis","congestive_hepatopathy","sepsis_cholestasis","dili","pn_associated","biliary_obstruction_cholangitis","cholecystitis","hemolysis","viral_hepatitis","others"];
+const GROUP={initial_abnormal:["입실 초기 이상","crit"],incident:["관찰 중 신규 이상","crit"],onset_unknown:["발생 시점 불명","warn"],normal:["이상 사건 없음","ok"]};
+const PATH={unassessable_alive_icu:"회복 판정 불가 · 생존 ICU 퇴실",unassessable_died_icu:"회복 판정 불가 · ICU 사망",recovered_alive_icu:"회복 · 생존 ICU 퇴실",unrecovered_alive_icu:"회복 미확인 · 생존 ICU 퇴실",unrecovered_died_icu:"회복 미확인 · ICU 사망",recovered_died_icu:"회복 · ICU 사망"};
+const FIRST={resolution:"48h 내 해소",no_event_observed:"48h 내 사건 없음",insufficient_measurement:"측정 부족 (판정 불가)",death_before_resolution:"해소 전 사망",discharge_before_resolution:"해소 전 ICU 퇴실"};
+const STEP={excluded_pre_icu_abnormal:"제외: ICU 입실 전 이미 이상",no_pre_icu_abnormality:"입실 전 이상 없음",all_icu_stays:"전체 ICU 입실",first_icu_per_patient:"환자별 첫 ICU 입실",adult_valid_stay:"성인·유효 입실",analysis_sample:"분석 표본",first_abnormal_event:"첫 이상 사건 발생"};
+const COND={clean:"원본",claim:"잘못된 주장",rationale:"잘못된 설명",combined:"주장 + 설명"};
+const TRIG=["ALT","ALP","TBIL"], COL={ALT:"var(--alt)",ALP:"var(--alp)",TBIL:"var(--tbil)"};
+const $=s=>document.querySelector(s);
+const ICON={check:'<svg viewBox="0 0 16 16" aria-label="확인됨"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  query:'<svg viewBox="0 0 16 16" aria-label="확인 불가"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4M8 11.6v.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  quote:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 11c0-4 2-6.5 5.5-7l.5 1.6C7 6.2 6.2 7.4 6.1 9H8.5v6H3zm8.5 0c0-4 2-6.5 5.5-7l.5 1.6c-2 .6-2.8 1.8-2.9 3.4H17v6h-5.5z"/></svg>'};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct=(x,d=0)=>x==null||isNaN(x)?"–":(x*100).toFixed(d)+"%";
+const fmt=(x,d=2)=>x==null||isNaN(x)?"–":(+x).toLocaleString("ko-KR",{maximumFractionDigits:d});
+const NS="http://www.w3.org/2000/svg";
+
+function S(tag,attrs={},text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e}
+function svgBox(w,h,label){const s=S("svg",{viewBox:`0 0 ${w} ${h}`,role:"img","aria-label":label||"",style:`max-width:${Math.round(w*1.15)}px`});return s}
+const lin=(d0,d1,r0,r1)=>v=>r0+(v-d0)/(d1-d0||1)*(r1-r0);
+function niceTicks(max,n=5){if(!(max>0))return[0,1];const step=Math.pow(10,Math.floor(Math.log10(max/n)));const m=[1,2,2.5,5,10].find(m=>max/(m*step)<=n)||10;const st=m*step,out=[];for(let v=0;v<=max+1e-9;v+=st)out.push(+v.toFixed(10));if(out[out.length-1]<max)out.push(+(out[out.length-1]+st).toFixed(10));return out}
+
+const st={manifest:null,summary:null,cases:{},key:null,hour:0,playing:false,timer:null,a1view:"with_cluster",revealed:false};
+
+async function load(){
+  try{
+    st.manifest=await (await fetch("data/manifest.json",{cache:"no-store"})).json();
+    st.summary=await (await fetch("data/"+(st.manifest.summary_file||"summary.json"),{cache:"no-store"})).json();
+  }catch(e){
+    $("#console").innerHTML=`<div class="na" style="margin:16px">데이터 파일을 읽지 못했습니다. <code>site/data/manifest.json</code>이 있는지 확인하고, 로컬에서는 <code>python -m http.server</code>로 여세요.</div>`;return;
+  }
+  const src=st.manifest.source;const b=$("#src-badge");b.dataset.kind=src;
+  b.textContent={synthetic:"합성 예시 데이터","mimic-iv-demo":"MIMIC-IV Demo (공개)","mimic-iv":"MIMIC-IV 집계"}[src]||src;
+  $("#syn-banner").hidden=src!=="synthetic";
+  renderMeta();renderFigures();loadResults();
+  const cs=st.manifest.cases||[];
+  $("#cases").innerHTML=cs.map((c,i)=>{const g=GROUP[c.group]||[c.group||"",""];return `<button class="case-btn" data-key="${esc(c.case_key)}" aria-pressed="false" title="${esc(c.story||"")}"><b>${i+1} · ${esc(c.case_key)}</b><span>${esc(g[0])}</span></button>`}).join("");
+  $("#cases").querySelectorAll("button").forEach(b=>b.onclick=()=>selectCase(b.dataset.key));
+  if(cs.length){await selectCase(cs[0].case_key);heroMonitor(st.cases[cs[0].case_key])}
+  wire();
+}
+
+async function getCase(k){if(!st.cases[k]){st.cases[k]=await (await fetch(`data/cases/${encodeURIComponent(k)}.json`,{cache:"no-store"})).json();prep(st.cases[k])}return st.cases[k]}
+function prep(c){
+  c.alertHour=c.t0_hour??(c.frames.find(f=>f.agent1&&f.agent1.status!=="no_current_alert")||{}).hour??null;
+  const seen=new Set();c.points={ALT:[],ALP:[],TBIL:[]};c.logs=[];
+  for(const f of c.frames){
+    for(const l of f.labs){const id=l.analyte+"@"+l.measured_hour;if(seen.has(id))continue;seen.add(id);
+      if(TRIG.includes(l.analyte)&&l.ratio!=null){c.points[l.analyte].push({h:l.measured_hour,pub:f.hour,r:l.ratio});
+        c.logs.push({h:f.hour,cls:l.ratio>=2?"alert":"",t:`${l.analyte} ${fmt(l.ratio,1)}×ULN 공개 (채혈 ${fmt(l.measured_hour,0)}h)`})}}
+    if(f.hour===c.alertHour)c.logs.push({h:f.hour,cls:"alert",t:"첫 이상 사건 알림 → Agent 1·2 실행, Agent 3 종료"});
+  }
+}
+
+async function selectCase(k){
+  stop();st.key=k;st.revealed=false;const c=await getCase(k);
+  $("#cases").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.key===k));
+  const r=$("#hour");r.max=c.max_hour;st.hour=0;r.value=0;
+  const tk=[];const step=c.max_hour>72?24:12;for(let h=0;h<=c.max_hour;h+=step)tk.push(`<span style="left:${h/c.max_hour*100}%">${h}h</span>`);
+  if(c.alertHour!=null)tk.push(`<span class="t0" style="left:${c.alertHour/c.max_hour*100}%;top:2px"><svg viewBox="0 0 10 8" aria-label="알림 시각"><path d="M5 0l5 8H0z"/></svg></span>`);
+  $("#ticks").innerHTML=tk.join("");
+  $("#reveal-out").hidden=true;
+  render();renderShadowCase();
+}
+
+function frameAt(c,h){let f=c.frames[0];for(const x of c.frames){if(x.hour<=h)f=x;else break}return f}
+function patientState(f,c,h){
+  const fresh=TRIG.map(a=>f.labs.find(l=>l.analyte===a&&l.ratio!=null&&l.age_hours<=24));
+  if(c.alertHour!=null&&h>=c.alertHour){const g=GROUP[c.group]||["이상 사건","crit"];return [`이상 · ${g[0]}`,"crit"]}
+  if(fresh.some(x=>!x))return ["판정 불가 · 최근 24시간 측정 없음","warn"];
+  return ["정상 · 세 항목 모두 24시간 내 기준 미만","ok"];
+}
+function render(){
+  const c=st.cases[st.key];if(!c)return;const h=st.hour,f=frameAt(c,h);
+  $("#clock").textContent=`${h} h`;
+  const [txt,cls]=patientState(f,c,h);
+  $("#state").innerHTML=`<span class="chip ${cls}">${esc(txt)}</span>${c.story?`<span class="muted" style="font-size:.8rem">${esc(c.story)}</span>`:""}`;
+  drawTrend(c,h);drawLanes(c,h);
+  const rows=[...f.labs].sort((a,b)=>(TRIG.indexOf(b.analyte)>-1)-(TRIG.indexOf(a.analyte)>-1)||a.analyte.localeCompare(b.analyte));
+  $("#labs tbody").innerHTML=rows.map(l=>`<tr class="${l.ratio>=2&&TRIG.includes(l.analyte)?"hi":""} ${l.age_hours>24?"stale":""}"><td>${esc(l.analyte)}</td><td>${fmt(l.value,2)}</td><td>${esc(l.unit)}</td><td>${fmt(l.uln,1)}</td><td>${l.ratio==null?"–":fmt(l.ratio,2)}</td><td>${fmt(l.age_hours,0)}h</td></tr>`).join("")||`<tr><td colspan="6" class="muted">아직 공개된 검사가 없습니다</td></tr>`;
+  const lg=c.logs.filter(x=>x.h<=h).slice(-7).reverse();
+  $("#log").innerHTML=lg.map(x=>`<div class="${x.cls}"><b>${x.h}h</b><span>${esc(x.t)}</span></div>`).join("");
+  renderA1(f,c,h);renderA2(f);renderA3(f);
+}
+function drawTrend(c,h){
+  const svg=$("#trend");svg.innerHTML="";const W=640,H=260,m={l:40,r:14,t:14,b:26};
+  const hasFc=c.frames.some(f=>f.forecast&&Object.keys(f.forecast).length),X1=c.max_hour+(hasFc?24:0);
+  const x=lin(0,X1,m.l,W-m.r);const lmin=Math.log10(.3),lmax=Math.log10(60);
+  const y=v=>lin(lmin,lmax,H-m.b,m.t)(Math.log10(Math.max(.3,Math.min(60,v))));
+  svg.append(S("rect",{class:"future",x:x(h),y:m.t,width:Math.max(0,W-m.r-x(h)),height:H-m.t-m.b,fill:"var(--sunk)"}));
+  if(h<c.max_hour)svg.append(S("text",{x:(x(h)+W-m.r)/2,y:m.t+14,"text-anchor":"middle"},hasFc?"아직 공개되지 않은 시간 · 점선과 띠는 예측":"아직 공개되지 않은 시간"));
+  for(const v of [.5,1,2,5,10,20,50]){svg.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)}));svg.append(S("text",{x:m.l-6,y:y(v)+3,"text-anchor":"end"},v+"×"))}
+  const step=X1>72?24:12;for(let t=0;t<=X1;t+=step)svg.append(S("text",{x:x(t),y:H-8,"text-anchor":"middle"},t+"h"));
+  svg.append(S("line",{class:"thr",x1:m.l,x2:W-m.r,y1:y(2),y2:y(2),stroke:"var(--crit)"}));
+  svg.append(S("text",{x:W-m.r,y:y(2)-5,"text-anchor":"end",style:"fill:var(--crit)"},"2×ULN 알림 기준"));
+  for(const a of TRIG){
+    const pts=c.points[a].filter(p=>p.pub<=h);if(!pts.length)continue;
+    svg.append(S("polyline",{points:pts.map(p=>`${x(p.h)},${y(p.r)}`).join(" "),fill:"none",stroke:COL[a],"stroke-width":2.2,"stroke-linejoin":"round"}));
+    pts.forEach((p,i)=>svg.append(S("circle",{cx:x(p.h),cy:y(p.r),r:i===pts.length-1?4.2:2.8,fill:i===pts.length-1?COL[a]:"var(--surface)",stroke:COL[a],"stroke-width":1.8})));
+    const lp=pts[pts.length-1];svg.append(S("text",{x:x(lp.h)+7,y:y(lp.r)+3,class:"lbl-ink",style:`fill:${COL[a]}`},a))
+  }
+  const f0=frameAt(c,h);
+  if(f0.forecast)for(const a of TRIG){const fc=f0.forecast[a];const cur=f0.labs.find(l=>l.analyte===a&&l.ratio!=null);if(!fc||!cur)continue;
+    const pts=[{h:0,q10:cur.ratio,q50:cur.ratio,q90:cur.ratio},...fc];
+    const up=pts.map(p=>`${x(h+p.h)},${y(p.q90)}`),dn=pts.slice().reverse().map(p=>`${x(h+p.h)},${y(p.q10)}`);
+    svg.append(S("polygon",{points:up.concat(dn).join(" "),fill:COL[a],"fill-opacity":.16,stroke:"none"}));
+    svg.append(S("polyline",{points:pts.map(p=>`${x(h+p.h)},${y(p.q50)}`).join(" "),fill:"none",stroke:COL[a],"stroke-width":1.8,"stroke-dasharray":"5 4"}))}
+  if(c.alertHour!=null&&h>=c.alertHour){svg.append(S("line",{x1:x(c.alertHour),x2:x(c.alertHour),y1:m.t,y2:H-m.b,stroke:"var(--crit)","stroke-width":1,"stroke-dasharray":"2 3"}));svg.append(S("text",{x:x(c.alertHour)+4,y:H-m.b-6,style:"fill:var(--crit)"},"알림 t0"))}
+  svg.append(S("line",{class:"now",x1:x(h),x2:x(h),y1:m.t,y2:H-m.b,stroke:"var(--ink)"}));
+  svg.append(S("text",{x:m.l,y:m.t-2},"배수 (값/ULN, 로그 눈금)"));
+}
+function agentHead(tag,title,meta){return `<div class="agent-h"><h3><i>${tag}</i>${title}</h3><small>${meta||""}</small></div>`}
+function renderA1(f,c,h){
+  const el=$("#ag1"),a=f.agent1||{};const on=a.status!=="no_current_alert";el.dataset.active=on;
+  if(!on){el.innerHTML=agentHead("A1","원인 후보","대기")+`<p class="empty-agent">첫 이상 사건 전입니다. 알림이 없으면 원인 추정을 호출하지 않습니다.</p>`;return}
+  const ans=(a.answer||{})[st.a1view]||{};
+  const rule=a.backend==="rule";
+  const seg=rule?`<span class="model-tag">규칙 기반 기준 모델 · LLM 아님</span>`:`<span class="seg" role="group" aria-label="입력 조건"><button data-v="base" aria-pressed="${st.a1view==="base"}">기본</button><button data-v="with_cluster" aria-pressed="${st.a1view==="with_cluster"}">+패턴</button></span>`;
+  let body;
+  if(!ans.candidates){body=`<p class="empty-agent">LLM 결과 없음 (${esc(ans.status||"model_not_run")}). 화면은 가상의 원인을 만들지 않습니다.</p>`}
+  else if(ans.flags){const order=FLAG_ORDER.some(k=>k in ans.flags)?FLAG_ORDER:Object.keys(ans.flags);
+    const on=order.filter(k=>ans.flags[k]&&ans.flags[k].present).length;
+    body=`<p class="flag-sum">${order.length}개 원인을 각각 따로 판정 · 해당 <b>${on}</b>개${on>1?" (복합 원인 가능)":""}</p><div class="flags">${order.map(k=>{const f=ans.flags[k]||{present:0};const sup=(f.support||[])[0],ag=(f.against||[])[0];
+      const na=f.assessable===false;return `<div class="flag ${f.present?"on":""}${na?" na":""}"><span class="bit">${na?"–":f.present?1:0}</span><b>${esc(CAUSE[k]||k)}</b><span class="why">${na?"판단 불가 · "+esc(ag||""):f.present?esc(sup?sup.reason+" · "+(sup.analyte_or_label||""):"근거 기록"):esc(ag||"")}</span></div>`}).join("")}</div><p class="unc">${ans.abstain?"<b>판단 보류</b> · ":""}${esc(ans.uncertainty||"")}</p>`}
+  else{body=ans.candidates.map((cd,i)=>`<div class="cand"><span class="rank">${i+1}</span><div><b>${esc(CAUSE[cd.cause_code]||cd.cause_code)}</b><ul>${(cd.support||[]).map(s=>`<li class="sup">${esc(s.reason)} <span class="ev">${esc(s.analyte_or_label)} · ${esc(s.measured_at)}</span></li>`).join("")}${(cd.against_or_missing||[]).map(s=>`<li class="ag">${esc(s)}</li>`).join("")}</ul></div></div>`).join("")+
+    `<p class="unc">${ans.abstain?"<b>판단 보류</b> · ":""}${esc(ans.uncertainty||"")}</p>`}
+  el.innerHTML=`<div class="agent-h"><h3><i>A1</i>원인 후보</h3>${seg}</div><small class="muted" style="font-size:.74rem">${a.output_at_hour}h 시점 출력 · ${a.synthetic?"합성 예시":rule?esc(a.model||"rule baseline")+" (사전 계산)":esc(a.model||"LLM")+" 캐시"}</small>`+body;
+  el.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{st.a1view=b.dataset.v;render()});
+}
+function stackBar(j){const parts=[["resolution","해소","var(--c-res)"],["death","사망","var(--c-death)"],["icu_discharge","퇴원","var(--c-dis)"],["no_first_event","48h 내 없음","var(--c-none)"]];
+  return `<div class="stack">${parts.map(([k,,c])=>`<div style="width:${(j[k]||0)*100}%;background:${c}" title="${k}"></div>`).join("")}</div><div class="legend">${parts.map(([k,l,c])=>`<span><i class="sw" style="background:${c}"></i>${l} ${pct(j[k])}</span>`).join("")}</div>`}
+function renderA2(f){
+  const el=$("#ag2"),a=f.agent2||{};const on=a.status==="exploratory_reference_estimate";el.dataset.active=on;
+  if(!on){el.innerHTML=agentHead("A2","경과 경로","대기")+`<p class="empty-agent">${a.status==="not_yet_abnormal"||a.status==="not_eligible_normal_or_unknown"?"이상 사건 이후에만 계산합니다.":esc(a.reason||a.status||"")}</p>`;return}
+  const j=a.joint_first_event||{};
+  if(a.prognosis){const P=a.prognosis,rows=[["recovered_alive_icu","회복 · 생존 ICU 퇴실","var(--c-res)"],["recovered_died_icu","회복 · ICU 사망","var(--accent)"],["unrecovered_alive_icu","회복 미확인 · 생존 ICU 퇴실","var(--c-dis)"],["unrecovered_died_icu","회복 미확인 · ICU 사망","var(--c-death)"]];
+    const top=rows.reduce((b,r)=>(P[r[0]]||0)>(P[b[0]]||0)?r:b,rows[0]);
+    el.innerHTML=agentHead("A2","예후 예측",`학습 모델 · ${a.model_at_hour??""}h 알림 시 1회`)+`<p style="font-size:.8rem">ICU 퇴실 시점 회복 여부 × ICU 사망, 네 경로 중 어디에 해당할지${P.died_icu!=null?` · <b>ICU 사망 ${pct(P.died_icu,0)}</b> (회복 판정이 안 되는 경우에도 예측)`:""}</p><div class="prog">${rows.map(([k,l,col])=>`<div class="prow ${k===top[0]?"top":""}"><span>${l}</span><div class="pbar"><div style="width:${(P[k]||0)*100}%;background:${col}"></div></div><b class="mono">${pct(P[k],0)}</b></div>`).join("")}</div>`+
+    (a.joint_first_event?`<p class="naive">48시간 유사 사례 참고(n=${a.comparable_n}): 경쟁 사건 반영 해소 <b class="mono">${pct(a.joint_first_event.resolution)}</b>, 사망·퇴원을 무시하면 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b></p>`:"")+`<p class="warnline">다항 그래디언트 부스팅. 개인별로 검증된 임상 확률이 아닙니다. 위 그래프의 점선은 향후 24시간 간 수치 예측입니다.</p>`;return}
+  if(a.model_probs){const mp=a.model_probs,m={resolution:mp.resolution||0,death:mp.death_before_resolution||0,icu_discharge:mp.discharge_before_resolution||0,no_first_event:mp.no_event_observed||0};
+    el.innerHTML=agentHead("A2","경과 경로",`학습 모델 · ${a.model_at_hour}h 알림 시 1회 실행`)+`<p style="font-size:.8rem">알림 후 48시간 안에 처음 일어날 사건의 예측 확률</p>`+stackBar(m)+`<p class="naive">유사 사례 참고(n=${a.comparable_n}): 경쟁 사건 반영 해소 <b class="mono">${pct(j.resolution)}</b>, 사망·퇴원을 무시하면 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b></p><p class="warnline">다항 그래디언트 부스팅. 개인별로 검증된 임상 확률이 아닙니다.</p>`;return}
+  el.innerHTML=agentHead("A2","경과 경로",`유사 개발 사례 n=${a.comparable_n} · ${a.horizon_hours}h`)+`<p style="font-size:.8rem">알림 후 ${a.horizon_hours}시간 안에 처음 일어나는 사건</p>`+stackBar(j)+
+    `<p class="naive">퇴원·사망을 중도절단으로 처리하면 해소 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b>, 경쟁 사건 반영 시 <b class="mono">${pct(j.resolution)}</b></p>${a.comparable_n<30?`<p class="smalln">참고 사례 ${a.comparable_n}명. 개발 집단이 작아 모든 환자에게 거의 같은 집단이 쓰이며, 값이 불안정합니다.</p>`:""}<p class="warnline">탐색적 참고 추정. 개인별로 검증된 확률이 아닙니다.</p>`;
+}
+function renderA3(f){
+  const el=$("#ag3"),a=f.agent3||{};const on=a.status==="exploratory_observation_conditional_estimate"||a.status==="model_estimate";el.dataset.active=on;
+  if(!on){const why={not_eligible_abnormal:"이미 이상 사건이 발생해 대상이 아닙니다.",not_eligible_or_stale:"최근 24시간 안에 세 항목이 모두 측정되지 않아 계산하지 않습니다. 측정 없음은 정상이 아닙니다.",unavailable:"참고 집단을 아직 만들지 않았습니다."}[a.status]||esc(a.status||"");el.innerHTML=agentHead("A3","정상 환자 24시간 · 5×ULN 이상 위험","대기")+`<p class="empty-agent">${why}</p>`;return}
+  if(a.status==="model_estimate"){const pr=a.risk_next24;
+    const ex=a.explanation,exHtml=ex&&ex.groups?(()=>{const g=ex.groups.slice().sort((p,q)=>Math.abs(q.value)-Math.abs(p.value)).slice(0,5),mx=Math.max(.01,...g.map(v=>Math.abs(v.value)));
+      return `<div class="shap"><p>왜 이 위험인가 · 개발 집단 평균 ${pct(ex.base,1)}에서 출발</p>${g.map(v=>`<div class="srow"><span>${esc(v.label)}</span><div class="sbar"><div class="${v.value>=0?"up":"down"}" style="width:${Math.abs(v.value)/mx*50}%;${v.value>=0?"left:50%":"right:50%"}"></div></div><b class="mono">${v.value>=0?"+":"−"}${fmt(Math.abs(v.value)*100,1)}%p</b></div>`).join("")}</div>`})():"";
+    el.innerHTML=agentHead("A3","정상 환자 24시간 · 5×ULN 이상 위험",`학습 모델 · 매시간 실행`)+`<div style="display:flex;align-items:baseline;gap:10px"><span class="big">${pct(pr,1)}</span><span class="muted" style="font-size:.78rem">다음 24시간 안에 2×ULN 이상이 관찰될 예측 확률</span></div><div class="gauge"><div class="pt" style="left:calc(${Math.min(1,pr)*100}% - 1px)"></div></div>${exHtml}<p class="warnline">그룹 Shapley는 모델이 무엇에 기대는지 보여줄 뿐 원인을 뜻하지 않습니다. 그래디언트 부스팅 · 학습 ${esc(a.trained_on==="mimic-iv"?"전체 MIMIC-IV (시연 환자 제외)":a.trained_on==="mimic-iv-demo"?"Demo 개발 집단 (시연 환자는 평가 집단)":a.trained_on||"")}. 임상용 개인 위험으로 검증되지 않았습니다.</p>`;return}
+  const ci=a.ci||[null,null],thin=a.known_n!=null&&a.known_n<10;
+  el.innerHTML=agentHead("A3","정상 환자 24시간 · 5×ULN 이상 위험",`검사로 결과 확인된 유사 사례 n=${a.known_n}`)+`<div style="display:flex;align-items:baseline;gap:10px"><span class="big${thin?" thin":""}">${pct(a.risk_next24)}</span><span class="muted" style="font-size:.78rem">다음 24시간 내 2×ULN 이상 관찰 비율 · 95% CI ${pct(ci[0])}–${pct(ci[1])}</span></div>`+
+   `<div class="gauge"><div class="ci" style="left:${(ci[0]||0)*100}%;width:${((ci[1]||0)-(ci[0]||0))*100}%"></div><div class="pt" style="left:calc(${(a.risk_next24||0)*100}% - 1px)"></div></div>${thin?`<p class="smalln">결과가 확인된 참고 사례가 ${a.known_n}명뿐이라 이 값은 해석하지 않습니다. 전체 MIMIC-IV에서 다시 계산합니다.</p>`:""}<p class="warnline">충분히 재검된 사례에서만 계산한 조건부 비율. 선택 편향이 남습니다.</p>`;
+}
+
+function tick(){const c=st.cases[st.key];if(!c)return;if(st.hour>=c.max_hour){stop();return}st.hour++;$("#hour").value=st.hour;render();
+  if(c.alertHour!=null&&st.hour===c.alertHour){stop();flash()}}
+function flash(){const el=$("#ag1");el.animate?.([{boxShadow:"0 0 0 0 var(--crit)"},{boxShadow:"0 0 0 6px transparent"}],{duration:900,iterations:2})}
+function play(){const c=st.cases[st.key];if(c&&st.hour>=c.max_hour)st.hour=0;st.playing=true;$("#play").setAttribute("aria-label","일시정지");$("#play-ico").innerHTML='<path d="M3 2h4v12H3zM9 2h4v12H9z"/>';st.timer=setInterval(tick,+$("#speed").value)}
+function stop(){st.playing=false;clearInterval(st.timer);$("#play").setAttribute("aria-label","재생");$("#play-ico").innerHTML='<path d="M4 2l10 6-10 6z"/>'}
+function wire(){
+  $("#play").onclick=()=>st.playing?stop():play();
+  $("#speed").onchange=()=>{if(st.playing){stop();play()}};
+  $("#hour").oninput=e=>{st.hour=+e.target.value;render()};
+  $("#reveal-btn").onclick=()=>{const c=st.cases[st.key],o=c.observed||{};const out=$("#reveal-out");out.hidden=false;
+    out.innerHTML=o.observed_path?`<b>${esc(PATH[o.observed_path]||o.observed_path)}</b> · 48시간 첫 사건: ${esc(FIRST[o.first_event_48h]||o.first_event_48h)} <span class="muted">(관찰 결과, 예측 아님)</span>`:`${o.status==="no_abnormal_event_during_ICU"?"ICU 재원 중 이상 사건 없음":esc(o.status||"관찰 결과 없음")} <span class="muted">(관찰 결과)</span>`};
+  document.addEventListener("keydown",e=>{if(["INPUT","SELECT","TEXTAREA"].includes(e.target.tagName)&&e.target.type!=="range")return;
+    if(e.code==="Space"&&!e.target.closest("button")){e.preventDefault();st.playing?stop():play()}
+    else if(e.key==="ArrowRight"&&e.target.type!=="range"){stop();const c=st.cases[st.key];st.hour=Math.min(c.max_hour,st.hour+1);$("#hour").value=st.hour;render()}
+    else if(e.key==="ArrowLeft"&&e.target.type!=="range"){stop();st.hour=Math.max(0,st.hour-1);$("#hour").value=st.hour;render()}
+    else if(/^[1-9]$/.test(e.key)){const cs=st.manifest.cases;if(cs[+e.key-1])selectCase(cs[+e.key-1].case_key)}});
+  $("#tabs").querySelectorAll(".tab").forEach(t=>t.onclick=()=>{$("#tabs").querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x===t));
+    document.querySelectorAll("#shadow [role=tabpanel]").forEach(p=>p.hidden=p.id!==t.dataset.tab)});
+}
+
+function na(file,msg){return `<div class="na"><div>${msg||"아직 집계되지 않았습니다."}</div><code>${esc(file)}</code></div>`}
+function renderShadowCase(){
+  const c=st.cases[st.key],S0=st.summary||{};const inj=S0.injected_cause||"dili";
+  const de=c.data_errors,row=de&&de.rows&&de.rows[0];
+  if(row&&row.scenarios){const sk=Object.fromEntries((de.scenarios||[]).map(x=>[x.key,x]));
+    const fl=a=>(a&&a.length)?a.map(k=>esc(CAUSE[k]||k)).join(", "):"없음";
+    const rp=v=>v==null?"–":pct(v,1);
+    $("#stress-case").innerHTML=`<p class="muted" style="font-size:.8rem">기준 시각: 입실 후 ${de.hour}시간 · 오류가 없을 때 Agent 3 위험 ${rp((Object.values(row.scenarios)[0]||{}).risk_clean)}</p><div style="overflow-x:auto"><table class="t1"><thead><tr><th>오류</th><th>원래 → 입력</th><th>A3 위험 전</th><th>A3 위험 후</th><th>A1 원인 판정 전</th><th>값 검증</th></tr></thead><tbody>${(de.scenarios||[]).map(x=>{const r=row.scenarios[x.key];if(!r)return `<tr><td>${esc(x.label)}</td><td colspan="5" class="muted">이 시각에 해당 값 없음</td></tr>`;
+      const changed=r.flags_before&&r.flags_clean&&r.flags_before.join()!==r.flags_clean.join();
+      return `<tr><td>${esc(x.label)}</td><td>${fmt(r.original,1)} → <b>${fmt(r.entered,1)}</b></td><td>${rp(r.risk_before)}</td><td>${rp(r.risk_after)}</td><td class="${changed?"smd-hi":""}">${r.flags_before?fl(r.flags_before)+(changed?" (바뀜)":""):"–"}</td><td>${x.caught_after?"<b>보류</b> · 재측정 확인":"통과 (규칙으로 못 잡음)"}</td></tr>`}).join("")}</tbody></table></div>`;
+  }else $("#stress-case").innerHTML=na("data_errors",de&&de.status?`이 환자는 시험하지 못했습니다 (${esc(de.status)}).`:"이 환자에는 값 오류 시험 기록이 없습니다.");
+  const f=c.frames.find(x=>x.agent2&&x.agent2.status==="exploratory_reference_estimate");
+  if(f&&f.agent2.curve)$("#compete-case").innerHTML=cifSVG(f.agent2.curve,"이 환자의 유사 사례");
+  else if(f)$("#compete-case").innerHTML=stackBar(f.agent2.joint_first_event)+`<p class="naive">단순 중도절단 해소 ${pct(f.agent2.naive_competing_events_censored_resolution)} vs 경쟁위험 ${pct(f.agent2.joint_first_event.resolution)}</p>`;
+  else $("#compete-case").innerHTML=na("agent2 output","이 환자는 이상 사건이 없어 경과 추정 대상이 아닙니다.");
+  const a=c.frames.find(x=>x.agent1&&x.agent1.answer);
+  if(a&&a.agent1.backend==="rule"){$("#ground-case").innerHTML=na("09_agent_predictions.jsonl","규칙 기반 모델은 스냅샷에 있는 기록만 인용하도록 만들어져 있어 이 검사는 항상 통과합니다. 환각 근거 검사는 LLM 출력에 적용합니다.")}
+  else if(a&&a.agent1.answer.with_cluster?.candidates){const fr=frameAt(c,a.agent1.output_at_hour);const have=new Set(fr.labs.map(l=>l.analyte.toUpperCase()));
+    const items=a.agent1.answer.with_cluster.candidates.flatMap(cd=>(cd.support||[]).map(s=>({cd:cd.cause_code,s,ok:have.has(String(s.analyte_or_label).toUpperCase())})));
+    const k=items.filter(i=>i.ok).length;
+    $("#ground-case").innerHTML=`<p style="margin-bottom:8px"><span class="big">${k}/${items.length}</span> <span class="muted">개 인용이 재생 스냅샷의 검사에서 확인됨</span></p>`+items.map(i=>`<div class="cand" style="--agent-c:${i.ok?"var(--ok)":"var(--warn)"}"><span class="rank">${i.ok?ICON.check:ICON.query}</span><div><b style="font-size:.82rem">${esc(i.s.analyte_or_label)}</b> <span class="ev">${esc(CAUSE[i.cd]||i.cd)}</span><div class="muted" style="font-size:.74rem">${i.ok?"스냅샷 검사 목록에 존재":"검사 목록 밖 (활력징후·투약 등). 노트북의 전체 스냅샷 대조 결과를 확인"}</div></div></div>`).join("");
+  }else $("#ground-case").innerHTML=na("09_agent_predictions.jsonl","이 환자에는 원인 추정 출력이 없습니다.");
+}
+function backendOf(c){const f=c.frames.find(x=>x.agent1&&x.agent1.backend);return f?f.agent1.backend:null}
+function cifSVG(cv,label){
+  const W=460,H=220,m={l:46,r:12,t:12,b:30};const g=cv.grid_hours,x=lin(0,g[g.length-1],m.l,W-m.r),y=lin(0,1,H-m.b,m.t);const s=svgBox(W,H,label);
+  for(const v of [0,.25,.5,.75,1]){s.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)}));s.append(S("text",{x:m.l-5,y:y(v)+3,"text-anchor":"end"},pct(v)))}
+  for(let t=0;t<=g[g.length-1];t+=12)s.append(S("text",{x:x(t),y:H-12,"text-anchor":"middle"},t+"h"));
+  s.append(S("text",{x:(m.l+W-m.r)/2,y:H-1,"text-anchor":"middle"},"첫 이상 사건 이후 시간"));
+  const line=(arr,col,dash,w)=>{let d="";arr.forEach((v,i)=>{d+=(i?`H${x(g[i])}V${y(v)}`:`M${x(g[0])},${y(v)}`)});s.append(S("path",{d,fill:"none",stroke:col,"stroke-width":w||2,"stroke-dasharray":dash||""}))};
+  line(cv.naive_resolution,"var(--c-res)","5 4",1.6);line(cv.cif.resolution,"var(--c-res)");line(cv.cif.death,"var(--c-death)");line(cv.cif.icu_discharge,"var(--c-dis)");
+  const L=[["해소 (경쟁위험)","var(--c-res)",""],["해소 (단순 중도절단)","var(--c-res)","5 4"],["사망","var(--c-death)",""],["ICU 퇴실","var(--c-dis)",""]];
+  L.forEach(([t,c,d],i)=>{const yy=m.t+8+i*14,lx=W-m.r-150;s.append(S("rect",{x:lx-6,y:yy-8,width:156,height:14,fill:"var(--surface)","fill-opacity":.85}));s.append(S("line",{x1:lx,x2:lx+20,y1:yy,y2:yy,stroke:c,"stroke-width":2,"stroke-dasharray":d}));s.append(S("text",{x:lx+25,y:yy+3,class:"ink"},t))});
+  return `<div class="plot">${s.outerHTML}</div>`;
+}
+
+function fig(id,num,title,body,caption,file,wide){
+  const syn=(st.summary||{}).source==="synthetic";
+  const demo=(st.summary||{}).source==="mimic-iv-demo";
+  return `<figure id="${id}" class="${wide?"wide":""}">${syn&&body?`<span class="stamp">합성 예시</span>`:demo&&body?`<span class="stamp demo">MIMIC-IV Demo · 100명</span>`:""}<div class="fig-title"><span>FIGURE S${num-1}</span>${title}</div><div class="plot">${body||na(file)}</div><figcaption><b>Figure S${num-1}.</b> ${caption} <code>${esc(file)}</code></figcaption></figure>`}
+function hbars(rows,{label,value,max,color,fmtv,extra,w=520,rowh=24,lw=150,rm=60}){
+  if(!rows||!rows.length)return "";const H=rows.length*rowh+26,s=svgBox(w,H),mx=max||Math.max(...rows.map(value))||1,x=lin(0,mx,lw,w-rm);
+  niceTicks(mx,4).forEach(t=>{if(t>mx*1.0001)return;s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:4,y2:H-20}));s.append(S("text",{x:x(t),y:H-6,"text-anchor":"middle"},fmtv?fmtv(t):fmt(t,0)))});
+  rows.forEach((r,i)=>{const yy=6+i*rowh,v=value(r);s.append(S("text",{x:lw-8,y:yy+rowh/2+1,"text-anchor":"end",class:"ink"},label(r)));
+    if(v==null){s.append(S("text",{x:lw+4,y:yy+rowh/2+1},"<10 가림"));return}
+    s.append(S("rect",{x:lw,y:yy+3,width:Math.max(1,x(v)-lw),height:rowh-8,rx:3,fill:color?color(r):"var(--alt)"}));
+    s.append(S("text",{x:x(v)+5,y:yy+rowh/2+1,class:"ink"},fmtv?fmtv(v):fmt(v,0)));if(extra)extra(s,r,yy,x)});
+  return s.outerHTML}
+function renderFigures(){
+  const D=st.summary||{};const out=[];
+  const fs=$("#fig-source");
+  if(D.source==="mimic-iv-demo"){fs.hidden=false;fs.textContent="아래 그림은 공개 데이터 MIMIC-IV Demo 100명에 노트북을 실제로 실행한 결과입니다. 사건이 16건뿐이라 신뢰구간이 넓고 일부 그림은 계산되지 않습니다. 전체 MIMIC-IV 결과는 10 미만 칸을 가린 집계로 교체합니다."}
+  else if(D.source==="mimic-iv"){fs.hidden=false;fs.textContent="아래 그림은 전체 MIMIC-IV 집계입니다. 10 미만 칸은 가렸습니다."}
+  let f2="";if(D.cohort_flow){const rows=D.cohort_flow,W=520,bh=40,gap=22,H=rows.length*(bh+gap),s=svgBox(W,H,"코호트 흐름");
+    rows.forEach((r,i)=>{const y0=i*(bh+gap);s.append(S("rect",{x:110,y:y0,width:300,height:bh,rx:6,fill:"var(--sunk)",stroke:"var(--line)"}));
+      s.append(S("text",{x:260,y:y0+16,"text-anchor":"middle",class:"t-title"},STEP[r.step]||r.step));s.append(S("text",{x:260,y:y0+31,"text-anchor":"middle",class:"ink"},r.n==null?"<10":"n = "+fmt(r.n,0)));
+      if(i<rows.length-1){s.append(S("line",{x1:260,x2:260,y1:y0+bh,y2:y0+bh+gap-3,stroke:"var(--muted)"}));const nx=rows[i+1].n,dx=r.n!=null&&nx!=null?r.n-nx:null;
+        if(dx)s.append(S("text",{x:270,y:y0+bh+gap/2+4},`− ${fmt(dx,0)}`))}});f2=s.outerHTML}
+  out.push(fig("fig2",2,"코호트 흐름",f2,"성인 첫 ICU 입실을 환자 단위로 개발·평가 집단에 나눈 뒤, ICU 관찰 중 ALT·ALP·총빌리루빈 중 하나가 2×ULN 이상이 된 첫 사건을 주 분석에 사용했다. 분석 표본 단계는 실행 설정 MAX_PATIENTS를 반영한다.","04_cohort_flow.csv"));
+  const q=D.lab_qc;out.push(fig("fig3",3,"검사 품질 관리",q?hbars(q,{label:r=>r.analyte,value:r=>r.n,color:r=>TRIG.includes(r.analyte)?COL[r.analyte]:"var(--muted)",lw:120,w:680,rm:230,extra:(s,r,yy,x)=>{if(r.n){s.append(S("text",{x:676,y:yy+15,"text-anchor":"end",style:"font-size:9.5px"},`단위오류 ${pct(r.unit_invalid/r.n,1)} · ULN없음 ${pct(r.missing_uln/r.n,1)}`))}}}):"",
+    "항목별 추출 건수와 단위 불일치·행별 ULN 결측 비율. ULN이 없는 행은 배수를 계산하지 않으며 정상으로 간주하지 않는다. 기관 기준 대체값을 쓰면 별도 표시한다.","02_lab_quality.csv"));
+  let f4="";if(D.event_groups||D.trigger_ratio_hist){const W=520,s=svgBox(W,250,"첫 이상 사건");
+    if(D.event_groups){const gs=["initial_abnormal","incident","onset_unknown"],sp=["development","evaluation"],tot={};D.event_groups.forEach(r=>tot[r.split]=(tot[r.split]||0)+(r.n||0));
+      s.append(S("text",{x:0,y:12,class:"t-title"},"(a) 집단 구성"));
+      sp.forEach((p,i)=>{let x0=90;const y0=26+i*30;s.append(S("text",{x:84,y:y0+14,"text-anchor":"end",class:"ink"},p==="development"?"개발":"평가"));
+        gs.forEach((g,j)=>{const r=D.event_groups.find(z=>z.split===p&&z.group===g);const v=r?.n||0,w=tot[p]?v/tot[p]*400:0;
+          s.append(S("rect",{x:x0,y:y0,width:w,height:20,fill:["var(--crit)","var(--accent)","var(--muted)"][j],opacity:.85}));if(w>34)s.append(S("text",{x:x0+w/2,y:y0+14,"text-anchor":"middle",style:"fill:var(--surface)"},fmt(v,0)));x0+=w})});
+      ["입실 초기","신규","시점 불명"].forEach((t,j)=>{s.append(S("rect",{x:90+j*100,y:90,width:10,height:10,fill:["var(--crit)","var(--accent)","var(--muted)"][j]}));s.append(S("text",{x:104+j*100,y:99},t))})}
+    if(D.trigger_ratio_hist){const bins=[...new Set(D.trigger_ratio_hist.map(r=>r.bin))],mx=Math.max(...D.trigger_ratio_hist.map(r=>r.count||0))||1,bw=400/bins.length,yy=lin(0,mx,236,130);
+      s.append(S("text",{x:0,y:122,class:"t-title"},"(b) 사건 시점 배수 분포"));
+      bins.forEach((b,i)=>{TRIG.forEach((a,j)=>{const r=D.trigger_ratio_hist.find(z=>z.bin===b&&z.analyte===a),v=r?.count;if(v==null)return;const x0=90+i*bw+j*(bw-8)/3+4;s.append(S("rect",{x:x0,y:yy(v),width:(bw-8)/3-1,height:236-yy(v),fill:COL[a]}))});
+        s.append(S("text",{x:90+i*bw+bw/2,y:248,"text-anchor":"middle"},b+"×"))});
+      s.append(S("text",{x:84,y:yy(mx)+4,"text-anchor":"end"},fmt(mx,0)));s.append(S("text",{x:84,y:239,"text-anchor":"end"},"0"))}
+    f4=s.outerHTML}
+  out.push(fig("fig4",4,"첫 이상 사건의 구성과 크기",f4,"(a) 입실 24시간 내 기준 충족은 입실 초기 이상, 이후 첫 충족이면서 같은 항목 48시간 내 이전 값이 기준 미만이면 신규, 이전 값이 없으면 시점 불명. (b) 사건을 일으킨 항목의 ULN 배수. t0는 결과 공개 시각이며 실제 손상 시작 시각이 아니다.","05_events_private.csv → 집계",false));
+  let f5="";const cp=D.cluster_profile;if(cp&&cp.rows){const fs=cp.features,W=520,cw=Math.min(62,(W-110)/fs.length),rh=34,H=40+cp.rows.length*rh,s=svgBox(W,H,"간 손상 패턴 프로파일");
+    fs.forEach((c,j)=>s.append(S("text",{x:110+j*cw+cw/2,y:14,"text-anchor":"middle",style:"font-size:9px"},c.replace("_ratio","").replace("_slope24"," 기울기").replace("_delta24"," Δ"))));
+    cp.rows.forEach((r,i)=>{const z=cp.z[i]||{};s.append(S("text",{x:100,y:30+i*rh+rh/2,"text-anchor":"end",class:"ink"},`${cp.grouping==="liver_pattern"?({hepatocellular:"간세포형",mixed:"혼합형",cholestatic:"담즙정체형",isolated_bilirubin:"빌리루빈 단독"}[r.cluster]||r.cluster):"군집 "+r.cluster} · n=${r.n??"<10"}`));
+      fs.forEach((c,j)=>{const v=z[c],a=v==null?0:Math.max(-2,Math.min(2,v));s.append(S("rect",{x:110+j*cw,y:22+i*rh,width:cw-3,height:rh-4,rx:4,fill:a>=0?"var(--accent)":"var(--alt)","fill-opacity":(.12+Math.abs(a)/2*.75).toFixed(2)}));
+        s.append(S("text",{x:110+j*cw+cw/2,y:22+i*rh+rh/2+2,"text-anchor":"middle",class:"ink"},fmt(r[c],1)))})});f5=s.outerHTML}
+  out.push(fig("fig5",5,"간 손상 패턴 (ACG R 비)",f5,"t0 시점 R 비로 정한 고정 범주(간세포형 R≥5, 담즙정체형 R≤2, 그 사이 혼합형, 효소 정상·빌리루빈 상승은 빌리루빈 단독)별 배수 중앙값(칸 안 숫자)과 범주 간 표준화 점수(색). 원인이 아니라 생화학 패턴이며 Agent 1에는 이 범주만 들어갑니다. 비지도 군집(log2 배수에 GMM, BIC로 K 선택, 부트스트랩 ARI)은 보조 분석이며 "+(D.clustering_check&&D.clustering_check.status==="ok"?`이번 실행은 K=${D.clustering_check.k_selected}, ARI 중앙값 ${fmt(D.clustering_check.ari_median,2)}로 ${D.clustering_check.used?"안정":"불안정해 사용하지 않음"}.`+(D.clustering_check.clinical_phenotype_gmm&&D.clustering_check.clinical_phenotype_gmm.status==="ok"?` 넓은 임상 표현형 군집(변수 ${D.clustering_check.clinical_phenotype_gmm.features.length}개: 관류·염증·신장·합성 기능·병력 포함)은 K=${D.clustering_check.clinical_phenotype_gmm.k_selected}, ARI ${fmt(D.clustering_check.clinical_phenotype_gmm.ari_median,2)}.`:""):"표본이 부족해 실행하지 않았습니다."),"08_features.csv · 08b_clustering_check.json → 집계"));
+  let f6="";const cv=D.cause_validation;if(cv){const W=520,rows=cv,H=rows.length*30+60,s=svgBox(W,H,"원인 추정 검증"),x=lin(0,1,180,W-20);
+    [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:8,y2:H-40}));s.append(S("text",{x:x(t),y:H-26,"text-anchor":"middle"},pct(t)))});
+    rows.forEach((r,i)=>{const yy=20+i*30,c=r.condition==="cluster"?"var(--alt)":"var(--muted)";s.append(S("text",{x:170,y:yy+4,"text-anchor":"end",class:"ink"},`${r.metric==="top1"?"Top-1":"Top-3"} · ${r.condition==="cluster"?"+패턴":"기본"}  ${r.k??"–"}/${r.n??"–"}`));
+      if(r.rate==null)return;s.append(S("line",{x1:x(r.ci_low),x2:x(r.ci_high),y1:yy,y2:yy,stroke:c,"stroke-width":2}));s.append(S("rect",{x:x(r.rate)-5,y:yy-5,width:10,height:10,fill:c}))});
+    const p=D.paired_test;if(p){s.append(S("text",{x:10,y:H-8,class:"ink"},`짝지은 McNemar (Top-1): 불일치 ${p.discordant}쌍 (기본만 ${p.base_only} · 패턴 추가만 ${p.new_only}), 정확 p = ${fmt(p.p_exact_two_sided,3)}`))}f6=s.outerHTML}
+  out.push(fig("fig6",6,"전문의 참조 대비 원인 후보 일치",f6,"단일 최우선 원인 판정이 가능한 평가 사례에서의 Top-1·Top-3 일치율과 95% Wilson CI. 같은 환자에 R 비 패턴 정보만 추가했으므로 두 조건은 짝지은 자료이며 비교는 McNemar 정확 검정으로 한다. 실행 실패는 분모에서 빼지 않는다. 전문의 1인 판정은 참조 기준이며 확진이 아니다.","12_cause_validation.csv · 35_paired_mcnemar.csv",true));
+  let f7="";if(D.cif_development||D.outcome_paths){let html="";
+    if(D.outcome_paths)html+=hbars(D.outcome_paths,{label:r=>PATH[r.path]||r.path,value:r=>r.n,lw:150,color:r=>/death/.test(r.path)?"var(--c-death)":/resolved_then_hospital/.test(r.path)?"var(--c-res)":"var(--c-dis)"});
+    if(D.cif_development)html+=cifSVG(D.cif_development,"개발 집단 누적발생");f7=html}
+  out.push(fig("fig7",7,"관찰 경로와 경쟁 사건 누적발생",f7,"위: ICU 퇴실·ICU 사망까지 추적한 관찰 경로. 해소는 사건을 일으킨 모든 항목이 24시간 내 재측정에서 2×ULN 미만인 경우로 정의한 연구용 이상 해소이며 간 기능 회복과 다르다. 아래: 개발 집단 첫 사건의 Aalen-Johansen 누적발생(실선)과 사망·퇴원을 중도절단으로 처리한 1−KM(점선). 점선이 실선보다 높게 나타나는 정도가 경쟁 사건을 무시할 때의 과대추정이다.","10_outcomes_EVALUATION_ONLY.csv → 집계",true));
+  let f8="";const a3=D.agent3;if(a3&&a3.calibration){const W=360,H=300,m={l:44,r:14,t:14,b:40},mx=Math.max(.5,...a3.calibration.map(r=>Math.max(r.ci_high||0,r.mean_predicted||0)));const x=lin(0,mx,m.l,W-m.r),y=lin(0,mx,H-m.b,m.t),s=svgBox(W,H,"보정");
+    niceTicks(mx,5).filter(t=>t<=mx).forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:m.t,y2:H-m.b}));s.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(t),y2:y(t)}));s.append(S("text",{x:x(t),y:H-m.b+14,"text-anchor":"middle"},pct(t)));s.append(S("text",{x:m.l-5,y:y(t)+3,"text-anchor":"end"},pct(t)))});
+    s.append(S("line",{x1:x(0),y1:y(0),x2:x(mx),y2:y(mx),stroke:"var(--muted)","stroke-dasharray":"4 4"}));
+    a3.calibration.forEach(r=>{if(r.observed==null)return;s.append(S("line",{x1:x(r.mean_predicted),x2:x(r.mean_predicted),y1:y(r.ci_low),y2:y(r.ci_high),stroke:"var(--alp)","stroke-width":1.5}));s.append(S("circle",{cx:x(r.mean_predicted),cy:y(r.observed),r:3+Math.min(6,Math.sqrt(r.n||0)/4),fill:"var(--alp)","fill-opacity":.8}))});
+    s.append(S("text",{x:(m.l+W-m.r)/2,y:H-6,"text-anchor":"middle"},"예측 위험 (구간 평균)"));s.append(S("text",{x:12,y:(m.t+H-m.b)/2,transform:`rotate(-90 12 ${(m.t+H-m.b)/2})`,"text-anchor":"middle"},"관찰 비율"));
+    f8=`<div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;align-items:center">${s.outerHTML}<div class="metrics" style="grid-template-columns:1fr 1fr"><div><b>${fmt(a3.auroc,3)}</b><span>AUROC</span></div><div><b>${fmt(a3.auprc,3)}</b><span>AUPRC (유병률 ${pct(a3.prevalence,1)})</span></div><div><b>${fmt(a3.brier,3)}</b><span>Brier</span></div><div><b>${fmt(a3.n_known,0)}/${fmt(a3.n_all,0)}</b><span>결과 확인 가능 / 전체</span></div></div></div>`}
+  out.push(fig("fig8",8,"정상 환자 24시간 이상 발생: 보정과 판별",f8,"평가 환자마다 입실 24시간 시점 하나를 사전 지정해 계산했다. 점 크기는 구간 표본 수, 막대는 95% Wilson CI, 점선은 완전 보정선. 다음 24시간 재검으로 결과를 확인할 수 있었던 사례만 평가했으므로 전체 ICU 환자로 일반화하지 않는다.","22_agent3_predictions.csv → 집계"));
+  let f9="";const sa=D.stress_adoption;if(sa){const conds=["claim","rationale","combined"],W=520,H=170,s=svgBox(W,H,"입력 오류"),x=lin(0,1,130,W-20);
+    [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:6,y2:H-34}));s.append(S("text",{x:x(t),y:H-20,"text-anchor":"middle"},pct(t)))});
+    conds.forEach((c,i)=>{const yy=24+i*38;s.append(S("text",{x:120,y:yy+4,"text-anchor":"end",class:"ink"},COND[c]));
+      [false,true].forEach((g,j)=>{const r=sa.find(z=>z.input_condition===c&&z.guarded===g);if(!r||r.adoption_rate==null)return;const y2=yy-7+j*14,col=g?"var(--ok)":"var(--crit)";
+        s.append(S("line",{x1:x(r.ci_low),x2:x(r.ci_high),y1:y2,y2:y2,stroke:col,"stroke-width":2}));s.append(S("circle",{cx:x(r.adoption_rate),cy:y2,r:4.5,fill:col}));s.append(S("text",{x:x(r.ci_high)+6,y:y2+3},`${r.adopted}/${r.n}`))})});
+    [["방어 없음","var(--crit)"],["방어 문구","var(--ok)"]].forEach(([t,c],j)=>{s.append(S("circle",{cx:136+j*110,cy:H-6,r:4,fill:c}));s.append(S("text",{x:144+j*110,y:H-3,class:"ink"},t))});f9=s.outerHTML}
+  out.push(fig("fig9",9,"잘못된 입력에 대한 취약성과 방어 문구 효과",f9,`같은 평가 사례 스냅샷에 잘못된 주장·설명을 넣었을 때 주입 원인(${esc(CAUSE[D.injected_cause]||D.injected_cause||"")})이 원본에서는 1순위가 아니었다가 1순위로 바뀐 비율. 주입 원인이 해당 사례에서 실제로 틀렸는지는 전문의가 확인한다. 방어 문구가 참인 정보까지 무시하게 만드는지는 참인 정보 조건으로 따로 시험한다.`,"17_input_stress.jsonl"));
+  let f10="";if(D.threshold_sensitivity||D.alert_aggregation){let h="";
+    if(D.alert_aggregation)h+=hbars(D.alert_aggregation,{label:r=>r.comparison==="raw_abnormal_lab_records"?"기준 이상 검사 기록":"환자별 첫 사건 알림",value:r=>r.n,lw:150,color:r=>r.comparison==="raw_abnormal_lab_records"?"var(--muted)":"var(--accent)"});
+    if(D.threshold_sensitivity)h+=hbars(D.threshold_sensitivity,{label:r=>`${r.cutoff_fold_uln}×ULN`,value:r=>r.n_patients_flagged,lw:150,color:r=>r.cutoff_fold_uln==2?"var(--crit)":"var(--muted)"});f10=h}
+  out.push(fig("fig10",10,"알림 통합과 임계값 민감도",f10,"위: 기준 이상 검사 기록 수와 환자당 첫 사건 알림 수의 기계적 비교. 아래: 임계값별 알림 대상 환자 수(빨강이 채택 기준). 첫 사건만 알리는 설계는 이후 악화를 놓칠 수 있다.","18_alert_aggregation.csv · 33_threshold_sensitivity.csv",true));
+  $("#figs").innerHTML=out.join("");
+  $("#stress-cohort").innerHTML=na("shadow_data_error","결과를 불러오는 중입니다.");
+  $("#compete-cohort").innerHTML=D.cif_development?cifSVG(D.cif_development,"개발 집단"):na("risk_reference (notebook)");
+  const g=D.grounding;$("#ground-cohort").innerHTML=g?hbars(g,{label:r=>`${r.condition==="cluster"?"+패턴":"기본"} ${r.verified??"<10"}/${r.support_items??"<10"}`,value:r=>r.rate,max:1,fmtv:v=>pct(v,0),lw:130,color:()=>"var(--ok)"}):na("36_grounding_summary.csv");
+  $("#alert-agg").innerHTML=D.alert_aggregation?hbars(D.alert_aggregation,{label:r=>r.comparison==="raw_abnormal_lab_records"?"기준 이상 검사 기록":"환자별 첫 사건 알림",value:r=>r.n,lw:150,color:r=>r.comparison==="raw_abnormal_lab_records"?"var(--muted)":"var(--accent)"}):na("18_alert_aggregation.csv");
+  $("#alert-thr").innerHTML=D.threshold_sensitivity?hbars(D.threshold_sensitivity,{label:r=>`${r.cutoff_fold_uln}×ULN`,value:r=>r.n_patients_flagged,lw:90,color:r=>r.cutoff_fold_uln==2?"var(--crit)":"var(--muted)"}):na("33_threshold_sensitivity.csv");
+}
+function renderMeta(){const m=st.manifest,c=m.config||{};
+  const kv=[["데이터",m.source],["생성 시각",m.built_at],["코드 커밋",m.git_commit||"–"],["임계값",(c.threshold??"–")+"×ULN"],["난수 시드",c.seed??"–"],["보조 군집(GMM K)",c.cluster_k??"–"],["LLM 실행",c.LLM_enabled==null?"–":c.LLM_enabled?"예":"아니오"],["M4 커밋",c.m4_reviewed_commit||"–"]];
+  $("#meta").innerHTML=kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}
+function drawLanes(c,h){
+  const W=600,x=v=>v/Math.max(1,c.max_hour)*W,ticks=(hs,col,w)=>hs.map(v=>`<rect x="${x(v)-w/2}" y="3" width="${w}" height="10" rx="2" fill="${col}"/>`).join("");
+  const a3=c.frames.filter(f=>f.hour<=h&&f.agent3&&/estimate/.test(f.agent3.status||"")).map(f=>f.hour);
+  const a1=[...new Set(c.frames.filter(f=>f.hour<=h&&f.agent1&&f.agent1.output_at_hour!=null).map(f=>f.agent1.output_at_hour))];
+  const a2=c.alertHour!=null&&h>=c.alertHour?[c.alertHour]:[];
+  const lane=(lab,body)=>`<div class="lane"><span>${lab}</span><svg viewBox="0 0 ${W} 16" preserveAspectRatio="none"><rect x="0" y="7" width="${W}" height="2" fill="var(--line)"/>${body}<rect x="${x(h)-1}" y="0" width="2" height="16" fill="var(--ink)" opacity=".5"/></svg></div>`;
+  $("#lanes").innerHTML=lane(`A3 매시간 · ${a3.length}회`,ticks(a3,"var(--alp)",Math.max(1.5,W/c.max_hour*.7)))+lane(`A1 알림·갱신 · ${a1.length}회`,ticks(a1,"var(--alt)",5))+lane(`A2 알림 시 · ${a2.length}회`,ticks(a2,"var(--c-dis)",5));
+}
+
+const N=v=>v==null?"<10":(+v).toLocaleString("ko-KR");
+const F2=v=>v==null?null:(+v).toFixed(2);
+const CI=(v,ci,d=3)=>v==null?"–":`${fmt(v,d)}${ci?` <span class="ci">(${fmt(ci[0],d)}–${fmt(ci[1],d)})</span>`:""}`;
+const CLS={resolution:"해소",death_before_resolution:"해소 전 사망",discharge_before_resolution:"해소 전 ICU 퇴실",no_event_observed:"48h 내 사건 없음"};
+async function loadResults(){
+  let R=null,kind=null;
+  for(const [f,k] of [["data/results_full.json","full"],["data/results_demo.json","demo"]]){try{const r=await fetch(f,{cache:"no-store"});if(r.ok){R=await r.json();kind=k;break}}catch(e){}}
+  st.results=R;const src=$("#res-src");
+  if(!R){src.textContent="결과 파일이 없습니다. scripts/develop_models.py를 실행한 뒤 site/data/results_full.json을 넣으세요.";return}
+  src.dataset.kind=kind;
+  src.textContent=kind==="full"?`전체 MIMIC-IV 결과 · ${String(R.meta.built_at).slice(0,10)} 생성 · 10 미만 칸 가림 · 시연 환자 ${N(R.meta.excluded_demo_subjects_in_cohort)}명 제외`
+    :"지금 보이는 수치는 MIMIC-IV Demo 100명에 같은 코드를 실행한 결과입니다(파이프라인 확인용). 표본이 작아 성능은 해석하지 않습니다. 전체 MIMIC-IV 결과 파일(results_full.json)이 들어오면 자동으로 바뀝니다.";
+  for(const fn of [renderFlow,renderTable1,renderSched,renderDev,renderTable2,renderROC,renderCal,renderA2fig,renderA1fig,renderTable3,renderShap,renderTable2b,renderTable4,renderLight,renderBA,renderDECohort,renderChecks]){try{fn(R,kind)}catch(e){console.warn(fn.name,e)}}
+}
+function box(svg,x,y,w,h,t,sub,cls){svg.append(S("rect",{x,y,width:w,height:h,rx:8,fill:cls==="excl"?"var(--surface)":"var(--sunk)",stroke:cls==="excl"?"var(--warn)":"var(--line)","stroke-dasharray":cls==="excl"?"4 3":""}));
+  svg.append(S("text",{x:x+w/2,y:y+(sub?17:h/2+4),"text-anchor":"middle",class:"t-title"},t));if(sub)svg.append(S("text",{x:x+w/2,y:y+33,"text-anchor":"middle",class:"ink"},sub))}
+function arrow(svg,x1,y1,x2,y2){svg.append(S("line",{x1,y1,x2,y2,stroke:"var(--muted)","stroke-width":1.2}));svg.append(S("path",{d:`M${x2-4},${y2-6}L${x2},${y2}L${x2+4},${y2-6}`,fill:"none",stroke:"var(--muted)","stroke-width":1.2}))}
+function renderFlow(R){
+  const W=820,s=svgBox(W,640,"연구 대상 흐름도");const f=R.flow||[],get=k=>(f.find(r=>r.step===k)||{}).n;
+  const t1=(R.table1||[])[0]||{},d3=R.agent3_development||{},d2=R.agent2_development||{},a1=R.agent1_performance||{};
+  const cx=W/2-150;let y=6;
+  const main=[["전체 ICU 입실",get("all_icu_stays")],["환자별 첫 ICU 입실",get("first_icu_per_patient")],["성인 · 유효 입실",get("adult_valid_stay")]];
+  main.forEach(([t,n],i)=>{box(s,cx,y,300,42,t,`n = ${N(n)}`);if(i<main.length-1){arrow(s,cx+150,y+42,cx+150,y+62);const nx=main[i+1][1];if(n!=null&&nx!=null&&n-nx>0){box(s,cx+330,y+38,190,30,`제외 ${N(n-nx)}`,null,"excl")}}y+=62});
+  const ex=R.meta.excluded_demo_subjects_in_cohort;
+  arrow(s,cx+150,y-20,cx+150,y);box(s,cx,y,300,42,"분석 코호트",`n = ${N(t1.overall)}`);if(ex){box(s,cx+330,y-24,190,30,`공개 시연 환자 제외 ${N(ex)}`,null,"excl")}
+  y+=42;arrow(s,cx+150,y,cx+150,y+20);y+=20;
+  box(s,cx-60,y,200,42,"개발 집단",`n = ${N(t1.development)}`);box(s,cx+160,y,200,42,"평가 집단",`n = ${N(t1.evaluation)}`);
+  y+=62;const L=16,Rx=W/2+16,bw=250,xo=bw+10;
+  s.append(S("text",{x:L,y:y-6,class:"t-title"},"Agent 3 · 매시간 (분석 단위: 환자·시각)"));s.append(S("text",{x:Rx,y:y-6,class:"t-title"},"Agent 1·2 · 첫 알림 시 (분석 단위: 사건)"));
+  const lc=d3.label_counts||{};
+  const left=[["매시간 랜드마크",`${N(d3.landmarks_total)} 시점 · ${N(d3.patients_total)}명`],["세 항목 24h 내 측정 · 모두 기준 미만",`${N(d3.eligible)} 시점`],["다음 24h 결과 확인 (≥5×ULN 여부)",`${N(d3.known)} 시점 · ${N(d3.known_patients)}명`],["학습 / 평가",`${N(d3.train_rows)} · ${N(d3.train_patients)}명 / ${N(d3.test_rows)} · ${N(d3.test_patients)}명`]];
+  let yl=y;left.forEach(([t,sub],i)=>{box(s,L,yl,bw,44,t,sub);if(i<left.length-1)arrow(s,L+bw/2,yl+44,L+bw/2,yl+62);yl+=62});
+  box(s,L+xo,y+62+44,128,26,`판정 불가 ${N(lc.insufficient_measurement)}`,null,"excl");box(s,L+xo,y+62+74,128,26,`사망·퇴원 먼저 ${N(lc.death_or_icu_discharge_before_observation_end)}`,null,"excl");
+  const PD=R.prognosis_development,ev=PD?PD.events:d2.events,exc=PD?(PD.events!=null&&PD.assessable!=null?PD.events-PD.assessable:null):d2.excluded_insufficient;
+  const right=[["첫 이상 사건 (2×ULN)",`${N(ev)} 건`],[PD?"Agent 2 예후 (회복 판정 가능)":"Agent 2 분석 (해소 판정 가능)",`${N(ev!=null&&exc!=null?ev-exc:null)} 건${PD?" · 사망 모델은 전체":""}`],["Agent 1 평가 사건",`${N(a1.n_eval_events)} 건 · 대리 범주 있음 ${N(a1.n_with_proxy)}`]];
+  let yr=y;right.forEach(([t,sub],i)=>{box(s,Rx,yr,bw,44,t,sub);if(i<right.length-1)arrow(s,Rx+bw/2,yr+44,Rx+bw/2,yr+62);yr+=62});
+  box(s,Rx+xo,y+48,128,26,`${PD?"회복 판정 불가":"판정 불가"} ${N(exc)}`,null,"excl");
+  $("#flow-plot").innerHTML=s.outerHTML;
+}
+function renderTable1(R){
+  const rows=R.table1||[];if(!rows.length){$("#table1").innerHTML=na("table1_baseline.csv");return}
+  const c=v=>v==null?"–":Array.isArray(v)?(v.length===3?`${fmt(v[0],1)} [${fmt(v[1],1)}–${fmt(v[2],1)}]`:(v[0]==null?"<10":`${N(v[0])}${v[1]!=null?` (${(v[1]*100).toFixed(1)}%)`:""}`)):N(v);
+  const sm=v=>v==null?"<td>–</td>":`<td class="${v>.1?"smd-hi":""}">${fmt(v,2)}</td>`;
+  $("#table1").innerHTML=`<table class="t1"><thead><tr><th>변수</th><th>전체</th><th>이상 사건</th><th>사건 없음</th><th>SMD</th><th>개발</th><th>평가</th><th>SMD</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.variable)}</td><td>${c(r.overall)}</td><td>${c(r.event)}</td><td>${c(r.no_event)}</td>${sm(r.smd_event)}<td>${c(r.development)}</td><td>${c(r.evaluation)}</td>${sm(r.smd_split)}</tr>`).join("")}</tbody></table>`;
+}
+function renderSched(){
+  const W=520,H=190,m={l:92,r:14},x=lin(0,60,m.l,W-m.r),s=svgBox(W,H,"모델 실행 시점");const t0=38;
+  s.append(S("rect",{x:x(14),y:14,width:x(21)-x(14),height:132,fill:"var(--warn-soft)"}));s.append(S("text",{x:(x(14)+x(21))/2,y:26,"text-anchor":"middle",style:"fill:var(--warn)"},"측정 공백"));
+  [["Agent 3",52,"var(--alp)"],["Agent 1",92,"var(--alt)"],["Agent 2",128,"var(--c-dis)"]].forEach(([t,y,c])=>{s.append(S("text",{x:m.l-10,y:y+4,"text-anchor":"end",class:"t-title"},t));s.append(S("line",{x1:m.l,x2:W-m.r,y1:y,y2:y,stroke:"var(--line)"}))});
+  for(let h=4;h<t0;h++){if(h>=14&&h<21)continue;s.append(S("rect",{x:x(h)-1.6,y:46,width:3.2,height:12,rx:1,fill:"var(--alp)"}))}
+  s.append(S("text",{x:x(48),y:56,"text-anchor":"middle"},"알림 후 중지"));
+  const dia=(h,y,c)=>s.append(S("path",{d:`M${x(h)},${y-8}L${x(h)+7},${y}L${x(h)},${y+8}L${x(h)-7},${y}Z`,fill:c}));
+  dia(t0,92,"var(--alt)");dia(50,92,"var(--alt)");dia(t0,128,"var(--c-dis)");
+  s.append(S("text",{x:x(50),y:112,"text-anchor":"middle"},"새 약물 공개 → 재실행"));
+  s.append(S("line",{x1:x(t0),x2:x(t0),y1:14,y2:150,stroke:"var(--crit)","stroke-dasharray":"4 3"}));s.append(S("text",{x:x(t0)+4,y:162,style:"fill:var(--crit)"},"2×ULN 알림"));
+  for(let t=0;t<=60;t+=12)s.append(S("text",{x:x(t),y:H-6,"text-anchor":"middle"},t+"h"));
+  $("#sched-plot").innerHTML=s.outerHTML;
+}
+function renderDev(R){
+  const d=R.agent3_development||{},lc=d.label_counts||{},d2=R.agent2_development||{},sel=d.gbm_selected||{};
+  const steps=[["시점 생성",`ICU 입실 후 매시간 ${N(d.landmarks_total)} 시점 (${N(d.patients_total)}명). 첫 알림 이후 시점은 제외`],
+    ["대상 선정",`ALT·ALP·총빌리루빈이 모두 최근 24시간 안에 측정되고 모두 기준 미만인 ${N(d.eligible)} 시점`],
+    ["정답 라벨",`다음 24시간 이상 관찰 ${N(lc.abnormal_observed)} · 재검으로 정상 확인 ${N(lc.no_abnormality_observed)} · 판정 불가 ${N(lc.insufficient_measurement)} 제외`],
+    ["특징",`${N(d.n_features)}개: 간 검사 배수·24시간 변화·측정 횟수·경과 시간, 혈액·생화학, 활력징후, 승압제, 나이·성별, 이전 입원 진단. 모두 그 시각까지 결과가 보고된 값`],
+    ["학습",`로지스틱 회귀와 그래디언트 부스팅. 개발 집단 안에서 환자 단위 3겹 교차검증으로 ${(d.gbm_grid||[]).length}개 조합 중 선택 (학습률 ${sel.learning_rate??"–"}, 잎 ${sel.max_leaf_nodes??"–"})`],
+    ["평가",`평가 집단 ${N(d.test_rows)} 시점 · ${N(d.test_patients)}명. AUROC·AUPRC·Brier·보정, 환자 군집 부트스트랩 95% CI, 환자당 한 시점 민감도 분석`],
+    R.prognosis_development?["Agent 2",`첫 사건 ${N(R.prognosis_development.events)}건. 예후 4경로는 회복 판정 가능 ${N(R.prognosis_development.assessable)}건으로, ICU 사망(퇴실 후 24시간 포함)은 전체 사건으로 다항 로지스틱·그래디언트 부스팅 학습`]:["Agent 2",`첫 사건 ${N(d2.events)}건, 해소 판정 불가 ${N(d2.excluded_insufficient)}건 제외 후 다항 로지스틱·그래디언트 부스팅`],
+    ["Agent 1",`규칙 모델 ${esc(R.meta.rule_model||"")} (평가 전에 동결) + 기관 LLM. 퇴원 진단 대리 범주와 전문의 판정으로 평가`]];
+  $("#dev-plot").innerHTML=`<ol class="steps">${steps.map(([t,b])=>`<li><b>${t}</b><span>${b}</span></li>`).join("")}</ol>`;
+}
+function renderTable2(R){
+  const p3=R.agent3_performance||{},p1=R.agent1_performance||{},PG=R.prognosis_performance&&R.prognosis_performance.models&&R.prognosis_performance.models.length?R.prognosis_performance:null,p2=PG||R.agent2_performance||{};let CL=PG?PROG:CLS;
+  const best=Math.max(...(p3.models||[]).map(m=>m.auroc||0));
+  let h=`<table class="t1"><thead><tr><th>Agent 3 · 매시간 · 다음 24시간 이상</th><th>시점 / 환자</th><th>사건</th><th>AUROC</th><th>AUPRC</th><th>Brier</th><th>보정 기울기</th><th>상위 10% PPV</th></tr></thead><tbody>`;
+  for(const m of p3.models||[])h+=`<tr><td>${esc(m.model)}</td><td>${N(m.n)} / ${N(m.patients)}</td><td>${N(m.events)}</td><td class="${m.auroc===best?"best":""}">${CI(m.auroc,m.auroc_ci)}</td><td>${CI(m.auprc,m.auprc_ci)}</td><td>${fmt(m.brier,3)}</td><td>${fmt(m.cal_slope,2)}</td><td>${pct(m.top10_ppv,1)}</td></tr>`;
+  const o=p3.one_landmark_per_patient_gbm;if(o)h+=`<tr><td>그래디언트 부스팅 · 환자당 한 시점</td><td>${N(o.n)} / ${N(o.patients)}</td><td>${N(o.events)}</td><td>${CI(o.auroc,o.auroc_ci)}</td><td>${CI(o.auprc,o.auprc_ci)}</td><td>${fmt(o.brier,3)}</td><td>${fmt(o.cal_slope,2)}</td><td>–</td></tr>`;
+  if(!(p3.models||[]).length)h+=`<tr><td colspan="8" class="muted">학습 가능한 시점이 부족해 계산하지 않았습니다.</td></tr>`;
+  const CLk=Object.keys(CL).filter(k=>(p2.models||[]).some(m=>(m.per_class||[]).some(x=>x.class===k&&x.auroc!=null)));if(CLk.length)CL=Object.fromEntries(CLk.map(k=>[k,(PG?PROG:CLS)[k]]));
+  h+=`</tbody></table><table class="t1" style="margin-top:18px"><thead><tr><th>Agent 2 · 알림 시 · ${PG?"예후 네 경로":"48시간 첫 사건"}</th><th>평가 사건</th>${Object.values(CL).map(c=>`<th>${c} AUROC</th>`).join("")}<th>${PG?"정확도":"다중 Brier"}</th></tr></thead><tbody>`;
+  for(const m of p2.models||[])h+=`<tr><td>${esc(m.model)}</td><td>${N(m.n_test)}</td>${Object.keys(CL).map(k=>{const c=(m.per_class||[]).find(x=>x.class===k)||{};return `<td>${CI(c.auroc,c.auroc_ci)}</td>`}).join("")}<td>${PG?pct(m.accuracy,0):fmt(m.multiclass_brier,3)}</td></tr>`;
+  if(!(p2.models||[]).length)h+=`<tr><td colspan="7" class="muted">평가 사건이 부족해 계산하지 않았습니다.</td></tr>`;
+  const DI=R.death_icu_performance;if(DI&&DI.auroc!=null)h+=`</tbody></table><table class="t1" style="margin-top:18px"><thead><tr><th>Agent 2 · 알림 시 · ICU 사망 (퇴실 후 24시간 포함)</th><th>평가 사건</th><th>사망</th><th>AUROC</th><th>AUPRC</th><th>Brier</th><th>보정 기울기</th><th>상위 10% PPV</th></tr></thead><tbody><tr><td>그래디언트 부스팅</td><td>${N(DI.n)}</td><td>${N(DI.events)}</td><td>${CI(DI.auroc,DI.auroc_ci)}</td><td>${CI(DI.auprc,DI.auprc_ci)}</td><td>${fmt(DI.brier,3)}</td><td>${fmt(DI.cal_slope,2)}</td><td>${pct(DI.top10_ppv,1)}</td></tr>`;
+  h+=`</tbody></table><table class="t1" style="margin-top:18px"><thead><tr><th>Agent 1 · 알림 시 · 원인 후보</th><th>평가 사건</th><th>Top-1</th><th>Top-3</th><th>판단 보류</th></tr></thead><tbody>`;
+  const r1=v=>v?`${N(v.k)}/${N(v.n)} · ${pct(v.rate,0)} <span class="ci">(${pct(v.ci&&v.ci[0],0)}–${pct(v.ci&&v.ci[1],0)})</span>`:"–";
+  for(const m of p1.models||[])h+=`<tr><td>${esc(m.model)} · 퇴원 진단 대리 기준</td><td>${N(m.n)}</td><td>${r1(m.top1)}</td><td>${r1(m.top3)}</td><td>${pct(m.abstain_rate,0)}</td></tr>`;
+  h+=`<tr><td>전문의 1인 눈가림 참조</td><td colspan="4" class="muted" style="text-align:left">판정 진행 중. 완료되면 이 행에 채웁니다.</td></tr></tbody></table>`;
+  if(p1.paired_top1_rule_vs_llm){const q=p1.paired_top1_rule_vs_llm;h+=`<p class="muted" style="font-size:.8rem;margin-top:8px">규칙 vs LLM Top-1 짝지은 McNemar: 불일치 ${q.discordant}쌍, 정확 p = ${fmt(q.p_exact_two_sided,3)}</p>`}
+  $("#table2").innerHTML=h;
+}
+function lineChart(series,{w=380,h=320,xl,yl,diag=true}){const m={l:44,r:12,t:12,b:40},x=lin(0,1,m.l,w-m.r),y=lin(0,1,h-m.b,m.t),s=svgBox(w,h,"");
+  [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:m.t,y2:h-m.b}));s.append(S("line",{class:"grid",x1:m.l,x2:w-m.r,y1:y(t),y2:y(t)}));s.append(S("text",{x:x(t),y:h-m.b+14,"text-anchor":"middle"},t));s.append(S("text",{x:m.l-5,y:y(t)+3,"text-anchor":"end"},t))});
+  if(diag)s.append(S("line",{x1:x(0),y1:y(0),x2:x(1),y2:y(1),stroke:"var(--muted)","stroke-dasharray":"4 4"}));
+  series.forEach((sr,i)=>{s.append(S("polyline",{points:sr.pts.map(p=>`${x(p[0])},${y(p[1])}`).join(" "),fill:"none",stroke:sr.col,"stroke-width":2.2}));const yy=m.t+14+i*15;s.append(S("line",{x1:x(.45),x2:x(.53),y1:y(0)-60+i*15,y2:y(0)-60+i*15,stroke:sr.col,"stroke-width":2.4}));s.append(S("text",{x:x(.55),y:y(0)-57+i*15,class:"ink"},sr.label))});
+  s.append(S("text",{x:(m.l+w-m.r)/2,y:h-8,"text-anchor":"middle"},xl));s.append(S("text",{x:12,y:(m.t+h-m.b)/2,transform:`rotate(-90 12 ${(m.t+h-m.b)/2})`,"text-anchor":"middle"},yl));return s.outerHTML}
+function renderROC(R){const p=R.agent3_performance||{},cv=p.curves||{},cols=["var(--muted)","var(--alp)"];
+  const ser=Object.entries(cv).filter(([k,v])=>v).map(([k,v],i)=>({label:`${k} ${fmt((p.models.find(m=>m.model===k)||{}).auroc,3)}`,col:cols[i%2],pts:v.roc.map(r=>[r.fpr,r.tpr])}));
+  $("#roc-plot").innerHTML=ser.length?lineChart(ser,{xl:"1 − 특이도",yl:"민감도"}):na("agent3_performance.curves")}
+function renderCal(R){const cv=((R.agent3_performance||{}).curves||{})["그래디언트 부스팅"];if(!cv){$("#cal-plot").innerHTML=na("agent3 calibration");return}
+  const cal=cv.calibration,mx=Math.min(1,Math.max(.2,...cal.map(r=>Math.max(r.ci_high,r.mean_predicted))));const W=380,H=320,m={l:44,r:12,t:12,b:40},x=lin(0,mx,m.l,W-m.r),y=lin(0,mx,H-m.b,m.t),s=svgBox(W,H,"보정");
+  niceTicks(mx,4).filter(t=>t<=mx+1e-9).forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:m.t,y2:H-m.b}));s.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(t),y2:y(t)}));s.append(S("text",{x:x(t),y:H-m.b+14,"text-anchor":"middle"},pct(t)));s.append(S("text",{x:m.l-5,y:y(t)+3,"text-anchor":"end"},pct(t)))});
+  s.append(S("line",{x1:x(0),y1:y(0),x2:x(mx),y2:y(mx),stroke:"var(--muted)","stroke-dasharray":"4 4"}));
+  cal.forEach(r=>{s.append(S("line",{x1:x(r.mean_predicted),x2:x(r.mean_predicted),y1:y(Math.min(mx,r.ci_low)),y2:y(Math.min(mx,r.ci_high)),stroke:"var(--alp)"}));s.append(S("circle",{cx:x(r.mean_predicted),cy:y(Math.min(mx,r.observed)),r:4,fill:"var(--alp)"}))});
+  const g=(R.agent3_performance.models||[]).find(m=>m.model==="그래디언트 부스팅")||{};s.append(S("text",{x:m.l+8,y:m.t+14,class:"ink"},`기울기 ${fmt(g.cal_slope,2)} · 절편 ${fmt(g.cal_intercept,2)}`));
+  s.append(S("text",{x:(m.l+W-m.r)/2,y:H-8,"text-anchor":"middle"},"예측 위험"));s.append(S("text",{x:12,y:(m.t+H-m.b)/2,transform:`rotate(-90 12 ${(m.t+H-m.b)/2})`,"text-anchor":"middle"},"관찰 비율"));
+  $("#cal-plot").innerHTML=s.outerHTML}
+function forest(rows,{w=420,lw=150}){const H=rows.length*26+36,s=svgBox(w,H,""),x=lin(0,1,lw,w-16);
+  [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:4,y2:H-28}));s.append(S("text",{x:x(t),y:H-12,"text-anchor":"middle"},t))});
+  s.append(S("line",{x1:x(.5),x2:x(.5),y1:4,y2:H-28,stroke:"var(--muted)","stroke-dasharray":"3 3"}));
+  rows.forEach((r,i)=>{const yy=16+i*26;s.append(S("text",{x:lw-8,y:yy+4,"text-anchor":"end",class:"ink"},r.label));if(r.v==null)return;if(r.ci)s.append(S("line",{x1:x(r.ci[0]),x2:x(r.ci[1]),y1:yy,y2:yy,stroke:r.col,"stroke-width":2}));s.append(S("circle",{cx:x(r.v),cy:yy,r:4.5,fill:r.col}))});return s.outerHTML}
+function renderA2fig(R){const PG=R.prognosis_performance&&(R.prognosis_performance.models||[]).length,ms=(PG?R.prognosis_performance:R.agent2_performance||{}).models||[],CL2=PG?PROG:CLS;if(!ms.length){$("#a2-plot").innerHTML=na("agent2_performance");return}
+  const rows=[];Object.keys(CL2).filter(k=>ms.some(m=>(m.per_class||[]).some(x=>x.class===k&&x.auroc!=null))).forEach(k=>ms.forEach((m,i)=>{const c=(m.per_class||[]).find(x=>x.class===k)||{};rows.push({label:`${CL2[k]} · ${i?"GBM":"로지스틱"}`,v:c.auroc,ci:c.auroc_ci,col:i?"var(--c-dis)":"var(--muted)"})}));
+  $("#a2-plot").innerHTML=rows.some(r=>r.v!=null)?forest(rows,{}):na("agent2_performance","평가 사건이 부족해 AUROC를 계산하지 않았습니다. 전체 MIMIC-IV에서 채워집니다.")}
+function renderA1fig(R){const ms=(R.agent1_performance||{}).models||[];if(!ms.length){$("#a1-plot").innerHTML=na("agent1_performance");return}
+  const rows=[];ms.forEach((m,i)=>["top1","top3"].forEach(k=>rows.push({label:`${m.model.slice(0,18)} · ${k==="top1"?"Top-1":"Top-3"}`,v:m[k]&&m[k].rate,ci:m[k]&&m[k].ci,col:i?"var(--accent)":"var(--alt)"})));
+  $("#a1-plot").innerHTML=forest(rows,{lw:190})}
+
+const PROG={unassessable_alive_icu:"판정 불가·생존 ICU 퇴실",unassessable_died_icu:"판정 불가·ICU 사망",recovered_alive_icu:"회복·생존 ICU 퇴실",recovered_died_icu:"회복·ICU 사망",unrecovered_alive_icu:"미회복·생존 ICU 퇴실",unrecovered_died_icu:"미회복·ICU 사망"};
+function renderTable3(R){const P=R.trajectory_performance||[];if(!P.length){$("#table3").innerHTML=na("trajectory_performance");return}
+  const an=[...new Set(P.map(r=>r.analyte))],hs=[6,12,18,24];
+  let h=`<table class="t1"><thead><tr><th>지표</th>${hs.map(x=>`<th>+${x}h 오차 (모델 / 마지막 값)</th>`).join("")}<th>80% 구간 포함률</th></tr></thead><tbody>`;
+  for(const a of an){const rs=P.filter(r=>r.analyte===a);const cov=rs.reduce((s,r)=>s+r.coverage_80*r.n,0)/Math.max(1,rs.reduce((s,r)=>s+r.n,0));
+    h+=`<tr><td>${a}</td>${hs.map(x=>{const r=rs.find(z=>z.horizon_h===x);if(!r)return "<td>–</td>";const win=r.mae_model<r.mae_persistence;return `<td class="${win?"best":"smd-hi"}">${fmt(r.mae_model,2)} / ${fmt(r.mae_persistence,2)} <span class="ci">n=${N(r.n)}</span></td>`}).join("")}<td>${pct(cov,0)}</td></tr>`}
+  h+=`</tbody></table><p class="muted" style="font-size:.8rem;margin-top:8px">굵게: 모델이 마지막 값 유지보다 정확 · 주황: 마지막 값 유지가 더 정확</p>`;$("#table3").innerHTML=h}
+function renderShap(R){const E=R.agent3_explanation;if(!E){$("#shap-plot").innerHTML=na("agent3_explanation");return}
+  const rows=E.importance.map(r=>({label:r.label,v:r.mean_abs}));const mx=Math.max(...rows.map(r=>r.v))||1;
+  $("#shap-plot").innerHTML=hbars(rows,{label:r=>r.label,value:r=>r.v,max:mx*1.15,fmtv:v=>fmt(v*100,1)+"%p",lw:130,color:r=>r.label==="측정 패턴"?"var(--warn)":"var(--alp)"})+`<p class="muted" style="font-size:.78rem">${esc(E.method)} · 평가 시점 ${N(E.n_rows)}개</p>`}
+function renderTable2b(R){const E=R.event_thresholds,A=R.agent3_by_threshold;if(!E&&!A){$("#table2b").innerHTML=na("event_thresholds · agent3_by_threshold");return}
+  const ci=(v,c)=>v==null?"–":`${fmt(v,3)}${c?` <span class="ci">(${fmt(c[0],3)}–${fmt(c[1],3)})</span>`:""}`;
+  let h="";if(E)h+=`<table class="t1"><thead><tr><th>기준</th><th>첫 사건 환자</th><th>ICU 퇴실 전 회복</th><th>미회복</th><th>회복 판정 불가</th><th>ICU 사망</th><th>생존 ICU 퇴실</th></tr></thead><tbody>${E.map(r=>`<tr><td>${r.threshold_x_uln}×ULN</td><td>${N(r.patients_with_event)}</td><td>${N(r.recovered_before_icu_discharge)} (${pct(r.recovered_rate,1)})</td><td>${N(r.unrecovered_before_icu_discharge)}</td><td>${N(r.recovery_unassessable)}</td><td>${N(r.icu_death)} (${pct(r.died_icu_rate,1)})</td><td>${N(r.alive_icu_discharge)}</td></tr>`).join("")}</tbody></table>`;
+  if(A)h+=`<table class="t1" style="margin-top:12px"><thead><tr><th>예측 목표</th><th>평가 시점</th><th>사건</th><th>AUROC</th><th>AUPRC</th><th>Brier</th></tr></thead><tbody>${A.map(r=>`<tr class="${r.threshold_x_uln===5?"best":""}"><td>24h 내 ≥${r.threshold_x_uln}×ULN${r.threshold_x_uln===5?" (주 모델)":""}</td><td>${N(r.n??r.rows)}</td><td>${N(r.events)}</td><td>${ci(r.auroc,r.auroc_ci)}</td><td>${ci(r.auprc,r.auprc_ci)}</td><td>${fmt(r.brier,3)}</td></tr>`).join("")}</tbody></table>`;
+  $("#table2b").innerHTML=h}
+function renderTable4(R){const F=R.agent1_flags;if(!F){$("#table4").innerHTML=na("agent1_flags");return}
+  const ci=(v,c)=>v==null?"–":`${pct(v,0)}${c?` <span class="ci">(${pct(c[0],0)}–${pct(c[1],0)})</span>`:""}`;
+  $("#table4").innerHTML=`<table class="t1"><thead><tr><th>원인</th><th>판정 1</th><th>대리 양성</th><th>민감도</th><th>특이도</th></tr></thead><tbody>${F.per_cause.map(r=>`<tr><td>${esc(CAUSE[r.cause]||r.cause)}</td>${r._suppressed?`<td colspan="4" class="muted">10 미만 칸이 있어 가림 (빼기로 역산되지 않게 함께 가림)</td>`:`<td>${N(r.flagged)}</td><td>${N(r.proxy_positive)}</td>${r.assessable===false?`<td colspan="2" class="muted">판단 불가 (영상·국소 소견 필요)</td>`:r.proxy_available===false?`<td colspan="2" class="muted">대리 기준 없음 (해당 ICD 없음)</td>`:`<td>${ci(r.sensitivity,r.sensitivity_ci)}</td><td>${ci(r.specificity,r.specificity_ci)}</td>`}`}</tr>`).join("")}</tbody></table><p class="muted" style="font-size:.78rem;margin-top:6px">${esc(F.model)} · 평가 사건 ${N(F.n_events)} · 2개 이상 동시 해당 ${N(F.events_with_multiple_flags)} · 해당 없음 ${N(F.events_with_no_flag)}</p>`}
+function renderLight(R){const t=(R.table1||[])[0]||{},d=R.agent3_development||{},d2=R.agent2_development||{},g=((R.agent3_performance||{}).models||[]).find(m=>m.model==="그래디언트 부스팅")||{};
+  $("#light").innerHTML=[[N(t.overall),"명의 ICU 환자를 시간순으로 재생"],[N(d.landmarks_total),"번의 매시간 판단 시점"],[N(d2.events),"건의 첫 이상 사건에 원인·경과 제시"],[g.auroc!=null?fmt(g.auroc,2):"–","Agent 3 AUROC (평가 집단)"]].map(([b,t])=>`<div><b>${b}</b><span>${t}</span></div>`).join("")}
+function renderBA(R,kind){
+  const L=R.shadow_leakage||{},M=R.shadow_missing_as_normal||{},Cm=R.shadow_competing||{},A=R.alert_aggregation||(st.summary||{}).alert_aggregation||[],SI=R.shadow_input||(st.summary||{}).stress_adoption;
+  const comp=Cm.evaluation&&Cm.evaluation.n>=30?Cm.evaluation:Cm.development||Cm.evaluation;
+  const raw=(A.find(r=>r.comparison==="raw_abnormal_lab_records")||{}).n,evn=(A.find(r=>r.comparison==="first_patient_event_alerts")||{}).n;
+  const pick=(c,g)=>SI&&SI.find(r=>r.input_condition===c&&r.guarded===g);
+  const cards=[
+   {k:"leak",t:"데이터 누출: 같은 환자가 양쪽에 들어가면",q:"매시간 시점을 환자 구분 없이 무작위로 나누면 성능은 어떻게 보일까?",b:["무작위 시점 분할",F2(L.before_row_split),"AUROC"],a:["환자 단위 분할",F2(L.after_patient_split),"AUROC"],
+    d:L.before_row_split!=null?`AUROC가 ${fmt(L.before_row_split-L.after_patient_split,2)} 부풀려짐`:null,w:"같은 환자의 앞뒤 시간이 학습과 평가에 동시에 들어가면 모델은 질병이 아니라 환자를 외웁니다. 발표하는 모든 성능은 환자 단위 분할 결과입니다.",src:"shadow_leakage"},
+   {k:"miss",t:"측정 없음은 정상이 아니다",q:"이상 수치가 화면에 없으면 정상이라고 봐도 될까?",b:["‘이상 없음’으로 보이는 시간",M.naive_normal_hours!=null?N(M.naive_normal_hours):null,"시간"],a:["실제로 판정 가능한 시간",M.truly_eligible_hours!=null?N(M.truly_eligible_hours):null,"시간"],
+    d:M.unmeasured_share_of_naive_normal!=null?`${pct(M.unmeasured_share_of_naive_normal,0)}는 최근 24시간 안에 간 검사가 하나라도 빠져 있었음`:null,w:"Agent 3은 세 항목이 모두 최근에 측정된 시간에만 실행됩니다. 측정이 없으면 화면은 ‘판정 불가’를 표시합니다.",src:"shadow_missing_as_normal"},
+   {k:"comp",t:"회복만 세면 생기는 착시",q:"퇴원하거나 사망한 환자를 ‘아직 회복 안 됨’으로 남겨두면?",b:["사망·퇴원을 무시한 해소 확률",comp?pct(comp.naive_resolution_48h,1):null,"48시간"],a:["경쟁 사건을 반영한 해소 확률",comp?pct(comp.aj_resolution_48h,1):null,comp?`사망 ${pct(comp.aj_death_48h,1)} · 퇴원 ${pct(comp.aj_discharge_48h,1)}`:""],
+    d:comp?(Math.abs(comp.naive_resolution_48h-comp.aj_resolution_48h)<.005?"이 표본에서는 차이가 작음":`해소를 ${fmt((comp.naive_resolution_48h-comp.aj_resolution_48h)*100,1)}%p 과대추정`):null,w:"van Geloven 등(BMJ 2022)의 권고대로 사망과 퇴원을 경쟁 사건으로 다뤘습니다.",src:"shadow_competing"},
+   {k:"alert",t:"알림 홍수를 환자 단위로",q:"기준을 넘는 검사마다 알림을 보내면 몇 번 울릴까?",b:["기준 이상 검사 기록",raw!=null?N(raw):null,"건"],a:["환자당 첫 사건 알림",evn!=null?N(evn):null,"건"],
+    d:raw&&evn?`${fmt(raw/evn,1)}배 적은 알림 (기계적 건수)`:null,w:"업무 부담 감소를 입증한 것은 아닙니다. 첫 사건만 알리면 이후 악화를 놓칠 수 있어 다음 과제로 남깁니다.",src:"18_alert_aggregation.csv"},
+   (()=>{const DE=R.shadow_data_error,sc=DE&&DE.scenarios?Object.fromEntries(DE.scenarios.map(x=>[x.key,x])):{},al=sc.alt_x100,ag=sc.age_x10;
+     const rate=(o,n)=>o&&o.fake_liver_event!=null&&n?pct(o.fake_liver_event/n,0):null;
+     return {k:"value",t:"값 하나가 틀리면",q:"나이 19를 190으로, ALT 45를 4500으로 잘못 적으면?",b:["현재 파이프라인",al?rate(al.before,al.applicable):null,"정상 환자에게 가짜 간기능 이상 사건"],a:["값 검증 규칙 추가",al?rate(al.after,al.applicable):null,"같은 환자, 같은 오류"],
+      d:al?`ALT 오류 ${pct(al.catch_rate_after,0)} 차단${ag?` · 나이 190은 전에는 ${pct(ag.catch_rate_before,0)}, 후에는 ${pct(ag.catch_rate_after,0)} 차단`:""}${DE.guard_cost_on_real_data?` · 실제 값 중 잘못 보류 ${pct(DE.guard_cost_on_real_data.quarantined_share,2)}`:""}`:null,
+      w:"트리 모델은 나이 190을 가장 나이 많은 환자처럼 조용히 받아들입니다. 오류는 경고 없이 위험도와 원인 판정을 바꿉니다. 그래서 범위·급변·짝 효소 불일치 규칙으로 값을 보류하고 ‘재측정 확인’을 띄웁니다. 그럴듯한 범위 안의 오류는 규칙으로도 못 잡는다는 한계도 함께 보고합니다.",
+      src:"shadow_data_error",pending:!DE||DE.status==="failed"?"전체 MIMIC-IV 실행 결과(shadow_data_error)가 오면 채워집니다.":null}})(),
+  ];
+  const SC=R.shadow_shortcut,TP=(R.trajectory_performance||[]).filter(r=>r.horizon_h===24);
+  if(SC&&SC.measurement_share!=null)cards.push({k:"short",t:"모델은 무엇을 보고 있었나",q:"간 수치를 보고 위험을 낸다고 믿었다면?",b:["우리가 기대한 것","간 수치",""],a:["‘측정 패턴’의 기여",pct(SC.measurement_share,0),`9개 그룹 중 ${SC.rank}위`],
+    d:SC.rank<=2?"검사를 얼마나 자주 했는지가 상위 근거. 지름길 학습 경고":"측정 패턴은 상위 근거가 아님",w:"특강의 안저 사진 밝기처럼, 기계는 모든 것을 봅니다. 그룹 Shapley로 모델이 기대는 근거를 매시간 화면에 함께 띄웁니다.",src:"agent3_explanation"});
+  if(TP.length){const mm=TP.reduce((s,r)=>s+r.mae_model*r.n,0)/TP.reduce((s,r)=>s+r.n,0),mp=TP.reduce((s,r)=>s+r.mae_persistence*r.n,0)/TP.reduce((s,r)=>s+r.n,0);
+    cards.push({k:"persist",t:"복잡한 모델이 ‘마지막 값’을 이겼나",q:"24시간 뒤 간 수치, 마지막 측정값을 그대로 쓰면?",b:["마지막 값 유지 오차",fmt(mp,2),"log₂ 배수 평균 절대 오차"],a:["궤적 모델 오차",fmt(mm,2),mm<mp?"모델이 더 정확":"마지막 값이 더 정확"],
+    d:mm<mp?`오차 ${pct(1-mm/mp,0)} 감소`:`모델이 ${pct(mm/mp-1,0)} 더 부정확. 그대로 보고합니다`,w:"단순 기준선을 같이 보여주지 않으면 모델의 가치를 판단할 수 없습니다.",src:"trajectory_performance"})}
+  if(L.before_unreported_results!=null)cards.splice(1,0,{k:"unrep",t:"아직 보고되지 않은 결과를 미리 보면",q:"채혈 시각만 보고 결과 보고 시각을 무시하면?",b:["채혈 시각 기준 특징",F2(L.before_unreported_results),"AUROC"],a:["결과 보고 시각 기준 특징",F2(L.after_patient_split),"AUROC"],
+    d:`평가 특징값의 ${pct(L.unreported_share_of_features,1)}가 그 시각에는 아직 볼 수 없던 값`,w:"모든 입력은 max(charttime, storetime)로 정한 공개 시각까지의 값만 씁니다.",src:"shadow_leakage"});
+  $("#ba-grid").innerHTML=cards.map(c=>`<article class="ba${c.pending?" pending":""}" data-state="before" id="ba-${c.k}"><h4>${c.t}</h4><p class="q">${c.q}</p>
+    <div class="flip"><div class="side before"><small>전 · ${c.b[0]}</small><b>${c.b[1]??"–"}</b><span>${c.b[2]}</span></div><div class="side after"><small>후 · ${c.a[0]}</small><b>${c.a[1]??"–"}</b><span>${c.a[2]}</span></div></div>
+    <p class="delta">${c.pending?esc(c.pending):c.d||""}</p><p class="why">${c.w}</p><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><button class="btn toggle">후 보기</button><span class="src-line">${c.src}${kind==="demo"?" · Demo 100명":""}</span></div></article>`).join("");
+  const flip=(el,to)=>{el.dataset.state=to||(el.dataset.state==="before"?"after":"before");el.querySelector(".toggle").textContent=el.dataset.state==="before"?"후 보기":"전 보기"};
+  $("#ba-grid").querySelectorAll(".ba").forEach(el=>el.querySelector(".toggle").onclick=()=>flip(el));
+  $("#ba-all").onclick=()=>{const els=[...$("#ba-grid").querySelectorAll(".ba")],to=els.some(e=>e.dataset.state==="before")?"after":"before";els.forEach((e,i)=>setTimeout(()=>flip(e,to),i*160))};
+}
+function formatAudit(R){const A=R.value_format_audit;if(!A||!A.length)return "";const by={};A.forEach(r=>{by[r.kind]=(by[r.kind]||0)+(r.n||0)});const sup=A.some(r=>r.n==null);
+  const K={malformed_number:"형식 오류 (예: 37..5)",censored:"검출 한계 표기 (예: <5)",deidentified:"비식별 처리 (___)",text:"기타 문자",empty:"빈 값"};
+  return `<p style="font-size:.84rem;margin-top:10px"><b>전체 자료에서 숫자 칸인데 숫자로 읽히지 않은 값</b> · 지금까지는 경고 없이 버려졌습니다: ${Object.entries(by).map(([k,n])=>`${K[k]||k} ${N(n)}건`).join(" · ")}${sup?" (10건 미만 칸은 합계에서 빠짐)":""}</p>`}
+function renderDECohort(R){const DE=R.shadow_data_error;$("#stress-cohort").innerHTML=DE&&DE.scenarios?`<div style="overflow-x:auto"><table class="t1"><thead><tr><th>오류</th><th>대상</th><th>차단 전</th><th>차단 후</th><th>가짜 사건 전→후</th><th>A1 판정 바뀜 전→후</th></tr></thead><tbody>${DE.scenarios.map(x=>`<tr><td>${esc(x.label)}</td><td>${N(x.applicable)}</td><td>${pct(x.catch_rate_before,0)}</td><td>${pct(x.catch_rate_after,0)}</td><td>${x.before&&x.before.fake_liver_event!=null?N(x.before.fake_liver_event)+" → "+N(x.after.fake_liver_event):"–"}</td><td>${x.before&&x.before.agent1_flag_changed!=null?N(x.before.agent1_flag_changed)+" → "+N(x.after.agent1_flag_changed):"–"}</td></tr>`).join("")}</tbody></table></div>${formatAudit(R)}<p class="muted" style="font-size:.78rem;margin-top:6px">규칙 비용: 실제 검사값 ${N(DE.guard_cost_on_real_data?.lab_values)}건 중 ${N(DE.guard_cost_on_real_data?.quarantined)}건 보류 · 실제 사건 ${N(DE.guard_cost_on_real_data?.true_events)}건 중 첫 값이 보류된 사건 ${N(DE.guard_cost_on_real_data?.true_events_trigger_held)}건</p>`:na("shadow_data_error","전체 MIMIC-IV 실행 결과가 오면 채워집니다.")}
+function renderChecks(R,kind){
+  const ok='<svg viewBox="0 0 16 16"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',todo='<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+  const d=R.agent3_development||{},lc=d.label_counts||{};
+  const items=[[1,"모든 입력은 결과 공개 시각(max(charttime, storetime))까지의 값만 사용"],[1,"환자 단위 개발·평가 분할, 두 집단 중복 0명 (노트북 assert)"],
+    [kind==="full"&&R.meta.excluded_demo_subjects_in_cohort!=null,`공개 시연 환자 ${N(R.meta.excluded_demo_subjects_in_cohort)}명을 학습·평가에서 제외`],
+    [1,"하이퍼파라미터는 개발 집단 내부 교차검증으로만 선택, 평가 집단은 한 번만 사용"],[1,"퇴원 진단·이후 경과는 평가 전용. 모델 입력으로 쓰지 않음"],
+    [1,`결과 확인이 안 되는 ${N(lc.insufficient_measurement)} 시점을 음성으로 바꾸지 않고 제외`],[1,"측정 없음은 ‘판정 불가’로 표시하고 정상으로 처리하지 않음"],
+    [kind==="full","공개 결과는 집단 집계만, 10 미만 칸 가림"],[0,"전문의 1인 눈가림 참조 판정 (진행 중)"],[0,"외부 기관 검증 (다음 과제)"]];
+  $("#checks").innerHTML=items.map(([o,t])=>`<li class="${o?"":"todo"}">${o?ok:todo}<span>${t}</span></li>`).join("");
+}
+
+function heroMonitor(c){
+  const g=GROUP[c.group]||[""];$("#hm-id").textContent=`${c.case_key}${g[0]?" · "+g[0]:""}`;
+  const end=Math.min(c.max_hour,(c.alertHour??c.max_hour-36)+36);
+  const W=520,H=190,m={l:32,r:12,t:10,b:20},x=lin(0,end,m.l,W-m.r),lmin=Math.log10(.3),lmax=Math.log10(60);
+  const y=v=>lin(lmin,lmax,H-m.b,m.t)(Math.log10(Math.max(.3,Math.min(60,v))));
+  const svg=$("#hm-trace");
+  const draw=h=>{svg.innerHTML="";
+    for(const v of [1,2,10,50]){svg.append(S("line",{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:"var(--line)"}));svg.append(S("text",{x:m.l-5,y:y(v)+3,"text-anchor":"end"},v+"×"))}
+    svg.append(S("line",{x1:m.l,x2:W-m.r,y1:y(2),y2:y(2),stroke:"var(--crit)","stroke-dasharray":"5 4","stroke-width":1.3}));
+    for(const a of TRIG){const pts=c.points[a].filter(p=>p.pub<=h&&p.h<=end);if(!pts.length)continue;
+      svg.append(S("polyline",{points:pts.map(p=>`${x(p.h)},${y(p.r)}`).join(" "),fill:"none",stroke:COL[a],"stroke-width":2.4,"stroke-linejoin":"round","stroke-linecap":"round"}));
+      const lp=pts[pts.length-1];svg.append(S("circle",{cx:x(lp.h),cy:y(lp.r),r:4,fill:COL[a]}));svg.append(S("text",{x:x(lp.h)+7,y:y(lp.r)+3,style:`fill:${COL[a]};font-weight:600`},a))}
+    svg.append(S("line",{x1:x(h),x2:x(h),y1:m.t,y2:H-m.b,stroke:"var(--ink)","stroke-opacity":.5}));
+    for(let t=0;t<=end;t+=24)svg.append(S("text",{x:x(t),y:H-5,"text-anchor":"middle"},t+"h"));
+    $("#hm-clock").textContent=`${h} h`};
+  const reveal=()=>{
+    if(c.alertHour==null){$("#hm-alert-t").textContent="ICU 재원 중 2×ULN 알림 없음";return}
+    const trig=TRIG.flatMap(a=>c.points[a].filter(p=>p.r>=2&&p.pub<=c.alertHour+1).map(p=>({a,r:p.r,pub:p.pub}))).sort((u,v)=>u.pub-v.pub||v.r-u.r)[0];
+    $("#hm-alert-t").textContent=`${c.alertHour}h · ${trig?`${trig.a} ${fmt(trig.r,1)}×ULN 공개`:"기준 도달"} → 원인 추정 실행`;$("#hm-alert").classList.add("on");
+    const f=c.frames.find(fr=>fr.hour>=c.alertHour&&fr.agent1&&fr.agent1.answer),ans=f&&f.agent1.answer.with_cluster;
+    const ul=$("#hm-cands");
+    ul.innerHTML=ans&&ans.candidates?ans.candidates.slice(0,3).map((cd,i)=>`<li style="--i:${i}"><span class="rank" style="--agent-c:var(--alt)">${i+1}</span><b>${esc(CAUSE[cd.cause_code]||cd.cause_code)}</b><small>근거 ${(cd.support||[]).length} · 반대·누락 ${(cd.against_or_missing||[]).length}</small></li>`).join("")
+      :`<li style="--i:0"><span></span><b>LLM 결과 없음</b><small>가상 원인을 만들지 않음</small></li>`;
+    if(f&&f.agent1.backend==="rule")$("#hm-foot").textContent="Agent 1 · 규칙 기반 기준 모델 (LLM 아님)";
+    requestAnimationFrame(()=>ul.classList.add("on"))};
+  $("#hm-src").textContent=st.manifest.source==="mimic-iv-demo"?"MIMIC-IV Demo 실데이터":st.manifest.source==="synthetic"?"합성 예시":"MIMIC-IV";
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches){draw(end);reveal();return}
+  let h=0;const run=()=>{draw(h);
+    if(c.alertHour!=null&&h===c.alertHour){reveal();h++;return setTimeout(run,1100)}
+    if(h<end){h++;setTimeout(run,55)}};
+  run();
+}
+load();
+</script>
+</body>
+</html>

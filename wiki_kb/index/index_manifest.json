@@ -1,0 +1,12 @@
+{
+ "wiki_sha256": "e16700007b742a76b8320f3ae1f66f795b655693ba468dc47512b6c10077f3ae",
+ "chunks": 451,
+ "pages": 63,
+ "chunking": {
+  "chars": 1000,
+  "overlap": 200,
+  "heading_aware": true
+ },
+ "lexical": "BM25 (k1=1.5, b=0.75), Korean bigrams",
+ "embedding": null
+}
