@@ -2,7 +2,8 @@
 
 The cause agent receives the ACG 2017 R-ratio pattern, a fixed and clinically defined
 category, instead of an unsupervised cluster id. Unsupervised clustering is kept only as a
-supplementary analysis: Gaussian mixture on log2 ULN ratios, K chosen by BIC over 2..8,
+supplementary analysis: Gaussian mixture, K chosen by BIC over 2..8,
+run twice: liver pattern only (ULN ratios + R) and broad clinical phenotype (about 30 variables),
 bootstrap adjusted Rand index (ARI) for stability. It is reported as "not used" when unstable.
 A cluster is a biochemical pattern, never a cause.
 """
@@ -38,19 +39,24 @@ def pattern_frame(features: pd.DataFrame) -> pd.Series:
 
 
 def _matrix(df: pd.DataFrame, cols):
-    X = df[cols].apply(pd.to_numeric, errors="coerce").clip(lower=0.05)
-    X = np.log2(X)  # ULN ratios are right-skewed; log2 makes 2x and 0.5x symmetric
+    X = df[cols].apply(pd.to_numeric, errors="coerce")
+    for c in cols:
+        v = X[c].dropna()
+        # log2 for strictly positive, non-binary columns (ULN ratios, lab values); slopes and flags stay linear
+        if len(v) and (v > 0).all() and v.nunique() > 2:
+            X[c] = np.log2(X[c].clip(lower=0.05))
     X = X.fillna(X.median())
     sd = X.std(ddof=0).replace(0, 1)
     return ((X - X.mean()) / sd).to_numpy()
 
 
-def gmm_explore(df: pd.DataFrame, cols, ks=range(2, 9), n_boot=50, seed=0, min_n=30):
+def gmm_explore(df: pd.DataFrame, cols, ks=range(2, 9), n_boot=50, seed=0, min_n=30, min_observed=0.5):
     """Supplementary: BIC-selected Gaussian mixture plus bootstrap ARI stability."""
     from sklearn.metrics import adjusted_rand_score
     from sklearn.mixture import GaussianMixture
-    cols = [c for c in cols if c in df and pd.to_numeric(df[c], errors="coerce").notna().any()]
-    out = {"method": "GaussianMixture(diag) on log2 ULN ratios, K by BIC, bootstrap ARI",
+    # keep variables observed in at least half of the rows; median imputation beyond that would dominate
+    cols = [c for c in cols if c in df and pd.to_numeric(df[c], errors="coerce").notna().mean() >= min_observed]
+    out = {"method": "GaussianMixture(diag), log2 for positive labs, K by BIC, bootstrap ARI",
            "n": int(len(df)), "features": cols, "stable_threshold": STABLE_ARI}
     if len(df) < min_n or not cols:
         return {**out, "status": "insufficient", "used": False}, None

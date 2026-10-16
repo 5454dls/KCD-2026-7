@@ -85,3 +85,15 @@ class PatternTests(unittest.TestCase):
         small, none = gmm_explore(df.head(10), ["ALT_ratio"])
         self.assertEqual(small["status"], "insufficient")
         self.assertIsNone(none)
+
+    def test_gmm_mixed_inputs_drop_sparse_columns(self):
+        import numpy as np
+        from kcd_liver.pattern import gmm_explore
+        rng = np.random.default_rng(1)
+        n = 80
+        df = pd.DataFrame({"ALT_ratio": rng.lognormal(1, 1, n), "ALT_slope24": rng.normal(0, 1, n),
+                           "pressor_record6": rng.integers(0, 2, n).astype(float),
+                           "LACTATE_latest": np.where(rng.random(n) < .8, np.nan, 2.0)})
+        out, lab = gmm_explore(df, list(df.columns), ks=range(2, 4), n_boot=5)
+        self.assertNotIn("LACTATE_latest", out["features"])  # observed in <50% of rows
+        self.assertEqual(len(lab), n)

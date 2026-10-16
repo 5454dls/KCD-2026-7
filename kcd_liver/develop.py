@@ -203,8 +203,14 @@ def build_features(rows: pd.DataFrame, lab: pd.DataFrame, context: pd.DataFrame,
     return X
 
 
-def feature_columns(X: pd.DataFrame) -> list[str]:
-    return [c for c in X.columns if c not in {"stay_id", "t", "subject_id", "split", "y", "label", "case_id"}]
+def feature_columns(X: pd.DataFrame, observed_in=None) -> list[str]:
+    """Model inputs. With observed_in (development mask), drop columns never observed there:
+    HistGradientBoosting cannot bin a feature with zero observed values."""
+    cols = [c for c in X.columns if c not in {"stay_id", "t", "subject_id", "split", "y", "label", "case_id"}]
+    if observed_in is not None:
+        m = np.asarray(observed_in, bool)
+        cols = [c for c in cols if pd.to_numeric(X.loc[m, c], errors="coerce").notna().any()]
+    return cols
 
 
 # ------------------------------------------------------------------ labels
@@ -566,7 +572,7 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
     if len(known) and known.y.nunique() == 2 and known.split.eq("evaluation").any():
         log(f"agent3: features for {len(known):,} known landmarks")
         X = build_features(known[["stay_id", "t"]], lab, context, cohort, hist)
-        cols = feature_columns(X)
+        cols = feature_columns(X, known.split.eq("development").values)
         Xa = X[cols].astype(float)
         tr = known.split.eq("development").values
         te = ~tr
@@ -641,7 +647,7 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
                                                                 "aj_discharge_48h": aj["cif"]["hospital_discharge"][-1], "curve": aj}
         if len(K2) and K2.split.eq("evaluation").any() and K2[K2.split.eq("development")].first_event_48h.nunique() >= 2:
             X2 = build_features(K2.rename(columns={"t0": "t"})[["stay_id", "t"]], lab, context, cohort, hist)
-            cols2 = feature_columns(X2)
+            cols2 = feature_columns(X2, K2.split.eq("development").values)
             Xa2 = X2[cols2].astype(float)
             tr2 = K2.split.eq("development").values
             y2 = K2.first_event_48h.values
@@ -987,7 +993,7 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
     Lt, targets = trajectory_rows(cohort, lab, step_hours=traj_step_hours)
     if len(Lt):
         Xt = build_features(Lt[["stay_id", "t"]], lab, context, cohort, hist)
-        cols_t = feature_columns(Xt)
+        cols_t = feature_columns(Xt, Lt.split.eq("development").values)
         models, perf = fit_trajectory(Lt, targets, Xt, cols_t)
         R["trajectory_performance"] = perf
         R["trajectory_development"] = {"landmarks": int(len(Lt)), "step_hours": traj_step_hours, "horizons": TRAJ_HORIZONS,
@@ -1006,7 +1012,7 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
         if len(ev2) and ev2.split.eq("evaluation").any() and ev2[ev2.split.eq("development")].observed_path.nunique() >= 2:
             from sklearn.base import clone
             X2 = build_features(ev2.rename(columns={"t0": "t"})[["stay_id", "t"]], lab, context, cohort, hist)
-            cols2 = feature_columns(X2)
+            cols2 = feature_columns(X2, ev2.split.eq("development").values)
             Xa = X2[cols2].astype(float)
             tr = ev2.split.eq("development").values
             y = ev2.observed_path.values
