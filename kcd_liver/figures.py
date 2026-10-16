@@ -79,7 +79,8 @@ def fig3_qc(agg, ax):
     ax.barh(names, [r["n"] or 0 for r in q], color=[PALETTE.get(a, PALETTE["muted"]) for a in names])
     for i, r in enumerate(q):
         if r["n"]:
-            ax.text(r["n"], i, f"  단위오류 {r['unit_invalid'] / r['n']:.1%} · ULN없음 {r['missing_uln'] / r['n']:.1%}",
+            share = lambda k: "<10건" if r.get(k) is None else f"{r[k] / r['n']:.1%}"  # small cells are suppressed
+            ax.text(r["n"], i, f"  단위오류 {share('unit_invalid')} · ULN없음 {share('missing_uln')}",
                     va="center", fontsize=7, color=PALETTE["muted"])
     ax.set_xlabel("추출 건수")
     ax.set_title("Figure 3. 검사 품질 관리")
@@ -257,7 +258,13 @@ def render_all(agg: dict, out_dir: Path, show: bool = False) -> list[Path]:
     paths = []
     for name, size, ncols, fn in plan:
         fig, axes = plt.subplots(1, ncols, figsize=size)
-        fn(agg, axes if ncols > 1 else axes)
+        try:
+            fn(agg, axes if ncols > 1 else axes)
+        except Exception as ex:  # one broken figure must not stop the run; the reason is printed on the figure
+            for a in (axes if ncols > 1 else [axes]):
+                a.clear()
+            _na(axes[0] if ncols > 1 else axes, f"{name}: {type(ex).__name__}")
+            print(f"figure {name} failed: {type(ex).__name__}: {ex}")
         _stamp(fig, agg)
         fig.tight_layout()
         p = out_dir / f"{name}.png"
