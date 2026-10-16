@@ -21,6 +21,8 @@ from collections import Counter
 from pathlib import Path
 
 CHUNK_CHARS, OVERLAP_CHARS = 1000, 200
+META_HEADINGS = re.compile(r"근거 공백|검색 방법|이 페이지의 범위|evidence gap", re.I)
+META_WEIGHT = 0.3
 _FM = re.compile(r"^---\n(.*?)\n---\n", re.S)
 
 
@@ -191,6 +193,8 @@ class WikiRetriever:
             qn = math.sqrt(sum(x * x for x in q)) or 1
             cos = [sum(a * b for a, b in zip(q, v)) / (qn * (math.sqrt(sum(x * x for x in v)) or 1)) for v in self.vecs]
             score = [.5 * s + .5 * c for s, c in zip(score, cos)]
+        # meta sections (what a source does NOT cover, how it was searched) list keywords but carry no evidence
+        score = [sc * (META_WEIGHT if META_HEADINGS.search(self.chunks[i]["heading_path"]) else 1) for i, sc in enumerate(score)]
         order = sorted(range(len(self.chunks)), key=lambda i: -score[i])
         out = []
         for i in order:
