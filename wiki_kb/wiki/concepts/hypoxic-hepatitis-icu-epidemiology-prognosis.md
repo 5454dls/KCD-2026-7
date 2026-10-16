@@ -3,7 +3,7 @@ type: concept
 title: ICU 저산소성 간염의 빈도, 소인, 예후
 tags: [hypoxic-hepatitis, icu, epidemiology, prognosis, mortality, risk-factors]
 related: [hypoxic-hepatitis, henrion-2007-hypoxic-hepatitis-clinician, fuhrmann-2011-hypoxic-hepatitis-icu-mortality, waseem-2018-acute-liver-injury-shock-nationwide, waseem-chen-hypoxic-hepatitis-review, congestive-hepatopathy, norepinephrine, sepsis-hemodynamic-resuscitation, threshold-disagreements, icu-liver-cause-evidence-map]
-sources: ["henrion-2012-hypoxic-hepatitis-clinician.pdf", "fuhrmann-2011-hypoxic-hepatitis-mortality-icu.pdf", "acute-liver-injury-hemodynamic-instability-2018.pdf", "hypoxic-hepatitis-review.pdf"]
+sources: ["henrion-2007-hypoxic-hepatitis-clinician.pdf", "fuhrmann-2011-hypoxic-hepatitis-mortality-icu.pdf", "waseem-2018-acute-liver-injury-shock-nationwide.pdf", "hypoxic-hepatitis-review.pdf"]
 created: 2026-10-16
 updated: 2026-10-16
 ---

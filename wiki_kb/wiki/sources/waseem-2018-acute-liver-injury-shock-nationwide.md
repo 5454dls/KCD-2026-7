@@ -3,7 +3,7 @@ type: source
 title: "Waseem et al. 2018, Risk and Prognosis of Acute Liver Injury Among Hospitalized Patients with Hemodynamic Instability: A Nationwide Analysis"
 tags: [acute-liver-injury, shock, hypoxic-hepatitis, cirrhosis, heart-failure, administrative-data]
 related: [hypoxic-hepatitis, hypoxic-hepatitis-icu-epidemiology-prognosis, congestive-hepatopathy, sepsis-liver-and-organ-dysfunction, isolated-hyperbilirubinemia, waseem-chen-hypoxic-hepatitis-review, fuhrmann-2011-hypoxic-hepatitis-icu-mortality, icu-liver-cause-evidence-map]
-sources: ["acute-liver-injury-hemodynamic-instability-2018.pdf"]
+sources: ["waseem-2018-acute-liver-injury-shock-nationwide.pdf"]
 authors: ["Najeff Waseem", "Berkeley N. Limketkai", "Brian Kim", "Tinsay Woreta", "Ahmet Gurakar", "Po-Hung Chen"]
 year: 2018
 venue: "Annals of Hepatology 2018;17(1):119-124"

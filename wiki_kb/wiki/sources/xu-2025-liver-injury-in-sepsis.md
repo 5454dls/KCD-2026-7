@@ -3,7 +3,7 @@ type: source
 title: "Xu 2025: 패혈증 간 손상(SILI)의 양상, 기전, 새 치료 전략 리뷰"
 tags: [sepsis, SILI, hypoxic-hepatitis, septic-cholestasis, secondary-sclerosing-cholangitis, mechanisms, review]
 related: [critical-illness-cholestatic-dysfunction, sc-cip-sclerosing-cholangitis-critically-ill, icu-acquired-liver-injury-classification, icu-cholestasis-definition-disagreements, jenniskens-2016-cholestatic-dysfunction-sepsis, horvatits-2019-liver-injury-critical-illness, hypoxic-hepatitis, lactate-dehydrogenase, n-acetylcysteine, sepsis-liver-and-organ-dysfunction, icu-liver-cause-evidence-map]
-sources: ["frontiers-2025-liver-injury-in-sepsis.pdf"]
+sources: ["xu-2025-liver-injury-in-sepsis.pdf"]
 authors: "Xu X, Yang T, An J, Li B, Dou Z"
 year: 2025
 venue: "Frontiers in Immunology 2025;16:1575554 (Review)"
@@ -14,7 +14,7 @@ updated: 2026-10-16
 
 # Xu 2025: 패혈증 간 손상(SILI)의 양상, 기전, 새 치료 전략
 
-약칭: **Xu 2025**. 원문 파일명은 frontiers-2025-liver-injury-in-sepsis.pdf입니다. 쪽수 `p.N`은 PDF의 N번째 쪽이며 학술지 쪽 번호(01-14)와 같습니다.
+약칭: **Xu 2025**. 원문 파일명은 xu-2025-liver-injury-in-sepsis.pdf입니다. 쪽수 `p.N`은 PDF의 N번째 쪽이며 학술지 쪽 번호(01-14)와 같습니다.
 
 ## 서지
 - 제목: Liver injury in sepsis: manifestations, mechanisms and emerging therapeutic strategies (Xu 2025 p.1).

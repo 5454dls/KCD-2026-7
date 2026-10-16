@@ -3,7 +3,7 @@ type: concept
 title: 울혈성 간병증의 혈청·영상·조직 표지자와 BNP, MELD-XI
 tags: [congestive-hepatopathy, BNP, NT-proBNP, MELD-XI, GGT, elastography, ultrasound, biomarker]
 related: [congestive-hepatopathy, lemmer-2017-congestive-hepatopathy, easl-2017-acute-liver-failure, hypoxic-hepatitis, gamma-glutamyl-transferase, waseem-chen-hypoxic-hepatitis-review, icu-liver-cause-evidence-map]
-sources: ["lemmer-2018-congestive-hepatopathy.pdf", "easl-2017-acute-liver-failure.pdf", "hypoxic-hepatitis-review.pdf"]
+sources: ["lemmer-2017-congestive-hepatopathy.pdf", "easl-2017-acute-liver-failure.pdf", "hypoxic-hepatitis-review.pdf"]
 created: 2026-10-16
 updated: 2026-10-16
 ---

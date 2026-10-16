@@ -3,7 +3,7 @@ type: source
 title: 울혈성 간병증, 울혈과 섬유화의 구별 (Lemmer 외, Clinical Liver Disease 2017)
 tags: [congestive-hepatopathy, fontan, fibrosis, MELD-XI, BNP, elastography, review]
 related: [congestive-hepatopathy, congestive-hepatopathy-markers, hypoxic-hepatitis, gamma-glutamyl-transferase, liver-chemistry-patterns-r-ratio, icu-liver-cause-evidence-map]
-sources: ["lemmer-2018-congestive-hepatopathy.pdf"]
+sources: ["lemmer-2017-congestive-hepatopathy.pdf"]
 authors: ["Alexander Lemmer", "Lisa VanWagner", "Daniel Ganger"]
 year: 2017
 venue: "Clinical Liver Disease 2017;10(6):139-143 (AASLD 공식 학습 자료)"

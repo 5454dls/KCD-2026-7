@@ -3,7 +3,7 @@ type: query
 title: "ICU 담즙정체·SILI 정의에서 원문끼리 다른 기준값"
 tags: [contradiction, threshold, cholestasis, bilirubin, hypoxic-hepatitis, SC-CIP]
 related: [critical-illness-cholestatic-dysfunction, icu-acquired-liver-injury-classification, sc-cip-sclerosing-cholangitis-critically-ill, hypoxic-hepatitis, threshold-disagreements, jenniskens-2016-cholestatic-dysfunction-sepsis, horvatits-2019-liver-injury-critical-illness, xu-2025-liver-injury-in-sepsis]
-sources: ["jenniskens-2016-cholestatic-dysfunction-sepsis.pdf", "horvatits-2019-liver-injury-critical-illness.pdf", "frontiers-2025-liver-injury-in-sepsis.pdf"]
+sources: ["jenniskens-2016-cholestatic-dysfunction-sepsis.pdf", "horvatits-2019-liver-injury-critical-illness.pdf", "xu-2025-liver-injury-in-sepsis.pdf"]
 created: 2026-10-16
 updated: 2026-10-16
 ---

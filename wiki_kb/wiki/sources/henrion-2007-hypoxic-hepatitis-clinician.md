@@ -3,7 +3,7 @@ type: source
 title: "Henrion 2007, Hypoxic hepatitis: the point of view of the clinician"
 tags: [hypoxic-hepatitis, shock-liver, icu, clinical-review]
 related: [hypoxic-hepatitis, hypoxic-hepatitis-icu-epidemiology-prognosis, congestive-hepatopathy, hypoxic-vs-other-acute-hepatocellular-injury, acetaminophen, viral-hepatitis-testing, lactate-dehydrogenase, waseem-chen-hypoxic-hepatitis-review, fuhrmann-2011-hypoxic-hepatitis-icu-mortality, icu-liver-cause-evidence-map]
-sources: ["henrion-2012-hypoxic-hepatitis-clinician.pdf"]
+sources: ["henrion-2007-hypoxic-hepatitis-clinician.pdf"]
 authors: ["Jean Henrion"]
 year: 2007
 venue: "Acta Gastro-Enterologica Belgica 2007;70:214-216 (Symposium)"

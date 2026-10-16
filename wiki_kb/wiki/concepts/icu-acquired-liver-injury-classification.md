@@ -3,7 +3,7 @@ type: concept
 title: "ICU 획득성 간 손상의 분류, 유병률, 사망률"
 tags: [icu, classification, epidemiology, mortality, hypoxic-liver-injury, cholestasis, SC-CIP, DILI, ALF, ACLF]
 related: [horvatits-2019-liver-injury-critical-illness, jenniskens-2016-cholestatic-dysfunction-sepsis, xu-2025-liver-injury-in-sepsis, critical-illness-cholestatic-dysfunction, sc-cip-sclerosing-cholangitis-critically-ill, hypoxic-hepatitis, congestive-hepatopathy, dili-diagnosis-and-causality, icu-cholestasis-definition-disagreements, icu-liver-cause-evidence-map]
-sources: ["horvatits-2019-liver-injury-critical-illness.pdf", "jenniskens-2016-cholestatic-dysfunction-sepsis.pdf", "frontiers-2025-liver-injury-in-sepsis.pdf"]
+sources: ["horvatits-2019-liver-injury-critical-illness.pdf", "jenniskens-2016-cholestatic-dysfunction-sepsis.pdf", "xu-2025-liver-injury-in-sepsis.pdf"]
 created: 2026-10-16
 updated: 2026-10-16
 ---

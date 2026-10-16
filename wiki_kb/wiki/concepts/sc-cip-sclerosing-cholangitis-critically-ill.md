@@ -3,7 +3,7 @@ type: concept
 title: "중증 환자의 이차 경화성 담관염 (SC-CIP)"
 tags: [SC-CIP, secondary-sclerosing-cholangitis, cholangiopathy, ERC, icu, cholestasis]
 related: [horvatits-2019-liver-injury-critical-illness, xu-2025-liver-injury-in-sepsis, jenniskens-2016-cholestatic-dysfunction-sepsis, critical-illness-cholestatic-dysfunction, icu-acquired-liver-injury-classification, cholestatic-injury-workup, sepsis-antimicrobial-timing, icu-liver-cause-evidence-map]
-sources: ["horvatits-2019-liver-injury-critical-illness.pdf", "frontiers-2025-liver-injury-in-sepsis.pdf", "jenniskens-2016-cholestatic-dysfunction-sepsis.pdf"]
+sources: ["horvatits-2019-liver-injury-critical-illness.pdf", "xu-2025-liver-injury-in-sepsis.pdf", "jenniskens-2016-cholestatic-dysfunction-sepsis.pdf"]
 created: 2026-10-16
 updated: 2026-10-16
 ---

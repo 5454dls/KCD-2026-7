@@ -3,7 +3,7 @@ type: concept
 title: "패혈증·중증 질환 담즙정체(sepsis-associated cholestasis): 정의, 기준, 빈도, 예후"
 tags: [cholestasis, sepsis, critical-illness, bilirubin, ALP, GGT, diagnostic-criteria, mortality, icu]
 related: [jenniskens-2016-cholestatic-dysfunction-sepsis, horvatits-2019-liver-injury-critical-illness, xu-2025-liver-injury-in-sepsis, icu-acquired-liver-injury-classification, parenteral-nutrition-icu-cholestasis, sc-cip-sclerosing-cholangitis-critically-ill, serum-bile-acids, icu-cholestasis-definition-disagreements, cholestatic-injury-workup, isolated-hyperbilirubinemia, sepsis-liver-and-organ-dysfunction, dili-phenotypes-and-latency, icu-liver-cause-evidence-map]
-sources: ["jenniskens-2016-cholestatic-dysfunction-sepsis.pdf", "horvatits-2019-liver-injury-critical-illness.pdf", "frontiers-2025-liver-injury-in-sepsis.pdf"]
+sources: ["jenniskens-2016-cholestatic-dysfunction-sepsis.pdf", "horvatits-2019-liver-injury-critical-illness.pdf", "xu-2025-liver-injury-in-sepsis.pdf"]
 created: 2026-10-16
 updated: 2026-10-16
 ---
