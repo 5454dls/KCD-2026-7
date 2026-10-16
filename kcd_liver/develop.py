@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 
 from .evaluation import mcnemar_exact, wilson
-from .rule_agent import VERSION as RULE_VERSION, rule_agent1
+from .rule_agent import exposures, VERSION as RULE_VERSION, rule_agent1
 from .site_aggregates import aalen_johansen, auroc as _auroc, average_precision as _ap
 
 TRIGGERS = ["ALT", "ALP", "TBIL"]
@@ -45,22 +45,27 @@ RATIO_FEATS = ["ALT", "AST", "ALP", "TBIL"]
 VALUE_FEATS = ["INR", "ALBUMIN", "LACTATE", "CREAT", "BUN", "PLATELET", "WBC", "SODIUM", "GLUCOSE", "BICARB", "HEMOGLOBIN"]
 VITALS = ["MAP", "HR", "RR", "SPO2", "TEMP_C"]
 PRESSORS = "norepinephrine|epinephrine|vasopressin|phenylephrine|dopamine"
-HISTORY = ["history_liver", "history_heart_failure", "history_ckd", "history_diabetes", "history_cancer"]
+HISTORY = ["history_liver", "history_viral_hepatitis", "history_heart_failure", "history_ckd", "history_diabetes", "history_cancer"]
 A2_CLASSES = ["resolution", "death_before_resolution", "discharge_before_resolution", "no_event_observed"]
 SEED = 20261016
 
 # ICD proxy for Agent 1 evaluation (current admission discharge codes, evaluation only)
+# Discharge-ICD proxy categories (NOT a reference standard; assigned after discharge, never an input)
 ICD_PROXY = {
-    "hypoxic_ischemic": {9: r"^(5700|7855|7855[0-9]|570$)", 10: r"^(K720|K7200|K763|R57|K762)"},
-    "sepsis_cholestasis": {9: r"^(038|99591|99592|78552)", 10: r"^(A40|A41|R652|R6520|R6521)"},
-    "drug_related": {9: r"^(5733|E93[0-9]|E94[0-9])", 10: r"^(K71|T3[6-9]|T4[0-9]|T50)"},
-    "biliary": {9: r"^(574|575|576)", 10: r"^(K80|K81|K82|K83)"},
-    "congestive": {9: r"^(5730|428)", 10: r"^(K761|I50)"},
-    "baseline_liver": {9: r"^(571|070)", 10: r"^(K70|K74|B18)"},
-    "nonhepatic": {9: r"^(72888|282|283)", 10: r"^(M6282|D55|D56|D57|D58|D59)"},
+    "hypoxic_hepatitis": {9: r"^(570|7855[0-9]?)", 10: r"^(K720|K762|K763|R57)"},
+    "congestive_hepatopathy": {9: r"^(5730|428)", 10: r"^(K761|I50)"},
+    "sepsis_cholestasis": {9: r"^(038|99591|99592|78552)", 10: r"^(A40|A41|R652)"},
+    "dili": {9: r"^(5733|E93[0-9]|E94[0-9])", 10: r"^(K71|T3[6-9]|T4[0-9]|T50)"},
+    "pn_associated": None,  # no specific ICD code: proxy not available
+    "biliary_obstruction_cholangitis": {9: r"^(5761|5762|574[3-9])", 10: r"^(K830|K831|K80[3-7])"},
+    "cholecystitis": {9: r"^(5750|5751|574[01]|574[3-4]|574[6-8])", 10: r"^(K81|K80[0146])"},
+    "hemolysis": {9: r"^(282|283)", 10: r"^(D5[5-9])"},
+    "viral_hepatitis": {9: r"^070", 10: r"^(B1[5-9]|B251|B0081)"},
+    "others": {9: r"^(571|72888)", 10: r"^(K70|K74|K75|K760|M6282)"},
 }
 HIST_RULES = {
     "history_liver": {9: r"^(570|571|572|573|070)", 10: r"^(B18|K70|K71|K72|K73|K74|K76)"},
+    "history_viral_hepatitis": {9: r"^070", 10: r"^(B1[5-9])"},
     "history_heart_failure": {9: r"^428", 10: r"^(I50|I43|I110|I130|I132)"},
     "history_ckd": {9: r"^(585|586|V56)", 10: r"^(N18|N19|Z992|Z940)"},
     "history_diabetes": {9: r"^250", 10: r"^E1[0-4]"},
@@ -393,6 +398,8 @@ def icd_proxy(events, diagnoses):
     code = dx.icd_code.astype(str).str.replace(".", "", regex=False)
     cats = {}
     for cat, rule in ICD_PROXY.items():
+        if rule is None:
+            continue
         hit = ((dx.icd_version == 9) & code.str.match(rule[9])) | ((dx.icd_version == 10) & code.str.match(rule[10]))
         for h in dx.loc[hit, "hadm_id"].unique():
             cats.setdefault(int(h), set()).add(cat)
@@ -415,7 +422,22 @@ def snapshot_payload(stay_id, t0, lab_g, ctx_g, hist_row, lookback=48):
         y = y[(y.available_at <= t0) & (y.charttime <= t0) & (y.charttime >= start)].sort_values("available_at").tail(150)
         ctx = [{"kind": r.kind, "label": r.label, "value": str(r.value), "measured_at": r.charttime.isoformat()} for r in y.itertuples()]
     hist = {k: bool(v) for k, v in (hist_row or {}).items() if k in HISTORY and pd.notna(v)}
-    return {"as_of": t0.isoformat(), "labs": labs, "context": ctx, "historical_codes": hist}
+    out = {"as_of": t0.isoformat(), "labs": labs, "context": ctx, "historical_codes": hist,
+           "exposures": exposures(admission_context(ctx_g.get(stay_id), t0), t0)}
+    hb = x[x.analyte.eq("HEMOGLOBIN")] if x is not None else None
+    if hb is not None and len(hb) >= 2:
+        out["hemoglobin_drop_48h"] = float(hb.value.max() - hb.sort_values("charttime").value.iloc[-1])
+    return out
+
+
+def admission_context(y, t0):
+    """All context rows of the stay available by t0 (for PN days and serology, beyond the 48 h window)."""
+    if y is None or not len(y):
+        return []
+    y = y[y.available_at <= t0]
+    y = y[y.kind.isin(["infusion_record", "emar_record", "serology_record"])]
+    return [{"kind": r.kind, "label": r.label, "value": r.value, "charttime": r.charttime, "available_at": r.available_at}
+            for r in y.itertuples()]
 
 
 def evaluate_agent1(events, lab, context, hist, diagnoses, llm_rows=None):
@@ -934,7 +956,9 @@ def evaluate_flags(events, lab, context, hist, diagnoses, llm_rows=None):
         y = np.array([r[c] for r in ref], int)
         tp, fp, fn, tn = int(((p == 1) & (y == 1)).sum()), int(((p == 1) & (y == 0)).sum()), int(((p == 0) & (y == 1)).sum()), int(((p == 0) & (y == 0)).sum())
         sens, spec = wilson(tp, tp + fn), wilson(tn, tn + fp)
-        rows.append({"cause": c, "flagged": int(p.sum()), "proxy_positive": int(y.sum()), "tp": tp, "fp": fp, "fn": fn, "tn": tn,
+        from .rule_agent import NOT_ASSESSABLE
+        rows.append({"cause": c, "assessable": c not in NOT_ASSESSABLE, "proxy_available": ICD_PROXY.get(c) is not None,
+                     "flagged": int(p.sum()), "proxy_positive": int(y.sum()), "tp": tp, "fp": fp, "fn": fn, "tn": tn,
                      "sensitivity": tp / (tp + fn) if tp + fn else None, "sensitivity_ci": list(sens) if tp + fn else None,
                      "specificity": tn / (tn + fp) if tn + fp else None, "specificity_ci": list(spec) if tn + fp else None})
     n = len(pred)
@@ -1037,4 +1061,23 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
 
     # ---- Agent 1: 0/1 flags
     R["agent1_flags"] = evaluate_flags(events, lab, context, hist, diagnoses)
+
+    # ---- shadow: one wrongly entered value (age 19 -> 190, decimal/unit slips) before vs after a plausibility guard
+    try:
+        from .data_errors import experiment
+        a3b = joblib.load(a3p) if a3p and a3p.exists() else None
+        tp = Path(model_dir) / "trajectory_qgbm.joblib" if model_dir else None
+        trb = joblib.load(tp) if tp and tp.exists() else None
+        L = agent3_landmarks(cohort, lab, events, step_hours=1)
+        L = L[L.split.eq("evaluation") & L.eligible]
+        # pre-declared sample: one random eligible hour per evaluation patient, at most 2,000 patients
+        rows = L.sample(frac=1, random_state=SEED).groupby("stay_id").head(1).head(2000)
+        ev_eval = events[events.split.eq("evaluation")]
+        ev_lab = lab[lab.stay_id.isin(set(cohort.loc[cohort.split.eq("evaluation"), "stay_id"]))]
+        if len(rows):
+            log(f"v2: data-entry error shadow on {len(rows):,} evaluation patients")
+            R["shadow_data_error"] = experiment(rows, ev_lab, context, cohort, hist, a3b, trb, rule_agent1, snapshot_payload,
+                                                events=ev_eval, log=log)
+    except Exception as ex:  # reported, never silently dropped
+        R["shadow_data_error"] = {"status": "failed", "error": f"{type(ex).__name__}: {ex}"}
     return _suppress_counts(_json_safe(R), min_cell)

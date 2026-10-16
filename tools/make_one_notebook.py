@@ -35,7 +35,7 @@ unpack = nbformat.v4.new_code_cell(textwrap.dedent(f'''\
     if REPO.exists(): shutil.rmtree(REPO)
     REPO.mkdir(parents=True)
     with tarfile.open(fileobj=io.BytesIO(base64.b64decode(PAYLOAD)), mode='r:gz') as t:
-        t.extractall(REPO)
+        try: t.extractall(REPO, filter='data')\n        except TypeError: t.extractall(REPO)
     sys.path.insert(0, str(REPO)); WORK.mkdir(parents=True, exist_ok=True)
     for m in [k for k in sys.modules if k.split('.')[0] in ('kcd_liver', 'scripts')]: del sys.modules[m]
     REPORT['code_version'] = '{commit}'

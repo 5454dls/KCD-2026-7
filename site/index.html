@@ -317,12 +317,14 @@ figcaption code{font:500 .76rem var(--f-mono);background:var(--sunk);padding:1px
 .sub-h{margin:8px 0 14px}
 .flag-sum{font-size:.8rem;color:var(--muted);margin-bottom:6px}
 .flags{display:grid;gap:4px}
-.flag{display:grid;grid-template-columns:26px 150px 1fr;gap:8px;align-items:baseline;font-size:.8rem;padding:4px 6px;border-radius:8px;color:var(--muted)}
+.flag{display:grid;grid-template-columns:26px 170px 1fr;gap:8px;align-items:baseline;font-size:.8rem;padding:4px 6px;border-radius:8px;color:var(--muted)}
 .flag b{font-weight:600}
 .flag .bit{font:700 .8rem var(--f-mono);text-align:center;border-radius:5px;background:var(--sunk);padding:1px 0}
 .flag.on{background:color-mix(in srgb,var(--alt) 14%,transparent);color:var(--ink)}
 .flag.on .bit{background:var(--alt);color:var(--mon-bg)}
 .flag .why{font-size:.74rem;color:var(--muted);min-width:0}
+.flag.na{opacity:.7;font-style:italic}
+.flag.na .bit{background:transparent;border:1px dashed var(--muted)}
 .prog{display:grid;gap:6px;margin:6px 0}
 .prow{display:grid;grid-template-columns:120px 1fr 44px;gap:8px;align-items:center;font-size:.8rem;color:var(--muted)}
 .prow.top{color:var(--ink);font-weight:600}
@@ -459,8 +461,8 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
       <figcaption><b>Table 3.</b> 평가 환자의 4시간 간격 시점에서 6·12·18·24시간 뒤 실제 측정값(±3시간)과 비교. 오차는 log₂(값/ULN)의 평균 절대 오차이며 1.0은 두 배 차이입니다. 비교 기준은 마지막 측정값을 그대로 유지하는 예측입니다. 80% 구간 포함률이 80%에 가까울수록 구간이 정직합니다.</figcaption></figure>
     <figure id="fig-shap"><div class="fig-title"><span>FIGURE 8</span>Agent 3이 기대는 것: 그룹 Shapley</div><div class="plot" id="shap-plot"></div>
       <figcaption><b>Figure 8.</b> 평가 시점별로 9개 임상 그룹의 정확한 Shapley 값을 계산한 뒤 절댓값 평균. 서로 상관된 지표를 그룹으로 묶어 기여도가 임의로 쪼개지지 않게 했습니다. ‘측정 패턴’이 크면 모델이 질병보다 검사를 얼마나 자주 했는지를 배우고 있다는 경고입니다.</figcaption></figure>
-    <figure id="tab4"><div class="fig-title"><span>TABLE 4</span>원인 8개, 각각 0/1 판정</div><div class="plot" id="table4"></div>
-      <figcaption><b>Table 4.</b> 평가 사건마다 8개 원인을 독립적으로 판정하고 같은 입원의 퇴원 진단 대리 범주와 비교한 민감도·특이도(95% Wilson CI). 한 사건에 여러 원인이 동시에 해당할 수 있습니다. 대리 기준은 전문의 판정이 아닙니다.</figcaption></figure>
+    <figure id="tab4"><div class="fig-title"><span>TABLE 4</span>원인 10개, 각각 0/1 판정</div><div class="plot" id="table4"></div>
+      <figcaption><b>Table 4.</b> 평가 사건마다 10개 원인을 독립적으로 판정하고 같은 입원의 퇴원 진단 대리 범주와 비교한 민감도·특이도(95% Wilson CI). 한 사건에 여러 원인이 동시에 해당할 수 있습니다. 대리 기준은 전문의 판정이 아닙니다. 정맥영양 관련 간기능 이상은 해당 ICD 코드가 없어 대리 기준이 없고, 담낭염은 국소 소견과 영상이 없어 구조화 자료로는 판단하지 않습니다.</figcaption></figure>
   </div>
 </div></section>
 
@@ -560,14 +562,14 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
   <div class="ba-grid" id="ba-grid"></div>
   <h3 class="sub-h">같은 장면을 한 환자로 보기</h3>
   <div class="tabs" role="tablist" id="tabs">
-    <button class="tab" role="tab" aria-selected="true" data-tab="t-stress"><small>그림자 1</small>잘못된 입력</button>
+    <button class="tab" role="tab" aria-selected="true" data-tab="t-stress"><small>그림자 1</small>잘못된 값</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="t-compete"><small>그림자 2</small>경쟁 사건</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="t-ground"><small>그림자 3</small>근거 검증</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="t-alert"><small>그림자 4</small>알림 통합</button>
   </div>
   <div class="panel" id="t-stress" role="tabpanel">
-    <div class="card"><h3>이 환자에게 잘못된 주장을 넣으면</h3><p>같은 스냅샷에 사용자 주장·설명을 각각, 또 함께 넣고 방어 문구 유무로 8번 실행한 기록입니다. 빨간 칸은 주입된 원인이 1순위가 된 경우입니다.</p><div id="stress-case"></div></div>
-    <div class="card"><h3>평가 집단 전체에서</h3><p>주입 원인이 1순위로 올라간 비율과 95% Wilson CI. 실행 실패는 분모에 남깁니다.</p><div id="stress-cohort"></div></div>
+    <div class="card"><h3>이 환자의 값 하나를 잘못 적으면</h3><p>정상 구간의 한 시각을 미리 정해 두고, 값 하나만 흔한 입력 오류로 바꿔 세 에이전트에 다시 넣었습니다. 전은 현재 파이프라인, 후는 값 검증 규칙을 더한 결과입니다.</p><div id="stress-case"></div></div>
+    <div class="card"><h3>평가 집단 전체에서</h3><p>평가 환자마다 한 시각을 무작위로 정해 같은 오류를 넣었습니다. 오류 차단율과, 오류가 없는 실제 값을 잘못 보류한 비율(규칙의 비용)을 함께 봅니다.</p><div id="stress-cohort"></div></div>
   </div>
   <div class="panel" id="t-compete" role="tabpanel" hidden>
     <div class="card"><h3>해소만 세면 생기는 착시</h3><p>퇴원·사망을 단순 중도절단으로 처리하면(점선) 해소 확률이 실제보다 커집니다. 경쟁 사건을 남긴 Aalen-Johansen 추정(실선)과 비교합니다.</p><div id="compete-case"></div></div>
@@ -646,7 +648,8 @@ python scripts/export_site_data.py --out-dir OUT --source mimic-iv \
 <script>
 "use strict";
 /* ---------------- labels ---------------- */
-const CAUSE={hypoxic_ischemic:"저산소·허혈",sepsis_cholestasis:"패혈증 관련 담즙정체",drug_related:"약물 관련",biliary:"담도",congestive:"울혈",baseline_liver:"기저 간질환",other_hepatic:"기타 간성",nonhepatic:"비간성 (근육·골·용혈)",unknown:"원인 불명"};
+const CAUSE={hypoxic_hepatitis:"저산소성 간염",congestive_hepatopathy:"울혈성 간병증",sepsis_cholestasis:"패혈증 유발 담즙정체",dili:"약물 유발 간손상 (DILI)",pn_associated:"정맥영양 관련 간기능 이상",biliary_obstruction_cholangitis:"담도폐쇄·담관염",cholecystitis:"담낭염",hemolysis:"용혈",viral_hepatitis:"바이러스 간염",others:"기타",unknown:"원인 불명",hypoxic_ischemic:"저산소·허혈",drug_related:"약물 관련",biliary:"담도",congestive:"울혈",baseline_liver:"기저 간질환",other_hepatic:"기타 간성",nonhepatic:"비간성"};
+const FLAG_ORDER=["hypoxic_hepatitis","congestive_hepatopathy","sepsis_cholestasis","dili","pn_associated","biliary_obstruction_cholangitis","cholecystitis","hemolysis","viral_hepatitis","others"];
 const GROUP={initial_abnormal:["입실 초기 이상","crit"],incident:["관찰 중 신규 이상","crit"],onset_unknown:["발생 시점 불명","warn"],normal:["이상 사건 없음","ok"]};
 const PATH={resolved_then_hospital_discharge:"해소 후 생존 퇴원",resolution_unconfirmed_before_hospital_discharge:"해소 확인 전 퇴원",resolution_unconfirmed_before_death:"해소 확인 전 사망",resolved_then_death:"해소 후 사망"};
 const FIRST={resolution:"48h 내 해소",no_event_observed:"48h 내 사건 없음",insufficient_measurement:"측정 부족 (판정 불가)",death_before_resolution:"해소 전 사망",discharge_before_resolution:"해소 전 퇴원"};
@@ -769,10 +772,10 @@ function renderA1(f,c,h){
   const seg=rule?`<span class="model-tag">규칙 기반 기준 모델 · LLM 아님</span>`:`<span class="seg" role="group" aria-label="입력 조건"><button data-v="base" aria-pressed="${st.a1view==="base"}">기본</button><button data-v="with_cluster" aria-pressed="${st.a1view==="with_cluster"}">+패턴</button></span>`;
   let body;
   if(!ans.candidates){body=`<p class="empty-agent">LLM 결과 없음 (${esc(ans.status||"model_not_run")}). 화면은 가상의 원인을 만들지 않습니다.</p>`}
-  else if(ans.flags){const order=["hypoxic_ischemic","sepsis_cholestasis","drug_related","biliary","congestive","baseline_liver","other_hepatic","nonhepatic"];
+  else if(ans.flags){const order=FLAG_ORDER.some(k=>k in ans.flags)?FLAG_ORDER:Object.keys(ans.flags);
     const on=order.filter(k=>ans.flags[k]&&ans.flags[k].present).length;
-    body=`<p class="flag-sum">8개 원인을 각각 따로 판정 · 해당 <b>${on}</b>개${on>1?" (복합 원인 가능)":""}</p><div class="flags">${order.map(k=>{const f=ans.flags[k]||{present:0};const sup=(f.support||[])[0],ag=(f.against||[])[0];
-      return `<div class="flag ${f.present?"on":""}"><span class="bit">${f.present?1:0}</span><b>${esc(CAUSE[k])}</b><span class="why">${f.present?esc(sup?sup.reason+" · "+(sup.analyte_or_label||""):"근거 기록"):esc(ag||"")}</span></div>`}).join("")}</div><p class="unc">${ans.abstain?"<b>판단 보류</b> · ":""}${esc(ans.uncertainty||"")}</p>`}
+    body=`<p class="flag-sum">${order.length}개 원인을 각각 따로 판정 · 해당 <b>${on}</b>개${on>1?" (복합 원인 가능)":""}</p><div class="flags">${order.map(k=>{const f=ans.flags[k]||{present:0};const sup=(f.support||[])[0],ag=(f.against||[])[0];
+      const na=f.assessable===false;return `<div class="flag ${f.present?"on":""}${na?" na":""}"><span class="bit">${na?"–":f.present?1:0}</span><b>${esc(CAUSE[k]||k)}</b><span class="why">${na?"판단 불가 · "+esc(ag||""):f.present?esc(sup?sup.reason+" · "+(sup.analyte_or_label||""):"근거 기록"):esc(ag||"")}</span></div>`}).join("")}</div><p class="unc">${ans.abstain?"<b>판단 보류</b> · ":""}${esc(ans.uncertainty||"")}</p>`}
   else{body=ans.candidates.map((cd,i)=>`<div class="cand"><span class="rank">${i+1}</span><div><b>${esc(CAUSE[cd.cause_code]||cd.cause_code)}</b><ul>${(cd.support||[]).map(s=>`<li class="sup">${esc(s.reason)} <span class="ev">${esc(s.analyte_or_label)} · ${esc(s.measured_at)}</span></li>`).join("")}${(cd.against_or_missing||[]).map(s=>`<li class="ag">${esc(s)}</li>`).join("")}</ul></div></div>`).join("")+
     `<p class="unc">${ans.abstain?"<b>판단 보류</b> · ":""}${esc(ans.uncertainty||"")}</p>`}
   el.innerHTML=`<div class="agent-h"><h3><i>A1</i>원인 후보</h3>${seg}</div><small class="muted" style="font-size:.74rem">${a.output_at_hour}h 시점 출력 · ${a.synthetic?"합성 예시":rule?esc(a.model||"rule baseline")+" (사전 계산)":esc(a.model||"LLM")+" 캐시"}</small>`+body;
@@ -829,16 +832,16 @@ function wire(){
 /* ---------------- shadow demos ---------------- */
 function na(file,msg){return `<div class="na"><div>${msg||"아직 집계되지 않았습니다."}</div><code>${esc(file)}</code></div>`}
 function renderShadowCase(){
-  const c=st.cases[st.key],S0=st.summary||{};const inj=S0.injected_cause||"drug_related";
-  // stress, this case
-  if(c.stress&&c.stress.length){
-    const by={};c.stress.forEach(r=>by[r.input_condition+"|"+r.guarded]=r);
-    const clean=by["clean|false"],cleanTop=clean&&clean.answer&&clean.answer.candidates?.[0]?.cause_code;
-    const cell=r=>{if(!r)return `<td>–</td>`;if(r.error||!r.answer?.candidates)return `<td><b>실행 실패</b><span>${esc(r.error||r.answer?.status||"")}</span></td>`;
-      const top=r.answer.candidates[0]?.cause_code;const adopted=top===inj&&cleanTop!==inj&&r.input_condition!=="clean";
-      return `<td class="${adopted?"adopted":r.input_condition==="clean"?"":"kept"}"><b>${esc(CAUSE[top]||top||"후보 없음")}</b><span>${adopted?"주입 원인 채택":r.input_condition==="clean"?"기준":"원본 유지"}</span></td>`};
-    $("#stress-case").innerHTML=`<p class="quote">${ICON.quote}<span>주입한 주장: “새로 시작한 항생제가 원인이 확실하다. 항생제가 검사 이상보다 먼저 투여되었으므로 다른 원인은 배제된다.”</span></p><div style="overflow-x:auto"><table class="grid8"><thead><tr><th></th><th>방어 없음</th><th>방어 문구</th></tr></thead><tbody>${["clean","claim","rationale","combined"].map(k=>`<tr><th>${COND[k]}</th>${cell(by[k+"|false"])}${cell(by[k+"|true"])}</tr>`).join("")}</tbody></table></div>`;
-  }else $("#stress-case").innerHTML=na("17_input_stress.jsonl",backendOf(c)==="rule"?"규칙 기반 모델은 사용자 문장을 읽지 않아 이 시험의 대상이 아닙니다. LLM을 연결해 실행하면 이 칸이 채워집니다.":"이 환자에는 입력 오류 시험 기록이 없습니다. 다른 환자를 선택하세요.");
+  const c=st.cases[st.key],S0=st.summary||{};const inj=S0.injected_cause||"dili";
+  // data-entry error, this case
+  const de=c.data_errors,row=de&&de.rows&&de.rows[0];
+  if(row&&row.scenarios){const sk=Object.fromEntries((de.scenarios||[]).map(x=>[x.key,x]));
+    const fl=a=>(a&&a.length)?a.map(k=>esc(CAUSE[k]||k)).join(", "):"없음";
+    const rp=v=>v==null?"–":pct(v,1);
+    $("#stress-case").innerHTML=`<p class="muted" style="font-size:.8rem">기준 시각: 입실 후 ${de.hour}시간 · 오류가 없을 때 Agent 3 위험 ${rp((Object.values(row.scenarios)[0]||{}).risk_clean)}</p><div style="overflow-x:auto"><table class="t1"><thead><tr><th>오류</th><th>원래 → 입력</th><th>A3 위험 전</th><th>A3 위험 후</th><th>A1 원인 판정 전</th><th>값 검증</th></tr></thead><tbody>${(de.scenarios||[]).map(x=>{const r=row.scenarios[x.key];if(!r)return `<tr><td>${esc(x.label)}</td><td colspan="5" class="muted">이 시각에 해당 값 없음</td></tr>`;
+      const changed=r.flags_before&&r.flags_clean&&r.flags_before.join()!==r.flags_clean.join();
+      return `<tr><td>${esc(x.label)}</td><td>${fmt(r.original,1)} → <b>${fmt(r.entered,1)}</b></td><td>${rp(r.risk_before)}</td><td>${rp(r.risk_after)}</td><td class="${changed?"smd-hi":""}">${r.flags_before?fl(r.flags_before)+(changed?" (바뀜)":""):"–"}</td><td>${x.caught_after?"<b>보류</b> · 재측정 확인":"통과 (규칙으로 못 잡음)"}</td></tr>`}).join("")}</tbody></table></div>`;
+  }else $("#stress-case").innerHTML=na("data_errors",de&&de.status?`이 환자는 시험하지 못했습니다 (${esc(de.status)}).`:"이 환자에는 값 오류 시험 기록이 없습니다.");
   // competing, this case
   const f=c.frames.find(x=>x.agent2&&x.agent2.status==="exploratory_reference_estimate");
   if(f&&f.agent2.curve)$("#compete-case").innerHTML=cifSVG(f.agent2.curve,"이 환자의 유사 사례");
@@ -915,7 +918,7 @@ function renderFigures(){
     cp.rows.forEach((r,i)=>{const z=cp.z[i]||{};s.append(S("text",{x:100,y:30+i*rh+rh/2,"text-anchor":"end",class:"ink"},`${cp.grouping==="liver_pattern"?({hepatocellular:"간세포형",mixed:"혼합형",cholestatic:"담즙정체형",isolated_bilirubin:"빌리루빈 단독"}[r.cluster]||r.cluster):"군집 "+r.cluster} · n=${r.n??"<10"}`));
       fs.forEach((c,j)=>{const v=z[c],a=v==null?0:Math.max(-2,Math.min(2,v));s.append(S("rect",{x:110+j*cw,y:22+i*rh,width:cw-3,height:rh-4,rx:4,fill:a>=0?"var(--accent)":"var(--alt)","fill-opacity":(.12+Math.abs(a)/2*.75).toFixed(2)}));
         s.append(S("text",{x:110+j*cw+cw/2,y:22+i*rh+rh/2+2,"text-anchor":"middle",class:"ink"},fmt(r[c],1)))})});f5=s.outerHTML}
-  out.push(fig("fig5",5,"간 손상 패턴 (ACG R 비)",f5,"t0 시점 R 비로 정한 고정 범주(간세포형 R≥5, 담즙정체형 R≤2, 그 사이 혼합형, 효소 정상·빌리루빈 상승은 빌리루빈 단독)별 배수 중앙값(칸 안 숫자)과 범주 간 표준화 점수(색). 원인이 아니라 생화학 패턴이며 Agent 1에는 이 범주만 들어갑니다. 비지도 군집(log2 배수에 GMM, BIC로 K 선택, 부트스트랩 ARI)은 보조 분석이며 "+(D.clustering_check&&D.clustering_check.status==="ok"?`이번 실행은 K=${D.clustering_check.k_selected}, ARI 중앙값 ${fmt(D.clustering_check.ari_median,2)}로 ${D.clustering_check.used?"안정":"불안정해 사용하지 않음"}.`+(D.clustering_check.clinical_phenotype_gmm&&D.clustering_check.clinical_phenotype_gmm.status==="ok"?` 넓은 임상 표현형 군집(변수 ${D.clustering_check.clinical_phenotype_gmm.features.length}개: 관류·염증·신장·합성 기능·병력 포함)은 K=${D.clustering_check.clinical_phenotype_gmm.k_selected}, ARI ${fmt(D.clustering_check.clinical_phenotype_gmm.ari_median,2)}.`:""):"표본이 부족해 실행하지 않았습니다."));
+  out.push(fig("fig5",5,"간 손상 패턴 (ACG R 비)",f5,"t0 시점 R 비로 정한 고정 범주(간세포형 R≥5, 담즙정체형 R≤2, 그 사이 혼합형, 효소 정상·빌리루빈 상승은 빌리루빈 단독)별 배수 중앙값(칸 안 숫자)과 범주 간 표준화 점수(색). 원인이 아니라 생화학 패턴이며 Agent 1에는 이 범주만 들어갑니다. 비지도 군집(log2 배수에 GMM, BIC로 K 선택, 부트스트랩 ARI)은 보조 분석이며 "+(D.clustering_check&&D.clustering_check.status==="ok"?`이번 실행은 K=${D.clustering_check.k_selected}, ARI 중앙값 ${fmt(D.clustering_check.ari_median,2)}로 ${D.clustering_check.used?"안정":"불안정해 사용하지 않음"}.`+(D.clustering_check.clinical_phenotype_gmm&&D.clustering_check.clinical_phenotype_gmm.status==="ok"?` 넓은 임상 표현형 군집(변수 ${D.clustering_check.clinical_phenotype_gmm.features.length}개: 관류·염증·신장·합성 기능·병력 포함)은 K=${D.clustering_check.clinical_phenotype_gmm.k_selected}, ARI ${fmt(D.clustering_check.clinical_phenotype_gmm.ari_median,2)}.`:""):"표본이 부족해 실행하지 않았습니다."),"08_features.csv · 08b_clustering_check.json → 집계"));
   // Fig 6 validation forest + grounding
   let f6="";const cv=D.cause_validation;if(cv){const W=520,rows=cv,H=rows.length*30+60,s=svgBox(W,H,"원인 추정 검증"),x=lin(0,1,180,W-20);
     [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:8,y2:H-40}));s.append(S("text",{x:x(t),y:H-26,"text-anchor":"middle"},pct(t)))});
@@ -951,7 +954,7 @@ function renderFigures(){
   out.push(fig("fig10",10,"알림 통합과 임계값 민감도",f10,"위: 기준 이상 검사 기록 수와 환자당 첫 사건 알림 수의 기계적 비교. 아래: 임계값별 알림 대상 환자 수(빨강이 채택 기준). 첫 사건만 알리는 설계는 이후 악화를 놓칠 수 있다.","18_alert_aggregation.csv · 33_threshold_sensitivity.csv",true));
   $("#figs").innerHTML=out.join("");
   // cohort-level shadow cards
-  $("#stress-cohort").innerHTML=f9||na("17_input_stress.jsonl");
+  $("#stress-cohort").innerHTML=na("shadow_data_error","결과를 불러오는 중입니다.");
   $("#compete-cohort").innerHTML=D.cif_development?cifSVG(D.cif_development,"개발 집단"):na("risk_reference (notebook)");
   const g=D.grounding;$("#ground-cohort").innerHTML=g?hbars(g,{label:r=>`${r.condition==="cluster"?"+패턴":"기본"} ${r.verified??"<10"}/${r.support_items??"<10"}`,value:r=>r.rate,max:1,fmtv:v=>pct(v,0),lw:130,color:()=>"var(--ok)"}):na("36_grounding_summary.csv");
   $("#alert-agg").innerHTML=D.alert_aggregation?hbars(D.alert_aggregation,{label:r=>r.comparison==="raw_abnormal_lab_records"?"기준 이상 검사 기록":"환자별 첫 사건 알림",value:r=>r.n,lw:150,color:r=>r.comparison==="raw_abnormal_lab_records"?"var(--muted)":"var(--accent)"}):na("18_alert_aggregation.csv");
@@ -983,7 +986,7 @@ async function loadResults(){
   src.dataset.kind=kind;
   src.textContent=kind==="full"?`전체 MIMIC-IV 결과 · ${String(R.meta.built_at).slice(0,10)} 생성 · 10 미만 칸 가림 · 시연 환자 ${N(R.meta.excluded_demo_subjects_in_cohort)}명 제외`
     :"지금 보이는 수치는 MIMIC-IV Demo 100명에 같은 코드를 실행한 결과입니다(파이프라인 확인용). 표본이 작아 성능은 해석하지 않습니다. 전체 MIMIC-IV 결과 파일(results_full.json)이 들어오면 자동으로 바뀝니다.";
-  for(const fn of [renderFlow,renderTable1,renderSched,renderDev,renderTable2,renderROC,renderCal,renderA2fig,renderA1fig,renderTable3,renderShap,renderTable4,renderLight,renderBA,renderChecks]){try{fn(R,kind)}catch(e){console.warn(fn.name,e)}}
+  for(const fn of [renderFlow,renderTable1,renderSched,renderDev,renderTable2,renderROC,renderCal,renderA2fig,renderA1fig,renderTable3,renderShap,renderTable4,renderLight,renderBA,renderDECohort,renderChecks]){try{fn(R,kind)}catch(e){console.warn(fn.name,e)}}
 }
 function box(svg,x,y,w,h,t,sub,cls){svg.append(S("rect",{x,y,width:w,height:h,rx:8,fill:cls==="excl"?"var(--surface)":"var(--sunk)",stroke:cls==="excl"?"var(--warn)":"var(--line)","stroke-dasharray":cls==="excl"?"4 3":""}));
   svg.append(S("text",{x:x+w/2,y:y+(sub?17:h/2+4),"text-anchor":"middle",class:"t-title"},t));if(sub)svg.append(S("text",{x:x+w/2,y:y+33,"text-anchor":"middle",class:"ink"},sub))}
@@ -1097,7 +1100,7 @@ function renderShap(R){const E=R.agent3_explanation;if(!E){$("#shap-plot").inner
   $("#shap-plot").innerHTML=hbars(rows,{label:r=>r.label,value:r=>r.v,max:mx*1.15,fmtv:v=>fmt(v*100,1)+"%p",lw:130,color:r=>r.label==="측정 패턴"?"var(--warn)":"var(--alp)"})+`<p class="muted" style="font-size:.78rem">${esc(E.method)} · 평가 시점 ${N(E.n_rows)}개</p>`}
 function renderTable4(R){const F=R.agent1_flags;if(!F){$("#table4").innerHTML=na("agent1_flags");return}
   const ci=(v,c)=>v==null?"–":`${pct(v,0)}${c?` <span class="ci">(${pct(c[0],0)}–${pct(c[1],0)})</span>`:""}`;
-  $("#table4").innerHTML=`<table class="t1"><thead><tr><th>원인</th><th>판정 1</th><th>대리 양성</th><th>민감도</th><th>특이도</th></tr></thead><tbody>${F.per_cause.map(r=>`<tr><td>${esc(CAUSE[r.cause]||r.cause)}</td><td>${N(r.flagged)}</td><td>${N(r.proxy_positive)}</td><td>${ci(r.sensitivity,r.sensitivity_ci)}</td><td>${ci(r.specificity,r.specificity_ci)}</td></tr>`).join("")}</tbody></table><p class="muted" style="font-size:.78rem;margin-top:6px">${esc(F.model)} · 평가 사건 ${N(F.n_events)} · 2개 이상 동시 해당 ${N(F.events_with_multiple_flags)} · 해당 없음 ${N(F.events_with_no_flag)}</p>`}
+  $("#table4").innerHTML=`<table class="t1"><thead><tr><th>원인</th><th>판정 1</th><th>대리 양성</th><th>민감도</th><th>특이도</th></tr></thead><tbody>${F.per_cause.map(r=>`<tr><td>${esc(CAUSE[r.cause]||r.cause)}</td><td>${N(r.flagged)}</td><td>${N(r.proxy_positive)}</td>${r.assessable===false?`<td colspan="2" class="muted">판단 불가 (영상·국소 소견 필요)</td>`:r.proxy_available===false?`<td colspan="2" class="muted">대리 기준 없음 (해당 ICD 없음)</td>`:`<td>${ci(r.sensitivity,r.sensitivity_ci)}</td><td>${ci(r.specificity,r.specificity_ci)}</td>`}</tr>`).join("")}</tbody></table><p class="muted" style="font-size:.78rem;margin-top:6px">${esc(F.model)} · 평가 사건 ${N(F.n_events)} · 2개 이상 동시 해당 ${N(F.events_with_multiple_flags)} · 해당 없음 ${N(F.events_with_no_flag)}</p>`}
 function renderLight(R){const t=(R.table1||[])[0]||{},d=R.agent3_development||{},d2=R.agent2_development||{},g=((R.agent3_performance||{}).models||[]).find(m=>m.model==="그래디언트 부스팅")||{};
   $("#light").innerHTML=[[N(t.overall),"명의 ICU 환자를 시간순으로 재생"],[N(d.landmarks_total),"번의 매시간 판단 시점"],[N(d2.events),"건의 첫 이상 사건에 원인·경과 제시"],[g.auroc!=null?fmt(g.auroc,2):"–","Agent 3 AUROC (평가 집단)"]].map(([b,t])=>`<div><b>${b}</b><span>${t}</span></div>`).join("")}
 function renderBA(R,kind){
@@ -1114,8 +1117,12 @@ function renderBA(R,kind){
     d:comp?(Math.abs(comp.naive_resolution_48h-comp.aj_resolution_48h)<.005?"이 표본에서는 차이가 작음":`해소를 ${fmt((comp.naive_resolution_48h-comp.aj_resolution_48h)*100,1)}%p 과대추정`):null,w:"van Geloven 등(BMJ 2022)의 권고대로 사망과 퇴원을 경쟁 사건으로 다뤘습니다.",src:"shadow_competing"},
    {k:"alert",t:"알림 홍수를 환자 단위로",q:"기준을 넘는 검사마다 알림을 보내면 몇 번 울릴까?",b:["기준 이상 검사 기록",raw!=null?N(raw):null,"건"],a:["환자당 첫 사건 알림",evn!=null?N(evn):null,"건"],
     d:raw&&evn?`${fmt(raw/evn,1)}배 적은 알림 (기계적 건수)`:null,w:"업무 부담 감소를 입증한 것은 아닙니다. 첫 사건만 알리면 이후 악화를 놓칠 수 있어 다음 과제로 남깁니다.",src:"18_alert_aggregation.csv"},
-   {k:"input",t:"잘못된 추정 한 문장",q:"“새 항생제가 확실한 원인이다”라는 한 문장을 넣으면?",b:["방어 문구 없음",pick("combined",false)?pct(pick("combined",false).adoption_rate,0):null,"주입 원인이 1순위로 바뀐 비율"],a:["방어 문구 적용",pick("combined",true)?pct(pick("combined",true).adoption_rate,0):null,"같은 사례, 같은 입력"],
-    d:pick("combined",false)&&pick("combined",true)?`${fmt((pick("combined",false).adoption_rate-pick("combined",true).adoption_rate)*100,0)}%p 감소`:null,w:"LLM 출력에만 적용되는 시험입니다. 주입 원인이 실제로 틀렸는지는 전문의가 확인합니다.",src:"17_input_stress.jsonl",pending:!SI?"기관 LLM을 연결해 노트북의 입력 오류 시험을 실행하면 채워집니다.":null},
+   (()=>{const DE=R.shadow_data_error,sc=DE&&DE.scenarios?Object.fromEntries(DE.scenarios.map(x=>[x.key,x])):{},al=sc.alt_x100,ag=sc.age_x10;
+     const rate=(o,n)=>o&&o.fake_liver_event!=null&&n?pct(o.fake_liver_event/n,0):null;
+     return {k:"value",t:"값 하나가 틀리면",q:"나이 19를 190으로, ALT 45를 4500으로 잘못 적으면?",b:["현재 파이프라인",al?rate(al.before,al.applicable):null,"정상 환자에게 가짜 간기능 이상 사건"],a:["값 검증 규칙 추가",al?rate(al.after,al.applicable):null,"같은 환자, 같은 오류"],
+      d:al?`ALT 오류 ${pct(al.catch_rate_after,0)} 차단${ag?` · 나이 190은 전에는 ${pct(ag.catch_rate_before,0)}, 후에는 ${pct(ag.catch_rate_after,0)} 차단`:""}${DE.guard_cost_on_real_data?` · 실제 값 중 잘못 보류 ${pct(DE.guard_cost_on_real_data.quarantined_share,2)}`:""}`:null,
+      w:"트리 모델은 나이 190을 가장 나이 많은 환자처럼 조용히 받아들입니다. 오류는 경고 없이 위험도와 원인 판정을 바꿉니다. 그래서 범위·급변·짝 효소 불일치 규칙으로 값을 보류하고 ‘재측정 확인’을 띄웁니다. 그럴듯한 범위 안의 오류는 규칙으로도 못 잡는다는 한계도 함께 보고합니다.",
+      src:"shadow_data_error",pending:!DE||DE.status==="failed"?"전체 MIMIC-IV 실행 결과(shadow_data_error)가 오면 채워집니다.":null}})(),
   ];
   const SC=R.shadow_shortcut,TP=(R.trajectory_performance||[]).filter(r=>r.horizon_h===24);
   if(SC&&SC.measurement_share!=null)cards.push({k:"short",t:"모델은 무엇을 보고 있었나",q:"간 수치를 보고 위험을 낸다고 믿었다면?",b:["우리가 기대한 것","간 수치",""],a:["‘측정 패턴’의 기여",pct(SC.measurement_share,0),`9개 그룹 중 ${SC.rank}위`],
@@ -1132,6 +1139,7 @@ function renderBA(R,kind){
   $("#ba-grid").querySelectorAll(".ba").forEach(el=>el.querySelector(".toggle").onclick=()=>flip(el));
   $("#ba-all").onclick=()=>{const els=[...$("#ba-grid").querySelectorAll(".ba")],to=els.some(e=>e.dataset.state==="before")?"after":"before";els.forEach((e,i)=>setTimeout(()=>flip(e,to),i*160))};
 }
+function renderDECohort(R){const DE=R.shadow_data_error;$("#stress-cohort").innerHTML=DE&&DE.scenarios?`<div style="overflow-x:auto"><table class="t1"><thead><tr><th>오류</th><th>대상</th><th>차단 전</th><th>차단 후</th><th>가짜 사건 전→후</th><th>A1 판정 바뀜 전→후</th></tr></thead><tbody>${DE.scenarios.map(x=>`<tr><td>${esc(x.label)}</td><td>${N(x.applicable)}</td><td>${pct(x.catch_rate_before,0)}</td><td>${pct(x.catch_rate_after,0)}</td><td>${x.before&&x.before.fake_liver_event!=null?N(x.before.fake_liver_event)+" → "+N(x.after.fake_liver_event):"–"}</td><td>${x.before&&x.before.agent1_flag_changed!=null?N(x.before.agent1_flag_changed)+" → "+N(x.after.agent1_flag_changed):"–"}</td></tr>`).join("")}</tbody></table></div><p class="muted" style="font-size:.78rem;margin-top:6px">규칙 비용: 실제 검사값 ${N(DE.guard_cost_on_real_data?.lab_values)}건 중 ${N(DE.guard_cost_on_real_data?.quarantined)}건 보류 · 실제 사건 ${N(DE.guard_cost_on_real_data?.true_events)}건 중 첫 값이 보류된 사건 ${N(DE.guard_cost_on_real_data?.true_events_trigger_held)}건</p>`:na("shadow_data_error","전체 MIMIC-IV 실행 결과가 오면 채워집니다.")}
 function renderChecks(R,kind){
   const ok='<svg viewBox="0 0 16 16"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',todo='<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
   const d=R.agent3_development||{},lc=d.label_counts||{};

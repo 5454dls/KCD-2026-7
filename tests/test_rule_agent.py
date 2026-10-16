@@ -3,8 +3,8 @@ import unittest
 from kcd_liver.evaluation import grounding_check
 from kcd_liver.rule_agent import rule_agent1
 
-CAUSES = {'hypoxic_ischemic', 'sepsis_cholestasis', 'drug_related', 'biliary', 'congestive', 'baseline_liver',
-          'other_hepatic', 'nonhepatic', 'unknown'}
+CAUSES = {'hypoxic_hepatitis', 'congestive_hepatopathy', 'sepsis_cholestasis', 'dili', 'pn_associated',
+          'biliary_obstruction_cholangitis', 'cholecystitis', 'hemolysis', 'viral_hepatitis', 'others', 'unknown'}
 
 
 def lab(a, ratio, value=None, t="2150-01-01T10:00:00"):
@@ -18,7 +18,7 @@ class RuleAgentTests(unittest.TestCase):
                 "context": [{"kind": "vital", "label": "MAP", "value": "52", "measured_at": "2150-01-01T08:00:00"},
                             {"kind": "infusion_record", "label": "Norepinephrine", "value": "recorded", "measured_at": "2150-01-01T07:00:00"}]}
         out = rule_agent1(snap)
-        self.assertEqual(out["candidates"][0]["cause_code"], "hypoxic_ischemic")
+        self.assertEqual(out["candidates"][0]["cause_code"], "hypoxic_hepatitis")
         self.assertFalse(out["abstain"])
         g = grounding_check(out, snap)
         self.assertEqual(g["verified"], g["support_items"])
@@ -27,8 +27,8 @@ class RuleAgentTests(unittest.TestCase):
         snap = {"labs": [lab("ALT", 1.2), lab("ALP", 2.5), lab("TBIL", 3.1), lab("WBC", None, 19)], "context": []}
         out = rule_agent1(snap)
         codes = [c["cause_code"] for c in out["candidates"]]
-        self.assertEqual(codes[0], "sepsis_cholestasis")
-        self.assertIn("biliary", codes)
+        # TG18 suspected cholangitis (inflammation + cholestasis) and sepsis cholestasis overlap: both listed
+        self.assertEqual(set(codes[:2]), {"sepsis_cholestasis", "biliary_obstruction_cholangitis"})
 
     def test_weak_evidence_abstains_and_schema_is_valid(self):
         out = rule_agent1({"labs": [lab("ALT", 2.2), lab("ALP", 1.0)], "context": []})
@@ -43,18 +43,43 @@ class RuleAgentTests(unittest.TestCase):
         f = rule_agent1(snap)["flags"]
         self.assertEqual(set(f), CAUSES - {"unknown"})
         self.assertTrue(all(v["present"] in (0, 1) for v in f.values()))
-        self.assertEqual((f["sepsis_cholestasis"]["present"], f["biliary"]["present"]), (1, 1))
+        self.assertEqual((f["sepsis_cholestasis"]["present"], f["biliary_obstruction_cholangitis"]["present"]), (1, 1))
+        self.assertEqual(f["cholecystitis"]["present"], 0)
+        self.assertFalse(f["cholecystitis"]["assessable"])
 
-    def test_other_hepatic_when_unexplained_hepatocellular(self):
+    def test_others_when_unexplained_hepatocellular(self):
         out = rule_agent1({"labs": [lab("ALT", 8), lab("ALP", 1.0)], "context": []})
-        self.assertEqual(out["flags"]["other_hepatic"]["present"], 1)
+        self.assertEqual(out["flags"]["others"]["present"], 1)
+
+    def test_hemolysis_indirect_bilirubin_and_haptoglobin(self):
+        snap = {"labs": [lab("TBIL", 3.0, 3.6), lab("DBIL", None, 0.4), lab("HAPTO", None, 10), lab("LDH", 2.5), lab("ALT", 1.0),
+                         lab("ALP", 1.0)], "context": []}
+        f = rule_agent1(snap)["flags"]
+        self.assertEqual(f["hemolysis"]["present"], 1)
+
+    def test_viral_serology_and_pn_exposure(self):
+        from kcd_liver.rule_agent import exposures, serology_positive
+        self.assertTrue(serology_positive("POSITIVE"))
+        self.assertFalse(serology_positive("NON-REACTIVE"))
+        self.assertFalse(serology_positive("NOT DETECTED"))
+        ctx = [{"kind": "serology_record", "label": "Hepatitis B Surface Antigen", "value": "POSITIVE",
+                "charttime": "2150-01-01T00:00:00", "available_at": "2150-01-01T02:00:00"},
+               {"kind": "infusion_record", "label": "Parenteral Nutrition", "value": "recorded",
+                "charttime": "2149-12-20T00:00:00", "available_at": "2149-12-20T00:00:00"}]
+        ex = exposures(ctx, "2150-01-01T12:00:00")
+        self.assertGreater(ex["pn_days"], 7)
+        f = rule_agent1({"labs": [lab("ALT", 12), lab("ALP", 2.5), lab("TBIL", 2.4, 2.8)], "context": [], "exposures": ex})["flags"]
+        self.assertEqual(f["viral_hepatitis"]["present"], 1)
+        self.assertEqual(f["pn_associated"]["present"], 1)
+        late = exposures(ctx, "2150-01-01T01:00:00")  # serology not yet reported at 01:00
+        self.assertEqual(late["serology"], [])
 
     def test_drug_record_needs_administration(self):
         base = {"labs": [lab("ALT", 4), lab("ALP", 1.2)], "context": []}
         given = dict(base, context=[{"kind": "emar_record", "label": "CefTRIAXone", "value": "Administered", "measured_at": "x"}])
         not_given = dict(base, context=[{"kind": "emar_record", "label": "CefTRIAXone", "value": "Not Given", "measured_at": "x"}])
-        self.assertIn("drug_related", [c["cause_code"] for c in rule_agent1(given)["candidates"]])
-        self.assertNotIn("drug_related", [c["cause_code"] for c in rule_agent1(not_given)["candidates"]])
+        self.assertIn("dili", [c["cause_code"] for c in rule_agent1(given)["candidates"]])
+        self.assertNotIn("dili", [c["cause_code"] for c in rule_agent1(not_given)["candidates"]])
 
 
 if __name__ == "__main__":

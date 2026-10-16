@@ -114,8 +114,11 @@ def export_cases(db_path: Path, site_data: Path) -> list[dict]:
             if isinstance(s["answer"], dict) and "error" in s["answer"] and "candidates" not in s["answer"]:
                 s["error"] = s["answer"].get("error")
         obs = con.execute("SELECT outcome_json FROM observed_outcomes WHERE case_key=?", (key,)).fetchone()
+        has_de = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='data_errors'").fetchone()
+        de = con.execute("SELECT result_json FROM data_errors WHERE case_key=?", (key,)).fetchone() if has_de else None
         doc = {"case_key": key, "max_hour": max_hour, "group": group, "frames": frames,
-               "stress": stress, "observed": json.loads(obs[0]) if obs else None}
+               "stress": stress, "observed": json.loads(obs[0]) if obs else None,
+               "data_errors": json.loads(de[0]) if de else None}
         (site_data / "cases" / f"{key}.json").write_text(
             json.dumps(clean(doc), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         cases.append({"case_key": key, "max_hour": max_hour, "group": group})
