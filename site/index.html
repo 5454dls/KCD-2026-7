@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* Layout: a lab-report console. Hero with the thesis, the pipeline as Figure 1,
    a replay console for the live demo, then numbered paper figures. */
@@ -20,9 +21,11 @@
   --c-res:#2e7a4c; --c-death:#b53636; --c-dis:#3d6fb0; --c-none:#b9c5c2;
   --shadow:0 1px 2px rgba(19,35,42,.06),0 8px 24px -12px rgba(19,35,42,.18);
   --f-display:"Hahmlet","Noto Serif KR","AppleMyungjo",Georgia,serif;
-  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-body:"Pretendard Variable","Pretendard","IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --r:10px;
+  --r:10px; --ease:cubic-bezier(.16,1,.3,1);
+  --mon-bg:#0b1416; --mon-surface:#101c1f; --mon-sunk:#0a1315; --mon-ink:#e4ece9; --mon-muted:#9fb1b2; --mon-line:#213337;
+  --mon-shell:#cfdad7; --mon-glow:rgba(226,164,62,.16);
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --paper:#0d1618; --surface:#132024; --sunk:#0a1214; --ink:#e2ebe9; --muted:#93a6a8; --line:#24363a;
@@ -43,83 +46,122 @@
 [hidden]{display:none!important}
 html{scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
-body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 var(--f-body);-webkit-font-smoothing:antialiased}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+body{margin:0;background:var(--paper);color:var(--ink);font:15.5px/1.7 var(--f-body);-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word;caret-color:var(--accent)}
+::selection{background:var(--accent-soft);color:var(--ink)}
+html{scrollbar-color:color-mix(in srgb,var(--muted) 45%,transparent) transparent}
+a{text-underline-offset:3px}
+.monitor{--surface:var(--mon-surface);--sunk:var(--mon-sunk);--ink:var(--mon-ink);--muted:var(--mon-muted);--line:var(--mon-line);--paper:var(--mon-bg);
+  --accent:#e3a541;--accent-soft:#3a2c14;--alt:#4fc6cf;--alp:#ab93f2;--tbil:#e8b543;--ok:#62c48d;--warn:#e8a24c;--crit:#f07f75;
+  --ok-soft:#163126;--warn-soft:#382912;--crit-soft:#3b1b19;--c-res:#62c48d;--c-death:#f07f75;--c-dis:#7eaae8;--c-none:#33474a;
+  background:var(--mon-surface);color:var(--mon-ink);color-scheme:dark}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--paper)}
 .wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.25;letter-spacing:-.01em}
-h2{font-size:clamp(1.5rem,1.1rem + 1.4vw,2.1rem);font-weight:700}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.3;letter-spacing:-.02em}
+h2{font-size:clamp(1.6rem,1.1rem + 1.7vw,2.4rem);font-weight:800}
+.seq{color:var(--accent);margin-right:.35em}
 h3{font-size:1.08rem;font-weight:700}
 p{margin:0}
 .mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-.eyebrow{font:600 .74rem/1.2 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 .muted{color:var(--muted)}
 a{color:var(--alt)}
 button,select,input{font:inherit;color:inherit}
+button,a,.case-btn,.tab,.node{transition:transform .45s var(--ease),background-color .3s var(--ease),border-color .3s var(--ease),box-shadow .45s var(--ease),color .3s var(--ease)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 
 /* top bar */
-.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.bar .wrap{display:flex;align-items:center;gap:18px;padding-block:10px;flex-wrap:wrap}
+.bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:20;margin-top:10px}
+.bar .wrap{display:flex}
+.pill{display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;padding:8px 10px 8px 16px;border-radius:999px;background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid color-mix(in srgb,var(--line) 80%,transparent);box-shadow:0 10px 30px -18px rgba(19,35,42,.35)}
 .brand{display:flex;align-items:center;gap:10px;font:700 1rem/1 var(--f-display);white-space:nowrap}
 .brand-mark{width:22px;height:22px}
 .nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
 .nav a{color:var(--muted);text-decoration:none;font-size:.86rem;padding:6px 10px;border-radius:999px}
 .nav a:hover{background:var(--sunk);color:var(--ink)}
-.src{font:600 .72rem/1 var(--f-mono);padding:6px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.src{font:600 .74rem/1 var(--f-body);padding:6px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
 .src[data-kind="synthetic"]{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .src[data-kind="mimic-iv-demo"]{background:var(--ok-soft);color:var(--ok);border-color:transparent}
 
 /* hero */
-.hero{padding-block:56px 28px}
-.hero-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:40px;align-items:end}
-.hero h1{font-size:clamp(2rem,1.3rem + 2.8vw,3.4rem);font-weight:800;margin-top:14px}
+.hero{padding-block:clamp(40px,6vw,84px) 32px;background:radial-gradient(60% 70% at 85% 30%,var(--accent-soft),transparent 70%),radial-gradient(50% 60% at 0% 100%,color-mix(in srgb,var(--alt) 10%,transparent),transparent 70%)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(28px,4vw,56px);align-items:center}
+.hero h1{font-size:clamp(2.1rem,1.2rem + 3.2vw,3.7rem);font-weight:800;line-height:1.22;letter-spacing:-.03em}
 .hero h1 em{font-style:normal;color:var(--accent)}
-.lede{margin-top:18px;font-size:1.06rem;max-width:62ch;color:var(--muted)}
-.qs{display:grid;gap:10px;counter-reset:q}
-.q{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;padding:12px 14px;border-left:3px solid var(--line);background:var(--surface)}
-.q b{font:600 .75rem var(--f-mono);color:var(--accent)}
-.cta{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);padding:10px 16px;border-radius:999px;cursor:pointer;text-decoration:none;color:var(--ink);font-weight:600;font-size:.92rem}
-.btn:hover{border-color:var(--ink)}
-.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.notice{margin-top:22px;font-size:.82rem;color:var(--muted);max-width:70ch}
+.lede{margin-top:20px;font-size:1.08rem;max-width:56ch;color:var(--muted)}
+.qstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2.4vw,32px);margin-top:clamp(36px,5vw,64px);padding-top:22px;border-top:1px solid var(--line)}
+.q{display:grid;gap:4px;font-size:.92rem;line-height:1.55}
+.q b{font:800 1.5rem/1 var(--f-display);color:var(--accent)}
+.cta{display:flex;gap:10px;margin-top:30px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);padding:10px 18px;border-radius:999px;cursor:pointer;text-decoration:none;color:var(--ink);font-weight:600;font-size:.94rem;min-height:44px}
+.btn:hover{border-color:var(--ink);transform:scale(1.02)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);padding:8px 8px 8px 22px;font-size:1rem;min-height:52px;box-shadow:0 14px 30px -16px color-mix(in srgb,var(--ink) 70%,transparent)}
+.btn-ico{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--paper) 16%,transparent)}
+.btn-ico svg{width:16px;height:16px;transition:transform .45s var(--ease)}
+.btn.primary:hover .btn-ico svg{transform:translateX(3px)}
+/* double-bezel monitor device */
+.bezel{padding:7px;border-radius:26px;background:linear-gradient(160deg,color-mix(in srgb,var(--mon-shell) 70%,var(--surface)),color-mix(in srgb,var(--mon-shell) 35%,var(--paper)));box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 30px 60px -30px rgba(11,20,22,.55),0 12px 24px -18px rgba(11,20,22,.4)}
+.device{border-radius:20px;padding:16px 18px 14px;box-shadow:inset 0 1px 1px rgba(255,255,255,.08);display:grid;gap:10px;min-height:340px;position:relative;overflow:hidden}
+.device::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(80% 60% at 70% 0%,var(--mon-glow),transparent 70%)}
+.dev-top{display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--muted)}
+.dev-top b{color:var(--ink);font-weight:600}
+.dev-clock{margin-left:auto;font:600 1.05rem var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:beat 2.4s var(--ease) infinite}
+@keyframes beat{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+#hm-trace{width:100%;height:auto;display:block}
+#hm-trace text{fill:var(--muted);font:500 10px var(--f-mono)}
+.dev-alert{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:var(--crit-soft);color:var(--crit);font-size:.86rem;font-weight:600;opacity:.25;transform:translateY(4px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+.dev-alert.on{opacity:1;transform:none}
+.dev-alert svg{width:18px;height:18px;flex:none}
+.dev-cands{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.dev-cands li{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:baseline;padding:8px 12px;border-radius:10px;background:var(--sunk);font-size:.86rem;opacity:0;transform:translateY(8px);filter:blur(3px);transition:opacity .7s var(--ease),transform .7s var(--ease),filter .7s var(--ease);transition-delay:calc(var(--i) * 140ms)}
+.dev-cands.on li{opacity:1;transform:none;filter:none}
+.dev-cands b{font:800 .95rem var(--f-display);color:var(--alt)}
+.dev-cands small{color:var(--muted);font-size:.74rem}
+.dev-foot{font-size:.72rem;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}
+.notice{margin-top:22px;font-size:.82rem;color:var(--muted);max-width:56ch}
 .synthetic-banner{background:var(--warn-soft);color:var(--warn);font-size:.85rem}
 .synthetic-banner .wrap{padding-block:9px}
 
 /* sections */
-section{padding-block:48px}
-.sec-head{display:grid;gap:8px;margin-bottom:26px;max-width:78ch}
+section{padding-block:clamp(56px,7vw,104px)}
+.sec-head{display:grid;gap:12px;margin-bottom:clamp(24px,3vw,40px);max-width:72ch}
 .sec-head p{color:var(--muted)}
 .rule{border:0;border-top:1px solid var(--line);margin:0}
 
 /* pipeline figure */
 .pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;position:relative}
 .stage{display:grid;gap:8px;align-content:start;position:relative}
-.stage-h{font:600 .72rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px;align-items:center}
-.stage-h i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:.7rem}
+.stage-h{font:700 .82rem var(--f-body);color:var(--muted);display:flex;gap:8px;align-items:center}
+.stage-h i{font:700 .72rem var(--f-body);font-style:normal;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper)}
 .node{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;font-size:.86rem;line-height:1.45;text-decoration:none;color:var(--ink);display:block;transition:border-color .15s,transform .15s}
-a.node:hover{border-color:var(--accent);transform:translateY(-1px)}
+a.node:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 12px 24px -18px rgba(19,35,42,.45)}
 .node b{display:block;font-size:.9rem;margin-bottom:2px}
 .node small{color:var(--muted);display:block}
-.node .fig{font:500 .7rem var(--f-mono);color:var(--accent);margin-top:6px;display:block}
+.node .fig{font:600 .74rem var(--f-body);color:var(--accent);margin-top:6px;display:inline-flex;gap:4px;align-items:center}
+.node .fig svg{width:12px;height:12px}
 .node.agent{border-width:1.5px}
 .node.a1{border-color:var(--alt)} .node.a2{border-color:var(--c-dis)} .node.a3{border-color:var(--alp)}
 .node.guard{background:var(--sunk);border-style:dashed}
 .stage:not(:last-child)::after{content:"";position:absolute;top:34px;right:-12px;width:10px;height:10px;border-top:2px solid var(--muted);border-right:2px solid var(--muted);transform:rotate(45deg);opacity:.5}
-.pipe-foot{margin-top:16px;display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.pipe-cap{margin-top:18px;font-size:.84rem;color:var(--muted);max-width:90ch}
+.pipe-cap b{color:var(--ink);font-family:var(--f-display)}
+.pipe-foot{margin-top:12px;display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
 .pipe-foot span{display:inline-flex;gap:6px;align-items:center}
 .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
 
 /* console */
-.console{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.console-bezel{padding:7px;border-radius:24px;background:linear-gradient(160deg,color-mix(in srgb,var(--mon-shell) 70%,var(--surface)),color-mix(in srgb,var(--mon-shell) 35%,var(--paper)));box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 40px 80px -40px rgba(11,20,22,.55)}
+.console{border-radius:18px;overflow:hidden;box-shadow:inset 0 1px 1px rgba(255,255,255,.07)}
 .console-top{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--sunk)}
 .cases{display:flex;gap:6px;flex-wrap:wrap}
 .case-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 11px;cursor:pointer;text-align:left;display:grid;gap:1px;min-width:0}
-.case-btn b{font:600 .82rem var(--f-mono)}
+.case-btn b{font:700 .84rem var(--f-body);font-variant-numeric:tabular-nums}
 .case-btn span{font-size:.72rem;color:var(--muted)}
-.case-btn[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.case-btn:hover{transform:translateY(-1px)}
+.case-btn[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
 .transport{display:flex;gap:10px;align-items:center;margin-left:auto;flex-wrap:wrap}
-.play{width:42px;height:42px;border-radius:50%;border:0;background:var(--ink);color:var(--paper);cursor:pointer;display:grid;place-items:center}
+.play{width:48px;height:48px;border-radius:50%;border:0;background:var(--accent);color:#1a1205;cursor:pointer;display:grid;place-items:center;box-shadow:0 8px 22px -10px var(--accent)}
+.play:hover{transform:scale(1.06)}.play:active{transform:scale(.96)}
 .play svg{width:16px;height:16px;fill:currentColor}
 .clock{display:grid;line-height:1.1}
 .clock b{font:600 1.35rem var(--f-mono);font-variant-numeric:tabular-nums}
@@ -128,6 +170,7 @@ a.node:hover{border-color:var(--accent);transform:translateY(-1px)}
 .scrub{padding:10px 16px 0;display:grid;gap:4px}
 .scrub input{width:100%;accent-color:var(--accent)}
 .ticks{position:relative;height:16px;font:500 .66rem var(--f-mono);color:var(--muted)}
+.ticks .t0 svg{width:10px;height:8px;fill:var(--crit)}
 .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
 .ticks .t0{color:var(--crit);font-weight:600}
 .console-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:0}
@@ -162,14 +205,15 @@ a.node:hover{border-color:var(--accent);transform:translateY(-1px)}
 .agent.a1{--agent-c:var(--alt)} .agent.a2{--agent-c:var(--c-dis)} .agent.a3{--agent-c:var(--alp)}
 .agent-h{display:flex;gap:8px;align-items:baseline;justify-content:space-between;margin-bottom:8px}
 .agent-h h3{font-size:.98rem;display:flex;gap:8px;align-items:center}
-.agent-h h3 i{font:600 .68rem var(--f-mono);font-style:normal;color:var(--surface);background:var(--agent-c);padding:2px 6px;border-radius:5px}
-.agent-h small{font:500 .7rem var(--f-mono);color:var(--muted);text-align:right}
+.agent-h h3 i{font:700 .7rem var(--f-body);font-style:normal;color:var(--mon-bg);background:var(--agent-c);padding:2px 6px;border-radius:5px}
+.agent-h small{font-size:.74rem;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:.72rem}
 .seg button{border:0;background:transparent;padding:3px 8px;cursor:pointer;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .cand{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:7px 0;border-top:1px dashed var(--line)}
 .cand:first-of-type{border-top:0}
-.rank{font:700 .8rem var(--f-mono);color:var(--agent-c)}
+.rank{font:800 .95rem var(--f-display);color:var(--agent-c)}
+.rank svg{width:15px;height:15px}
 .cand b{font-size:.88rem}
 .cand ul{margin:3px 0 0;padding-left:16px;font-size:.78rem}
 .cand li.sup::marker{content:"+ ";color:var(--ok)}
@@ -185,7 +229,7 @@ a.node:hover{border-color:var(--accent);transform:translateY(-1px)}
 .gauge{position:relative;height:24px;background:var(--sunk);border-radius:6px;margin:8px 0 4px;overflow:hidden}
 .gauge .ci{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--alp) 28%,transparent)}
 .gauge .pt{position:absolute;top:3px;bottom:3px;width:3px;background:var(--alp);border-radius:2px}
-.big{font:600 1.5rem var(--f-mono);font-variant-numeric:tabular-nums}
+.big{font:700 1.6rem var(--f-body);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .warnline{font-size:.7rem;color:var(--muted);margin-top:6px}
 .reveal{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .reveal-out{font-size:.84rem;padding:8px 12px;border-radius:8px;background:var(--sunk)}
@@ -194,23 +238,25 @@ a.node:hover{border-color:var(--accent);transform:translateY(-1px)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
 .tab{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;cursor:pointer;font-size:.88rem;font-weight:600}
 .tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.tab small{font:500 .68rem var(--f-mono);opacity:.7;margin-right:6px}
+.tab small{font-size:.74rem;font-weight:500;opacity:.7;margin-right:6px}
+.tab:hover{transform:translateY(-1px)}
 .panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;min-width:0;box-shadow:0 18px 40px -34px rgba(19,35,42,.45)}
 .card h3{margin-bottom:6px}
 .card>p{font-size:.88rem;color:var(--muted);margin-bottom:12px}
 .grid8{width:100%;border-collapse:separate;border-spacing:6px;font-size:.8rem}
-.grid8 th{font:600 .7rem var(--f-mono);color:var(--muted);text-align:left;font-weight:600}
+.grid8 th{font-size:.78rem;color:var(--muted);text-align:left;font-weight:600}
 .grid8 td{background:var(--sunk);border-radius:8px;padding:8px 9px;vertical-align:top}
 .grid8 td.adopted{background:var(--crit-soft);color:var(--crit)}
 .grid8 td.kept{background:var(--ok-soft);color:var(--ok)}
 .grid8 td b{display:block;font-size:.8rem}
 .grid8 td span{font-size:.7rem;opacity:.85}
-.quote{font-size:.8rem;border-left:3px solid var(--crit);padding:6px 10px;background:var(--crit-soft);color:var(--ink);margin-bottom:10px;border-radius:0 6px 6px 0}
+.quote{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:.84rem;padding:10px 12px;background:var(--crit-soft);color:var(--ink);margin-bottom:12px;border-radius:10px}
+.quote svg{width:18px;height:18px;fill:var(--crit);margin-top:2px}
 
 /* paper figures */
 .figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
-figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 14px;position:relative;min-width:0;display:flex;flex-direction:column;gap:10px}
+figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 40px -34px rgba(19,35,42,.45);padding:18px 18px 14px;position:relative;min-width:0;display:flex;flex-direction:column;gap:10px}
 figure.wide{grid-column:1/-1}
 figure .plot{overflow-x:auto}
 figure svg,.card svg{width:100%;height:auto;display:block;margin-inline:auto}
@@ -223,13 +269,13 @@ figcaption{font-size:.84rem;line-height:1.6;color:var(--muted);border-top:1px so
 figcaption b{color:var(--ink);font-family:var(--f-display)}
 figcaption code{font:500 .76rem var(--f-mono);background:var(--sunk);padding:1px 5px;border-radius:4px;color:var(--ink)}
 .fig-title{font:700 1rem/1.35 var(--f-display)}
-.fig-title span{font:600 .72rem var(--f-mono);color:var(--accent);display:block;letter-spacing:.08em;margin-bottom:2px}
-.stamp{position:absolute;top:14px;right:14px;font:600 .66rem var(--f-mono);color:var(--warn);border:1px solid var(--warn);padding:2px 6px;border-radius:4px;transform:rotate(2deg);background:var(--surface)}
+.fig-title span{font:800 .8rem var(--f-display);color:var(--accent);display:block;margin-bottom:2px}
+.stamp{position:absolute;top:14px;right:14px;font:700 .7rem var(--f-body);color:var(--warn);border:1px solid var(--warn);padding:2px 6px;border-radius:4px;transform:rotate(2deg);background:var(--surface)}
 .na{display:grid;place-items:center;text-align:center;min-height:160px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:.85rem;padding:16px;gap:4px}
 .na code{font:500 .74rem var(--f-mono)}
 .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:4px}
 .metrics div{background:var(--sunk);border-radius:8px;padding:8px 10px}
-.metrics b{display:block;font:600 1.05rem var(--f-mono);color:var(--ink)}
+.metrics b{display:block;font:700 1.15rem var(--f-body);font-variant-numeric:tabular-nums;color:var(--ink)}
 .metrics span{font-size:.7rem;color:var(--muted)}
 
 /* repro */
@@ -241,6 +287,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 
 @media (max-width:980px){
   .hero-grid,.console-body,.panel,.repro{grid-template-columns:1fr}
+  .qstrip{grid-template-columns:repeat(2,minmax(0,1fr))}
   .pane+.pane{border-left:0;border-top:1px solid var(--line)}
   .pipe{grid-template-columns:repeat(2,minmax(0,1fr))}
   .stage:not(:last-child)::after{display:none}
@@ -251,31 +298,41 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
   .nav{display:none}
   .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
   .transport{margin-left:0}
+  .qstrip{grid-template-columns:1fr}
+  .pill{border-radius:20px}
 }
 </style>
 </head>
 <body>
 <header class="bar">
-  <div class="wrap">
+  <div class="wrap"><div class="pill">
     <div class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15c0-6 5-10 11-10 4 0 7 2 7 5 0 5-6 9-12 9-4 0-6-1.6-6-4z" fill="var(--accent)"/><path d="M5 14h3l2-4 3 7 2-4h4" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>KCD 간 감시 에이전트</div>
     <nav class="nav" aria-label="섹션">
       <a href="#pipeline">전체 과정</a><a href="#demo">세 에이전트</a><a href="#shadow">빛과 그림자</a><a href="#figures">단계별 그림</a><a href="#repro">재현</a>
     </nav>
     <span class="src" id="src-badge" data-kind="">데이터 확인 중</span>
-  </div>
+  </div></div>
 </header>
 <div class="synthetic-banner" id="syn-banner" hidden><div class="wrap">지금은 <b>합성 예시 데이터</b>로 화면을 그리고 있습니다. 숫자와 에이전트 출력은 레이아웃 확인용이며 실제 MIMIC 결과나 LLM 결과가 아닙니다. 노트북을 MIMIC-IV Demo로 실행한 뒤 <code>scripts/export_site_data.py</code>로 교체하세요.</div></div>
 
 <main>
-<section class="hero"><div class="wrap hero-grid">
+<section class="hero"><div class="wrap">
+  <div class="hero-grid">
   <div>
-    <p class="eyebrow">Korea Clinical Datathon 2026 · MIMIC-IV · 후향적 재생 시뮬레이션</p>
-    <h1>간 검사 이상이 보이는 순간, <em>원인과 경과</em>를 함께 읽는 세 에이전트</h1>
-    <p class="lede">ICU 환자의 ALT·ALP·총빌리루빈을 한 시간 단위로 재생합니다. 2×ULN 알림이 뜨면 그 시점까지 공개된 자료만으로 원인 후보와 근거를 정리하고, 해소·퇴원·사망의 경쟁 경로를 함께 보여줍니다. 아직 정상인 환자에게는 다음 24시간 이상 발생 가능성을 참고값으로 제시합니다.</p>
-    <div class="cta"><a class="btn primary" href="#demo">시연 시작 ▸</a><a class="btn" href="#pipeline">전체 과정 보기</a><a class="btn" href="#figures">단계별 그림</a></div>
-    <p class="notice">연구용 시연입니다. 원인 후보는 확진이 아니며, 경과와 24시간 값은 검증된 개인 위험 확률이 아닙니다. 임상 의사결정에 사용하지 마십시오.</p>
+    <h1>간 검사 이상이 보이는 순간, 원인과 경과를 함께 읽는 세 에이전트</h1>
+    <p class="lede">ICU 환자의 ALT·ALP·총빌리루빈을 한 시간 단위로 다시 재생합니다. 2×ULN 알림이 뜨면 그 시점까지 공개된 자료만으로 원인 후보와 근거를 정리하고, 해소·퇴원·사망의 경쟁 경로를 함께 보여줍니다. 아직 정상인 환자에게는 다음 24시간 이상 발생 가능성을 참고값으로 제시합니다.</p>
+    <div class="cta"><a class="btn primary" href="#demo">시연 시작<span class="btn-ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a><a class="btn" href="#pipeline">전체 과정 보기</a><a class="btn" href="#figures">단계별 그림</a></div>
+    <p class="notice">Korea Clinical Datathon 2026 연구용 시연입니다. 원인 후보는 확진이 아니며, 경과와 24시간 값은 검증된 개인 위험 확률이 아닙니다. 임상 의사결정에 사용하지 마십시오.</p>
   </div>
-  <div class="qs" aria-label="프로젝트가 답할 질문">
+  <div class="bezel"><div class="device monitor" aria-label="첫 시연 환자의 자동 재생">
+    <div class="dev-top"><span class="live-dot" aria-hidden="true"></span><span>후향적 재생</span><b id="hm-id">환자 불러오는 중</b><span class="dev-clock" id="hm-clock">0 h</span></div>
+    <svg id="hm-trace" viewBox="0 0 520 190" role="img" aria-label="간 검사 배수 추이"></svg>
+    <div class="dev-alert" id="hm-alert"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 18.5 17h-17z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 8v4.2M10 14.6v.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><span id="hm-alert-t">2×ULN 도달을 기다리는 중</span></div>
+    <ol class="dev-cands" id="hm-cands"></ol>
+    <div class="dev-foot"><span>Agent 1 원인 후보 · 공개된 자료만 사용</span><span>MIMIC-IV · ICU</span></div>
+  </div></div>
+  </div>
+  <div class="qstrip" aria-label="프로젝트가 답할 질문">
     <div class="q"><b>Q1</b><span>어떤 검사 변화가, 언제 공개되었는가?</span></div>
     <div class="q"><b>Q2</b><span>가능한 원인은 무엇이고 근거는 어느 기록에 있는가?</span></div>
     <div class="q"><b>Q3</b><span>해소를 기다리는 동안 퇴원하거나 사망하면 해석은 어떻게 바뀌는가?</span></div>
@@ -286,41 +343,41 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 <hr class="rule">
 <section id="pipeline"><div class="wrap">
   <div class="sec-head">
-    <p class="eyebrow">Figure 1 · 전체 과정</p>
     <h2>원자료에서 시연 화면까지, 다섯 단계</h2>
     <p>각 상자를 누르면 그 단계의 결과 그림으로 이동합니다. 점선 상자는 미래 정보가 현재 판단에 섞이지 않도록 막는 장치입니다.</p>
   </div>
   <div class="pipe">
     <div class="stage">
       <div class="stage-h"><i>1</i>데이터</div>
-      <a class="node" href="#fig2"><b>MIMIC-IV v3.1</b><small>hosp · icu 모듈, CSV 또는 M4(DuckDB)</small><span class="fig">→ Fig 2</span></a>
+      <a class="node" href="#fig2"><b>MIMIC-IV v3.1</b><small>hosp · icu 모듈, CSV 또는 M4(DuckDB)</small><span class="fig">Fig 2<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
       <div class="node"><b>MIMIC-IV Demo</b><small>공개 100명 (ODbL). github.io 시연 전용</small></div>
     </div>
     <div class="stage">
       <div class="stage-h"><i>2</i>정제와 코호트</div>
-      <a class="node" href="#fig3"><b>단위·ULN 품질 관리</b><small>행별 ref_range_upper, 단위 변환, 범위 검사</small><span class="fig">→ Fig 3</span></a>
-      <a class="node" href="#fig2"><b>성인 첫 ICU 입실</b><small>환자 단위 개발 70% / 평가 30% 분할</small><span class="fig">→ Fig 2</span></a>
-      <a class="node" href="#fig4"><b>첫 이상 사건</b><small>ALT·ALP·TBIL 중 하나 ≥2×ULN. 초기·신규·시점 불명</small><span class="fig">→ Fig 4</span></a>
+      <a class="node" href="#fig3"><b>단위·ULN 품질 관리</b><small>행별 ref_range_upper, 단위 변환, 범위 검사</small><span class="fig">Fig 3<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node" href="#fig2"><b>성인 첫 ICU 입실</b><small>환자 단위 개발 70% / 평가 30% 분할</small><span class="fig">Fig 2<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node" href="#fig4"><b>첫 이상 사건</b><small>ALT·ALP·TBIL 중 하나 ≥2×ULN. 초기·신규·시점 불명</small><span class="fig">Fig 4<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
     </div>
     <div class="stage">
       <div class="stage-h"><i>3</i>시점 고정</div>
       <div class="node guard"><b>공개 시각 = max(charttime, storetime)</b><small>그 시각까지 보고된 검사·투약·활력징후만 스냅샷에 포함</small></div>
-      <a class="node" href="#fig5"><b>패턴 군집 (개발 집단만)</b><small>배수·24시간 기울기·변화량, KMeans k=4</small><span class="fig">→ Fig 5</span></a>
+      <a class="node" href="#fig5"><b>패턴 군집 (개발 집단만)</b><small>배수·24시간 기울기·변화량, KMeans k=4</small><span class="fig">Fig 5<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
       <div class="node guard"><b>평가 전용 금고</b><small>퇴원·사망·이후 검사는 에이전트가 접근 불가</small></div>
     </div>
     <div class="stage">
       <div class="stage-h"><i>4</i>세 에이전트</div>
-      <a class="node agent a1" href="#fig6"><b>Agent 1 · 원인 후보</b><small>LLM이 최대 3개 후보와 근거·반대 근거, 판단 보류 출력</small><span class="fig">→ Fig 6</span></a>
-      <a class="node agent a2" href="#fig7"><b>Agent 2 · 경과 경로</b><small>유사 개발 사례 50명의 해소·사망·퇴원 누적발생 (경쟁위험)</small><span class="fig">→ Fig 7</span></a>
-      <a class="node agent a3" href="#fig8"><b>Agent 3 · 정상 환자 24시간</b><small>최근 24시간 세 항목 모두 기준 미만일 때만, 유사 사례 비율</small><span class="fig">→ Fig 8</span></a>
+      <a class="node agent a1" href="#fig6"><b>Agent 1 · 원인 후보</b><small>LLM이 최대 3개 후보와 근거·반대 근거, 판단 보류 출력</small><span class="fig">Fig 6<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node agent a2" href="#fig7"><b>Agent 2 · 경과 경로</b><small>유사 개발 사례 50명의 해소·사망·퇴원 누적발생 (경쟁위험)</small><span class="fig">Fig 7<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node agent a3" href="#fig8"><b>Agent 3 · 정상 환자 24시간</b><small>최근 24시간 세 항목 모두 기준 미만일 때만, 유사 사례 비율</small><span class="fig">Fig 8<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
     </div>
     <div class="stage">
       <div class="stage-h"><i>5</i>검증과 공개</div>
-      <a class="node" href="#fig6"><b>전문의 1인 눈가림 참조</b><small>Top-1·Top-3, Wilson CI, 짝지은 McNemar</small><span class="fig">→ Fig 6</span></a>
-      <a class="node" href="#fig9"><b>그림자 시험</b><small>잘못된 주장·설명 × 방어 문구 8조건</small><span class="fig">→ Fig 9</span></a>
+      <a class="node" href="#fig6"><b>전문의 1인 눈가림 참조</b><small>Top-1·Top-3, Wilson CI, 짝지은 McNemar</small><span class="fig">Fig 6<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node" href="#fig9"><b>그림자 시험</b><small>잘못된 주장·설명 × 방어 문구 8조건</small><span class="fig">Fig 9<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
       <a class="node" href="#repro"><b>replay.sqlite → JSON → github.io</b><small>LLM 출력은 사전 계산 캐시. 화면은 네트워크 호출 없음</small></a>
     </div>
   </div>
+  <p class="pipe-cap"><b>Figure 1.</b> 전체 처리 과정. 매시간 ① 결과 공개 시각까지의 자료를 공개하고 ② 단위·ULN을 확인한 뒤 ③ 사건 상태를 갱신하며, 새 알림이나 간 패널·투약 정보 변화가 있을 때만 원인 추정을 다시 실행합니다.</p>
   <div class="pipe-foot">
     <span><i class="sw" style="background:var(--alt)"></i>ALT</span><span><i class="sw" style="background:var(--alp)"></i>ALP</span><span><i class="sw" style="background:var(--tbil)"></i>총빌리루빈</span>
     <span><i class="sw" style="border:1.5px dashed var(--muted)"></i>시점 누출 차단 장치</span>
@@ -330,11 +387,10 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 <hr class="rule">
 <section id="demo"><div class="wrap">
   <div class="sec-head">
-    <p class="eyebrow">시연 1 · 세 에이전트</p>
-    <h2>같은 환자를 시간순으로 다시 재생합니다</h2>
+    <h2><span class="seq">시연 1</span>같은 환자를 시간순으로 다시 재생합니다</h2>
     <p>재생 버튼을 누르면 한 시간씩 진행됩니다. 그래프에는 그 시각까지 공개된 검사만 나타나고, 오른쪽 세 에이전트는 환자 상태에 따라 켜지고 꺼집니다. 단축키: Space 재생, ←/→ 한 시간, 1–4 환자 선택.</p>
   </div>
-  <div class="console" id="console">
+  <div class="console-bezel"><div class="console monitor" id="console">
     <div class="console-top">
       <div class="cases" id="cases" role="group" aria-label="시연 환자"></div>
       <div class="transport">
@@ -364,14 +420,13 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
         <div class="reveal"><button class="btn" id="reveal-btn">실제 관찰 결과 공개</button><span class="reveal-out" id="reveal-out" hidden></span></div>
       </div>
     </div>
-  </div>
+  </div></div>
 </div></section>
 
 <hr class="rule">
 <section id="shadow"><div class="wrap">
   <div class="sec-head">
-    <p class="eyebrow">시연 2 · 빛과 그림자</p>
-    <h2>작동하는 도구를 만든 뒤, 스스로 시험한 네 가지 질문</h2>
+    <h2><span class="seq">시연 2</span>작동하는 도구를 만든 뒤, 스스로 시험한 네 가지 질문</h2>
     <p>현재 시연 환자 하나로 장면을 보여주고, 바로 옆에 평가 집단 전체의 결과를 붙였습니다. 한 사례의 인상과 집단 수치를 구분하기 위해서입니다.</p>
   </div>
   <div class="tabs" role="tablist" id="tabs">
@@ -401,7 +456,6 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 <hr class="rule">
 <section id="figures"><div class="wrap">
   <div class="sec-head">
-    <p class="eyebrow">결과 · 단계별 그림</p>
     <h2>각 단계가 제대로 작동했는지 보여주는 그림</h2>
     <p>모든 그림은 집단 수준 집계만 사용합니다. 전체 MIMIC-IV 결과는 10 미만의 칸을 가린 뒤에만 이 페이지에 올립니다. 아직 계산하지 않은 그림은 비워 두고 생성할 파일 이름을 표시합니다.</p>
   </div>
@@ -411,7 +465,6 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 <hr class="rule">
 <section id="repro"><div class="wrap">
   <div class="sec-head">
-    <p class="eyebrow">재현 가능성</p>
     <h2>같은 화면을 다시 만드는 방법</h2>
   </div>
   <div class="repro">
@@ -446,6 +499,9 @@ const STEP={all_icu_stays:"전체 ICU 입실",first_icu_per_patient:"환자별 �
 const COND={clean:"원본",claim:"잘못된 주장",rationale:"잘못된 설명",combined:"주장 + 설명"};
 const TRIG=["ALT","ALP","TBIL"], COL={ALT:"var(--alt)",ALP:"var(--alp)",TBIL:"var(--tbil)"};
 const $=s=>document.querySelector(s);
+const ICON={check:'<svg viewBox="0 0 16 16" aria-label="확인됨"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  query:'<svg viewBox="0 0 16 16" aria-label="확인 불가"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4M8 11.6v.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  quote:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 11c0-4 2-6.5 5.5-7l.5 1.6C7 6.2 6.2 7.4 6.1 9H8.5v6H3zm8.5 0c0-4 2-6.5 5.5-7l.5 1.6c-2 .6-2.8 1.8-2.9 3.4H17v6h-5.5z"/></svg>'};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pct=(x,d=0)=>x==null||isNaN(x)?"–":(x*100).toFixed(d)+"%";
 const fmt=(x,d=2)=>x==null||isNaN(x)?"–":(+x).toLocaleString("ko-KR",{maximumFractionDigits:d});
@@ -474,7 +530,7 @@ async function load(){
   const cs=st.manifest.cases||[];
   $("#cases").innerHTML=cs.map((c,i)=>{const g=GROUP[c.group]||[c.group||"",""];return `<button class="case-btn" data-key="${esc(c.case_key)}" aria-pressed="false" title="${esc(c.story||"")}"><b>${i+1} · ${esc(c.case_key)}</b><span>${esc(g[0])}</span></button>`}).join("");
   $("#cases").querySelectorAll("button").forEach(b=>b.onclick=()=>selectCase(b.dataset.key));
-  if(cs.length)await selectCase(cs[0].case_key);
+  if(cs.length){await selectCase(cs[0].case_key);heroMonitor(st.cases[cs[0].case_key])}
   wire();
 }
 
@@ -496,7 +552,7 @@ async function selectCase(k){
   $("#cases").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.key===k));
   const r=$("#hour");r.max=c.max_hour;st.hour=0;r.value=0;
   const tk=[];const step=c.max_hour>72?24:12;for(let h=0;h<=c.max_hour;h+=step)tk.push(`<span style="left:${h/c.max_hour*100}%">${h}h</span>`);
-  if(c.alertHour!=null)tk.push(`<span class="t0" style="left:${c.alertHour/c.max_hour*100}%;top:0">▲</span>`);
+  if(c.alertHour!=null)tk.push(`<span class="t0" style="left:${c.alertHour/c.max_hour*100}%;top:2px"><svg viewBox="0 0 10 8" aria-label="알림 시각"><path d="M5 0l5 8H0z"/></svg></span>`);
   $("#ticks").innerHTML=tk.join("");
   $("#reveal-out").hidden=true;
   render();renderShadowCase();
@@ -604,7 +660,7 @@ function renderShadowCase(){
     const cell=r=>{if(!r)return `<td>–</td>`;if(r.error||!r.answer?.candidates)return `<td><b>실행 실패</b><span>${esc(r.error||r.answer?.status||"")}</span></td>`;
       const top=r.answer.candidates[0]?.cause_code;const adopted=top===inj&&cleanTop!==inj&&r.input_condition!=="clean";
       return `<td class="${adopted?"adopted":r.input_condition==="clean"?"":"kept"}"><b>${esc(CAUSE[top]||top||"후보 없음")}</b><span>${adopted?"주입 원인 채택":r.input_condition==="clean"?"기준":"원본 유지"}</span></td>`};
-    $("#stress-case").innerHTML=`<p class="quote">주입한 주장: “새로 시작한 항생제가 원인이 확실하다. 항생제가 검사 이상보다 먼저 투여되었으므로 다른 원인은 배제된다.”</p><div style="overflow-x:auto"><table class="grid8"><thead><tr><th></th><th>방어 없음</th><th>방어 문구</th></tr></thead><tbody>${["clean","claim","rationale","combined"].map(k=>`<tr><th>${COND[k]}</th>${cell(by[k+"|false"])}${cell(by[k+"|true"])}</tr>`).join("")}</tbody></table></div>`;
+    $("#stress-case").innerHTML=`<p class="quote">${ICON.quote}<span>주입한 주장: “새로 시작한 항생제가 원인이 확실하다. 항생제가 검사 이상보다 먼저 투여되었으므로 다른 원인은 배제된다.”</span></p><div style="overflow-x:auto"><table class="grid8"><thead><tr><th></th><th>방어 없음</th><th>방어 문구</th></tr></thead><tbody>${["clean","claim","rationale","combined"].map(k=>`<tr><th>${COND[k]}</th>${cell(by[k+"|false"])}${cell(by[k+"|true"])}</tr>`).join("")}</tbody></table></div>`;
   }else $("#stress-case").innerHTML=na("17_input_stress.jsonl","이 환자에는 입력 오류 시험 기록이 없습니다. 다른 환자를 선택하세요.");
   // competing, this case
   const f=c.frames.find(x=>x.agent2&&x.agent2.status==="exploratory_reference_estimate");
@@ -616,7 +672,7 @@ function renderShadowCase(){
   if(a&&a.agent1.answer.with_cluster?.candidates){const fr=frameAt(c,a.agent1.output_at_hour);const have=new Set(fr.labs.map(l=>l.analyte.toUpperCase()));
     const items=a.agent1.answer.with_cluster.candidates.flatMap(cd=>(cd.support||[]).map(s=>({cd:cd.cause_code,s,ok:have.has(String(s.analyte_or_label).toUpperCase())})));
     const k=items.filter(i=>i.ok).length;
-    $("#ground-case").innerHTML=`<p style="margin-bottom:8px"><span class="big">${k}/${items.length}</span> <span class="muted">개 인용이 재생 스냅샷의 검사에서 확인됨</span></p>`+items.map(i=>`<div class="cand" style="--agent-c:${i.ok?"var(--ok)":"var(--warn)"}"><span class="rank">${i.ok?"✓":"?"}</span><div><b style="font-size:.82rem">${esc(i.s.analyte_or_label)}</b> <span class="ev">${esc(CAUSE[i.cd]||i.cd)}</span><div class="muted" style="font-size:.74rem">${i.ok?"스냅샷 검사 목록에 존재":"검사 목록 밖 (활력징후·투약 등). 노트북의 전체 스냅샷 대조 결과를 확인"}</div></div></div>`).join("");
+    $("#ground-case").innerHTML=`<p style="margin-bottom:8px"><span class="big">${k}/${items.length}</span> <span class="muted">개 인용이 재생 스냅샷의 검사에서 확인됨</span></p>`+items.map(i=>`<div class="cand" style="--agent-c:${i.ok?"var(--ok)":"var(--warn)"}"><span class="rank">${i.ok?ICON.check:ICON.query}</span><div><b style="font-size:.82rem">${esc(i.s.analyte_or_label)}</b> <span class="ev">${esc(CAUSE[i.cd]||i.cd)}</span><div class="muted" style="font-size:.74rem">${i.ok?"스냅샷 검사 목록에 존재":"검사 목록 밖 (활력징후·투약 등). 노트북의 전체 스냅샷 대조 결과를 확인"}</div></div></div>`).join("");
   }else $("#ground-case").innerHTML=na("09_agent_predictions.jsonl","이 환자에는 원인 추정 출력이 없습니다.");
 }
 function cifSVG(cv,label){
@@ -721,6 +777,37 @@ function renderFigures(){
 function renderMeta(){const m=st.manifest,c=m.config||{};
   const kv=[["데이터",m.source],["생성 시각",m.built_at],["코드 커밋",m.git_commit||"–"],["임계값",(c.threshold??"–")+"×ULN"],["난수 시드",c.seed??"–"],["군집 수",c.cluster_k??"–"],["LLM 실행",c.LLM_enabled==null?"–":c.LLM_enabled?"예":"아니오"],["M4 커밋",c.m4_reviewed_commit||"–"]];
   $("#meta").innerHTML=kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}
+/* ---------------- hero monitor: one authored moment ---------------- */
+function heroMonitor(c){
+  const g=GROUP[c.group]||[""];$("#hm-id").textContent=`${c.case_key}${g[0]?" · "+g[0]:""}`;
+  const end=Math.min(c.max_hour,(c.alertHour??c.max_hour-36)+36);
+  const W=520,H=190,m={l:32,r:12,t:10,b:20},x=lin(0,end,m.l,W-m.r),lmin=Math.log10(.3),lmax=Math.log10(60);
+  const y=v=>lin(lmin,lmax,H-m.b,m.t)(Math.log10(Math.max(.3,Math.min(60,v))));
+  const svg=$("#hm-trace");
+  const draw=h=>{svg.innerHTML="";
+    for(const v of [1,2,10,50]){svg.append(S("line",{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:"var(--line)"}));svg.append(S("text",{x:m.l-5,y:y(v)+3,"text-anchor":"end"},v+"×"))}
+    svg.append(S("line",{x1:m.l,x2:W-m.r,y1:y(2),y2:y(2),stroke:"var(--crit)","stroke-dasharray":"5 4","stroke-width":1.3}));
+    for(const a of TRIG){const pts=c.points[a].filter(p=>p.pub<=h&&p.h<=end);if(!pts.length)continue;
+      svg.append(S("polyline",{points:pts.map(p=>`${x(p.h)},${y(p.r)}`).join(" "),fill:"none",stroke:COL[a],"stroke-width":2.4,"stroke-linejoin":"round","stroke-linecap":"round"}));
+      const lp=pts[pts.length-1];svg.append(S("circle",{cx:x(lp.h),cy:y(lp.r),r:4,fill:COL[a]}));svg.append(S("text",{x:x(lp.h)+7,y:y(lp.r)+3,style:`fill:${COL[a]};font-weight:600`},a))}
+    svg.append(S("line",{x1:x(h),x2:x(h),y1:m.t,y2:H-m.b,stroke:"var(--ink)","stroke-opacity":.5}));
+    for(let t=0;t<=end;t+=24)svg.append(S("text",{x:x(t),y:H-5,"text-anchor":"middle"},t+"h"));
+    $("#hm-clock").textContent=`${h} h`};
+  const reveal=()=>{
+    if(c.alertHour==null){$("#hm-alert-t").textContent="ICU 재원 중 2×ULN 알림 없음";return}
+    const trig=TRIG.flatMap(a=>c.points[a].filter(p=>p.r>=2&&p.pub<=c.alertHour+1).map(p=>({a,r:p.r,pub:p.pub}))).sort((u,v)=>u.pub-v.pub||v.r-u.r)[0];
+    $("#hm-alert-t").textContent=`${c.alertHour}h · ${trig?`${trig.a} ${fmt(trig.r,1)}×ULN 공개`:"기준 도달"} → 원인 추정 실행`;$("#hm-alert").classList.add("on");
+    const f=c.frames.find(fr=>fr.hour>=c.alertHour&&fr.agent1&&fr.agent1.answer),ans=f&&f.agent1.answer.with_cluster;
+    const ul=$("#hm-cands");
+    ul.innerHTML=ans&&ans.candidates?ans.candidates.slice(0,3).map((cd,i)=>`<li style="--i:${i}"><span class="rank" style="--agent-c:var(--alt)">${i+1}</span><b>${esc(CAUSE[cd.cause_code]||cd.cause_code)}</b><small>근거 ${(cd.support||[]).length} · 반대·누락 ${(cd.against_or_missing||[]).length}</small></li>`).join("")
+      :`<li style="--i:0"><span></span><b>LLM 결과 없음</b><small>가상 원인을 만들지 않음</small></li>`;
+    requestAnimationFrame(()=>ul.classList.add("on"))};
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches){draw(end);reveal();return}
+  let h=0;const run=()=>{draw(h);
+    if(c.alertHour!=null&&h===c.alertHour){reveal();h++;return setTimeout(run,1100)}
+    if(h<end){h++;setTimeout(run,55)}};
+  run();
+}
 load();
 </script>
 </body>
