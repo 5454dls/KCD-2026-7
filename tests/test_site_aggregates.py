@@ -45,3 +45,20 @@ class SiteAggregateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DevelopV2Tests(unittest.TestCase):
+    def test_noncrossing_and_group_shapley_efficiency(self):
+        import numpy as np
+        import pandas as pd
+        from kcd_liver.develop import _noncrossing, group_shapley
+        P = _noncrossing({0.1: np.array([2.0, 0.0]), 0.5: np.array([1.0, 0.5]), 0.9: np.array([3.0, 1.0])})
+        self.assertTrue((P[0.1] <= P[0.5]).all() and (P[0.5] <= P[0.9]).all())
+        cols = ["ALT_latest", "MAP_latest", "age"]
+        f = lambda A: 0.1 * A[:, 0] + 0.2 * A[:, 1] + 0.05 * A[:, 0] * A[:, 1]
+        X = pd.DataFrame([[3.0, 2.0, 70.0]], columns=cols)
+        B = pd.DataFrame([[1.0, 1.0, 50.0], [0.0, 0.0, 60.0]], columns=cols)
+        phi, groups = group_shapley(f, X, B, cols)
+        total = f(X.to_numpy())[0] - f(B.to_numpy()).mean()
+        self.assertAlmostEqual(phi.sum(), total, places=9)  # efficiency: contributions add up exactly
+        self.assertAlmostEqual(phi[0][groups.index("background")], 0.0, places=12)  # unused feature gets zero

@@ -100,10 +100,12 @@ def export_cases(db_path: Path, site_data: Path) -> list[dict]:
     for row in con.execute(f"SELECT case_key, max_hour{extra} FROM cases ORDER BY case_key").fetchall():
         key, max_hour = row[0], int(row[1])
         group = row[2] if extra else None
-        frames = [{"hour": h, "labs": json.loads(l), "agent1": json.loads(a1),
-                   "agent2": json.loads(a2), "agent3": json.loads(a3)}
-                  for h, l, a1, a2, a3 in con.execute(
-                      "SELECT hour, labs_json, agent1_json, agent2_json, agent3_json FROM frames "
+        fcols = [r[1] for r in con.execute("PRAGMA table_info(frames)")]
+        fc = ", forecast_json" if "forecast_json" in fcols else ", NULL"
+        frames = [{"hour": r[0], "labs": json.loads(r[1]), "agent1": json.loads(r[2]),
+                   "agent2": json.loads(r[3]), "agent3": json.loads(r[4]), "forecast": json.loads(r[5]) if r[5] else {}}
+                  for r in con.execute(
+                      f"SELECT hour, labs_json, agent1_json, agent2_json, agent3_json{fc} FROM frames "
                       "WHERE case_key=? ORDER BY hour", (key,))]
         stress = [{"input_condition": c, "guarded": bool(g), "answer": json.loads(r)}
                   for c, g, r in con.execute(

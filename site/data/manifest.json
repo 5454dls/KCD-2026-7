@@ -33,7 +33,7 @@
   "threshold": 2.0,
   "LLM_enabled": true,
   "agent1_backend": "rule",
-  "agent1_model": "rule_baseline_v1.1",
+  "agent1_model": "rule_baseline_v1.2",
   "cluster_k": 4,
   "backend": "csv",
   "m4_reviewed_commit": "f3c434205e36966409af0ec33a0379f4813db58e",
@@ -49,9 +49,9 @@
  "summaries": {
   "summary.json": {
    "source": "mimic-iv-demo",
-   "built_at": "2026-10-16T10:29:22+00:00"
+   "built_at": "2026-10-16T11:06:29+00:00"
   }
  },
- "built_at": "2026-10-16T10:29:22+00:00",
+ "built_at": "2026-10-16T11:06:29+00:00",
  "git_commit": null
 }

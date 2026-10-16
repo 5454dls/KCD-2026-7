@@ -38,6 +38,17 @@ class RuleAgentTests(unittest.TestCase):
         self.assertEqual(len(codes), len(set(codes)))
         self.assertTrue(set(codes) <= CAUSES)
 
+    def test_flags_are_independent_binary_and_can_overlap(self):
+        snap = {"labs": [lab("ALT", 1.2), lab("ALP", 2.5), lab("TBIL", 3.1), lab("WBC", None, 19)], "context": []}
+        f = rule_agent1(snap)["flags"]
+        self.assertEqual(set(f), CAUSES - {"unknown"})
+        self.assertTrue(all(v["present"] in (0, 1) for v in f.values()))
+        self.assertEqual((f["sepsis_cholestasis"]["present"], f["biliary"]["present"]), (1, 1))
+
+    def test_other_hepatic_when_unexplained_hepatocellular(self):
+        out = rule_agent1({"labs": [lab("ALT", 8), lab("ALP", 1.0)], "context": []})
+        self.assertEqual(out["flags"]["other_hepatic"]["present"], 1)
+
     def test_drug_record_needs_administration(self):
         base = {"labs": [lab("ALT", 4), lab("ALP", 1.2)], "context": []}
         given = dict(base, context=[{"kind": "emar_record", "label": "CefTRIAXone", "value": "Administered", "measured_at": "x"}])

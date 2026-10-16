@@ -16,3 +16,5 @@ __pycache__/
 data/
 models/
 *.joblib
+run_all/
+kcd_return_package_*.zip

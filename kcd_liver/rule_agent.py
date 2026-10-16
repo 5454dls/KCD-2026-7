@@ -12,12 +12,17 @@ pre-specified project choice, frozen before evaluation, not fitted to outcomes.
 """
 from __future__ import annotations
 
+# The eight causes shown as independent 0/1 flags (several may apply at once).
+CAUSE_FLAGS = ["hypoxic_ischemic", "sepsis_cholestasis", "drug_related", "biliary", "congestive", "baseline_liver",
+               "other_hepatic", "nonhepatic"]
+FLAG_THRESHOLD = 1.0  # pre-specified: a category is flagged when its evidence score reaches this
+
 HEPATOTOXIC = ["acetaminophen", "ceftriaxone", "amoxicillin", "clavulanate", "piperacillin", "isoniazid", "rifampin",
                "valpro", "phenytoin", "amiodarone", "azithromycin", "fluconazole", "voriconazole", "ketoconazole",
                "methotrexate", "atorvastatin", "simvastatin", "allopurinol", "carbamazepine", "nitrofurantoin",
                "sulfamethoxazole", "trimethoprim", "oxacillin", "nafcillin", "tmp", "linezolid", "propofol"]
 PRESSORS = ["norepinephrine", "epinephrine", "vasopressin", "phenylephrine", "dopamine"]
-VERSION = "rule_baseline_v1.1"  # frozen 2026-10-16 after demo review; formal evaluation on full MIMIC-IV only
+VERSION = "rule_baseline_v1.2"  # v1.2 adds 0/1 flags for 8 causes; frozen before the full MIMIC-IV evaluation
 
 
 def _num(x):
@@ -63,7 +68,8 @@ def rule_agent1(payload: dict) -> dict:
     # hypoxic / ischaemic: very high aminotransferases with hypoperfusion evidence
     top_amino = max([(a, ratio(a)) for a in ("ALT", "AST") if ratio(a) is not None], key=lambda x: x[1], default=None)
     if top_amino and top_amino[1] >= 5:
-        add("hypoxic_ischemic", 2 if top_amino[1] >= 10 else 1, _sup(labs[top_amino[0]], f"{top_amino[0]} {top_amino[1]:.1f}×ULN"))
+        # aminotransferases alone are not ischaemia: >=10x counts as one unit, 5-10x as half; perfusion evidence adds
+        add("hypoxic_ischemic", 1 if top_amino[1] >= 10 else .5, _sup(labs[top_amino[0]], f"{top_amino[0]} {top_amino[1]:.1f}×ULN"))
         if low_map is not None and _num(low_map["value"]) < 65:
             add("hypoxic_ischemic", 1, _sup(low_map, f"MAP 최저 {_num(low_map['value']):.0f} mmHg"))
         elif maps:
@@ -118,6 +124,11 @@ def rule_agent1(payload: dict) -> dict:
             "근육 손상과 간손상이 동시에 있을 수 있음")
     if tb is not None and tb >= 2 and (alt or 0) < 1.5 and (alp or 0) < 1.5:
         add("nonhepatic", 1, _sup(labs["TBIL"], "빌리루빈 단독 상승 (용혈·포합 장애 감별)"))
+    # other hepatocellular causes (viral, autoimmune, ...): hepatocellular pattern without the explanations above
+    explained = any(S.get(c, {}).get("score", 0) >= FLAG_THRESHOLD for c in ("hypoxic_ischemic", "drug_related", "nonhepatic"))
+    if r_ratio is not None and r_ratio >= 5 and (alt or 0) >= 3 and not explained:
+        add("other_hepatic", 1.0, _sup(labs["ALT"], f"간세포형 (R {r_ratio:.1f}), 저관류·약물·근육으로 설명되지 않음"),
+            "바이러스·자가면역 검사는 입력에 없음")
 
     ranked = sorted(((c, v) for c, v in S.items() if v["score"] > 0), key=lambda x: -x[1]["score"])[:3]
     missing = [a for a in ("ALT", "ALP", "TBIL") if a not in labs]
@@ -128,5 +139,9 @@ def rule_agent1(payload: dict) -> dict:
     if missing:
         unc.append("최근 측정 없음: " + ", ".join(missing))
     unc.append("규칙 기반 기준 모델. 노트·영상·배양 정보는 사용하지 않음.")
+    flags = {c: {"present": int(S.get(c, {}).get("score", 0) >= FLAG_THRESHOLD),
+                 "score": round(float(S.get(c, {}).get("score", 0)), 2),
+                 "support": S.get(c, {}).get("support", []), "against": S.get(c, {}).get("against", [])} for c in CAUSE_FLAGS}
     return {"candidates": [{"cause_code": c, "support": v["support"], "against_or_missing": v["against"]} for c, v in ranked],
-            "uncertainty": " · ".join(unc), "abstain": abstain, "model": VERSION}
+            "flags": flags, "uncertainty": " · ".join(unc), "abstain": abstain or not any(f["present"] for f in flags.values()),
+            "model": VERSION}

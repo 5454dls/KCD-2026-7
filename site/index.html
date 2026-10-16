@@ -315,6 +315,25 @@ figcaption code{font:500 .76rem var(--f-mono);background:var(--sunk);padding:1px
 .ba .toggle{justify-self:start}
 .ba.pending .flip{opacity:.5}
 .sub-h{margin:8px 0 14px}
+.flag-sum{font-size:.8rem;color:var(--muted);margin-bottom:6px}
+.flags{display:grid;gap:4px}
+.flag{display:grid;grid-template-columns:26px 150px 1fr;gap:8px;align-items:baseline;font-size:.8rem;padding:4px 6px;border-radius:8px;color:var(--muted)}
+.flag b{font-weight:600}
+.flag .bit{font:700 .8rem var(--f-mono);text-align:center;border-radius:5px;background:var(--sunk);padding:1px 0}
+.flag.on{background:color-mix(in srgb,var(--alt) 14%,transparent);color:var(--ink)}
+.flag.on .bit{background:var(--alt);color:var(--mon-bg)}
+.flag .why{font-size:.74rem;color:var(--muted);min-width:0}
+.prog{display:grid;gap:6px;margin:6px 0}
+.prow{display:grid;grid-template-columns:120px 1fr 44px;gap:8px;align-items:center;font-size:.8rem;color:var(--muted)}
+.prow.top{color:var(--ink);font-weight:600}
+.pbar{height:12px;border-radius:6px;background:var(--sunk);overflow:hidden}.pbar div{height:100%}
+.shap{margin-top:8px;display:grid;gap:4px}
+.shap p{font-size:.74rem;color:var(--muted)}
+.srow{display:grid;grid-template-columns:110px 1fr 58px;gap:8px;align-items:center;font-size:.76rem}
+.sbar{position:relative;height:10px;background:var(--sunk);border-radius:5px}
+.sbar div{position:absolute;top:0;bottom:0;border-radius:5px}
+.sbar .up{background:var(--crit)}.sbar .down{background:var(--ok)}
+.srow b{text-align:right;font-size:.74rem}
 .steps{margin:0;padding:0;list-style:none;display:grid;gap:8px;counter-reset:st}
 .steps li{display:grid;grid-template-columns:28px 92px 1fr;gap:10px;align-items:baseline;font-size:.86rem;padding:8px 0;border-bottom:1px solid var(--line);counter-increment:st}
 .steps li::before{content:counter(st);font:800 .9rem var(--f-display);color:var(--accent)}
@@ -432,10 +451,16 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
       <figcaption><b>Figure 4.</b> 평가 집단의 매시간 랜드마크에서 다음 24시간 내 2×ULN 이상 관찰을 예측한 ROC 곡선. 점선은 무작위 판별.</figcaption></figure>
     <figure id="fig-cal"><div class="fig-title"><span>FIGURE 5</span>Agent 3 보정</div><div class="plot" id="cal-plot"></div>
       <figcaption><b>Figure 5.</b> 예측 위험 10분위별 평균 예측값과 관찰 비율(95% Wilson CI). 점선은 완전 보정선입니다. 보정 기울기 1, 절편 0이 이상적입니다.</figcaption></figure>
-    <figure id="fig-a2"><div class="fig-title"><span>FIGURE 6</span>Agent 2: 48시간 첫 사건 판별</div><div class="plot" id="a2-plot"></div>
-      <figcaption><b>Figure 6.</b> 첫 알림 시점에 예측한 48시간 내 첫 사건별 일대다 AUROC. 해소 확인이 불가능한 사건은 제외하고 그 수를 Figure 1에 표시했습니다.</figcaption></figure>
+    <figure id="fig-a2"><div class="fig-title"><span>FIGURE 6</span>Agent 2: 예후 네 경로 판별</div><div class="plot" id="a2-plot"></div>
+      <figcaption><b>Figure 6.</b> 첫 알림 시점에 예측한 예후 네 경로(수치 해소 여부 × 병원 내 사망 여부)별 일대다 AUROC. ‘미해소’에는 퇴원·사망 전 재검이 없어 해소를 확인하지 못한 경우가 포함됩니다.</figcaption></figure>
     <figure id="fig-a1"><div class="fig-title"><span>FIGURE 7</span>Agent 1: 원인 후보 일치</div><div class="plot" id="a1-plot"></div>
       <figcaption><b>Figure 7.</b> 대리 범주가 하나 이상 있는 평가 사건에서 1순위 또는 3순위 안에 대리 범주가 포함된 비율. 규칙 모델과 LLM은 같은 사례에서 비교하며 짝지은 McNemar 검정을 함께 표시합니다.</figcaption></figure>
+    <figure class="wide" id="tab3"><div class="fig-title"><span>TABLE 3</span>향후 24시간 간 수치 궤적 예측</div><div class="plot" id="table3"></div>
+      <figcaption><b>Table 3.</b> 평가 환자의 4시간 간격 시점에서 6·12·18·24시간 뒤 실제 측정값(±3시간)과 비교. 오차는 log₂(값/ULN)의 평균 절대 오차이며 1.0은 두 배 차이입니다. 비교 기준은 마지막 측정값을 그대로 유지하는 예측입니다. 80% 구간 포함률이 80%에 가까울수록 구간이 정직합니다.</figcaption></figure>
+    <figure id="fig-shap"><div class="fig-title"><span>FIGURE 8</span>Agent 3이 기대는 것: 그룹 Shapley</div><div class="plot" id="shap-plot"></div>
+      <figcaption><b>Figure 8.</b> 평가 시점별로 9개 임상 그룹의 정확한 Shapley 값을 계산한 뒤 절댓값 평균. 서로 상관된 지표를 그룹으로 묶어 기여도가 임의로 쪼개지지 않게 했습니다. ‘측정 패턴’이 크면 모델이 질병보다 검사를 얼마나 자주 했는지를 배우고 있다는 경고입니다.</figcaption></figure>
+    <figure id="tab4"><div class="fig-title"><span>TABLE 4</span>원인 8개, 각각 0/1 판정</div><div class="plot" id="table4"></div>
+      <figcaption><b>Table 4.</b> 평가 사건마다 8개 원인을 독립적으로 판정하고 같은 입원의 퇴원 진단 대리 범주와 비교한 민감도·특이도(95% Wilson CI). 한 사건에 여러 원인이 동시에 해당할 수 있습니다. 대리 기준은 전문의 판정이 아닙니다.</figcaption></figure>
   </div>
 </div></section>
 
@@ -710,12 +735,13 @@ function render(){
 }
 function drawTrend(c,h){
   const svg=$("#trend");svg.innerHTML="";const W=640,H=260,m={l:40,r:14,t:14,b:26};
-  const x=lin(0,c.max_hour,m.l,W-m.r);const lmin=Math.log10(.3),lmax=Math.log10(60);
+  const hasFc=c.frames.some(f=>f.forecast&&Object.keys(f.forecast).length),X1=c.max_hour+(hasFc?24:0);
+  const x=lin(0,X1,m.l,W-m.r);const lmin=Math.log10(.3),lmax=Math.log10(60);
   const y=v=>lin(lmin,lmax,H-m.b,m.t)(Math.log10(Math.max(.3,Math.min(60,v))));
   svg.append(S("rect",{class:"future",x:x(h),y:m.t,width:Math.max(0,W-m.r-x(h)),height:H-m.t-m.b,fill:"var(--sunk)"}));
-  if(h<c.max_hour)svg.append(S("text",{x:(x(h)+W-m.r)/2,y:m.t+14,"text-anchor":"middle"},"아직 공개되지 않은 시간"));
+  if(h<c.max_hour)svg.append(S("text",{x:(x(h)+W-m.r)/2,y:m.t+14,"text-anchor":"middle"},hasFc?"아직 공개되지 않은 시간 · 점선과 띠는 예측":"아직 공개되지 않은 시간"));
   for(const v of [.5,1,2,5,10,20,50]){svg.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)}));svg.append(S("text",{x:m.l-6,y:y(v)+3,"text-anchor":"end"},v+"×"))}
-  const step=c.max_hour>72?24:12;for(let t=0;t<=c.max_hour;t+=step)svg.append(S("text",{x:x(t),y:H-8,"text-anchor":"middle"},t+"h"));
+  const step=X1>72?24:12;for(let t=0;t<=X1;t+=step)svg.append(S("text",{x:x(t),y:H-8,"text-anchor":"middle"},t+"h"));
   svg.append(S("line",{class:"thr",x1:m.l,x2:W-m.r,y1:y(2),y2:y(2),stroke:"var(--crit)"}));
   svg.append(S("text",{x:W-m.r,y:y(2)-5,"text-anchor":"end",style:"fill:var(--crit)"},"2×ULN 알림 기준"));
   for(const a of TRIG){
@@ -724,6 +750,12 @@ function drawTrend(c,h){
     pts.forEach((p,i)=>svg.append(S("circle",{cx:x(p.h),cy:y(p.r),r:i===pts.length-1?4.2:2.8,fill:i===pts.length-1?COL[a]:"var(--surface)",stroke:COL[a],"stroke-width":1.8})));
     const lp=pts[pts.length-1];svg.append(S("text",{x:x(lp.h)+7,y:y(lp.r)+3,class:"lbl-ink",style:`fill:${COL[a]}`},a))
   }
+  const f0=frameAt(c,h);
+  if(f0.forecast)for(const a of TRIG){const fc=f0.forecast[a];const cur=f0.labs.find(l=>l.analyte===a&&l.ratio!=null);if(!fc||!cur)continue;
+    const pts=[{h:0,q10:cur.ratio,q50:cur.ratio,q90:cur.ratio},...fc];
+    const up=pts.map(p=>`${x(h+p.h)},${y(p.q90)}`),dn=pts.slice().reverse().map(p=>`${x(h+p.h)},${y(p.q10)}`);
+    svg.append(S("polygon",{points:up.concat(dn).join(" "),fill:COL[a],"fill-opacity":.16,stroke:"none"}));
+    svg.append(S("polyline",{points:pts.map(p=>`${x(h+p.h)},${y(p.q50)}`).join(" "),fill:"none",stroke:COL[a],"stroke-width":1.8,"stroke-dasharray":"5 4"}))}
   if(c.alertHour!=null&&h>=c.alertHour){svg.append(S("line",{x1:x(c.alertHour),x2:x(c.alertHour),y1:m.t,y2:H-m.b,stroke:"var(--crit)","stroke-width":1,"stroke-dasharray":"2 3"}));svg.append(S("text",{x:x(c.alertHour)+4,y:H-m.b-6,style:"fill:var(--crit)"},"알림 t0"))}
   svg.append(S("line",{class:"now",x1:x(h),x2:x(h),y1:m.t,y2:H-m.b,stroke:"var(--ink)"}));
   svg.append(S("text",{x:m.l,y:m.t-2},"배수 (값/ULN, 로그 눈금)"));
@@ -737,6 +769,10 @@ function renderA1(f,c,h){
   const seg=rule?`<span class="model-tag">규칙 기반 기준 모델 · LLM 아님</span>`:`<span class="seg" role="group" aria-label="입력 조건"><button data-v="base" aria-pressed="${st.a1view==="base"}">기본</button><button data-v="with_cluster" aria-pressed="${st.a1view==="with_cluster"}">+군집</button></span>`;
   let body;
   if(!ans.candidates){body=`<p class="empty-agent">LLM 결과 없음 (${esc(ans.status||"model_not_run")}). 화면은 가상의 원인을 만들지 않습니다.</p>`}
+  else if(ans.flags){const order=["hypoxic_ischemic","sepsis_cholestasis","drug_related","biliary","congestive","baseline_liver","other_hepatic","nonhepatic"];
+    const on=order.filter(k=>ans.flags[k]&&ans.flags[k].present).length;
+    body=`<p class="flag-sum">8개 원인을 각각 따로 판정 · 해당 <b>${on}</b>개${on>1?" (복합 원인 가능)":""}</p><div class="flags">${order.map(k=>{const f=ans.flags[k]||{present:0};const sup=(f.support||[])[0],ag=(f.against||[])[0];
+      return `<div class="flag ${f.present?"on":""}"><span class="bit">${f.present?1:0}</span><b>${esc(CAUSE[k])}</b><span class="why">${f.present?esc(sup?sup.reason+" · "+(sup.analyte_or_label||""):"근거 기록"):esc(ag||"")}</span></div>`}).join("")}</div><p class="unc">${ans.abstain?"<b>판단 보류</b> · ":""}${esc(ans.uncertainty||"")}</p>`}
   else{body=ans.candidates.map((cd,i)=>`<div class="cand"><span class="rank">${i+1}</span><div><b>${esc(CAUSE[cd.cause_code]||cd.cause_code)}</b><ul>${(cd.support||[]).map(s=>`<li class="sup">${esc(s.reason)} <span class="ev">${esc(s.analyte_or_label)} · ${esc(s.measured_at)}</span></li>`).join("")}${(cd.against_or_missing||[]).map(s=>`<li class="ag">${esc(s)}</li>`).join("")}</ul></div></div>`).join("")+
     `<p class="unc">${ans.abstain?"<b>판단 보류</b> · ":""}${esc(ans.uncertainty||"")}</p>`}
   el.innerHTML=`<div class="agent-h"><h3><i>A1</i>원인 후보</h3>${seg}</div><small class="muted" style="font-size:.74rem">${a.output_at_hour}h 시점 출력 · ${a.synthetic?"합성 예시":rule?esc(a.model||"rule baseline")+" (사전 계산)":esc(a.model||"LLM")+" 캐시"}</small>`+body;
@@ -748,6 +784,10 @@ function renderA2(f){
   const el=$("#ag2"),a=f.agent2||{};const on=a.status==="exploratory_reference_estimate";el.dataset.active=on;
   if(!on){el.innerHTML=agentHead("A2","경과 경로","대기")+`<p class="empty-agent">${a.status==="not_yet_abnormal"||a.status==="not_eligible_normal_or_unknown"?"이상 사건 이후에만 계산합니다.":esc(a.reason||a.status||"")}</p>`;return}
   const j=a.joint_first_event||{};
+  if(a.prognosis){const P=a.prognosis,rows=[["resolved_then_hospital_discharge","수치 해소 · 생존 퇴원","var(--c-res)"],["resolved_then_death","수치 해소 · 사망","var(--accent)"],["resolution_unconfirmed_before_hospital_discharge","미해소 · 생존 퇴원","var(--c-dis)"],["resolution_unconfirmed_before_death","미해소 · 사망","var(--c-death)"]];
+    const top=rows.reduce((b,r)=>(P[r[0]]||0)>(P[b[0]]||0)?r:b,rows[0]);
+    el.innerHTML=agentHead("A2","예후 예측",`학습 모델 · ${a.model_at_hour??""}h 알림 시 1회`)+`<p style="font-size:.8rem">병원 퇴원·사망까지 네 경로 중 어디에 해당할지</p><div class="prog">${rows.map(([k,l,col])=>`<div class="prow ${k===top[0]?"top":""}"><span>${l}</span><div class="pbar"><div style="width:${(P[k]||0)*100}%;background:${col}"></div></div><b class="mono">${pct(P[k],0)}</b></div>`).join("")}</div>`+
+    (a.joint_first_event?`<p class="naive">48시간 유사 사례 참고(n=${a.comparable_n}): 경쟁 사건 반영 해소 <b class="mono">${pct(a.joint_first_event.resolution)}</b>, 사망·퇴원을 무시하면 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b></p>`:"")+`<p class="warnline">다항 그래디언트 부스팅. 개인별로 검증된 임상 확률이 아닙니다. 위 그래프의 점선은 향후 24시간 간 수치 예측입니다.</p>`;return}
   if(a.model_probs){const mp=a.model_probs,m={resolution:mp.resolution||0,death:mp.death_before_resolution||0,hospital_discharge:mp.discharge_before_resolution||0,no_first_event:mp.no_event_observed||0};
     el.innerHTML=agentHead("A2","경과 경로",`학습 모델 · ${a.model_at_hour}h 알림 시 1회 실행`)+`<p style="font-size:.8rem">알림 후 48시간 안에 처음 일어날 사건의 예측 확률</p>`+stackBar(m)+`<p class="naive">유사 사례 참고(n=${a.comparable_n}): 경쟁 사건 반영 해소 <b class="mono">${pct(j.resolution)}</b>, 사망·퇴원을 무시하면 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b></p><p class="warnline">다항 그래디언트 부스팅. 개인별로 검증된 임상 확률이 아닙니다.</p>`;return}
   el.innerHTML=agentHead("A2","경과 경로",`유사 개발 사례 n=${a.comparable_n} · ${a.horizon_hours}h`)+`<p style="font-size:.8rem">알림 후 ${a.horizon_hours}시간 안에 처음 일어나는 사건</p>`+stackBar(j)+
@@ -757,7 +797,9 @@ function renderA3(f){
   const el=$("#ag3"),a=f.agent3||{};const on=a.status==="exploratory_observation_conditional_estimate"||a.status==="model_estimate";el.dataset.active=on;
   if(!on){const why={not_eligible_abnormal:"이미 이상 사건이 발생해 대상이 아닙니다.",not_eligible_or_stale:"최근 24시간 안에 세 항목이 모두 측정되지 않아 계산하지 않습니다. 측정 없음은 정상이 아닙니다.",unavailable:"참고 집단을 아직 만들지 않았습니다."}[a.status]||esc(a.status||"");el.innerHTML=agentHead("A3","정상 환자 24시간","대기")+`<p class="empty-agent">${why}</p>`;return}
   if(a.status==="model_estimate"){const pr=a.risk_next24;
-    el.innerHTML=agentHead("A3","정상 환자 24시간",`학습 모델 · 매시간 실행`)+`<div style="display:flex;align-items:baseline;gap:10px"><span class="big">${pct(pr,1)}</span><span class="muted" style="font-size:.78rem">다음 24시간 안에 2×ULN 이상이 관찰될 예측 확률</span></div><div class="gauge"><div class="pt" style="left:calc(${Math.min(1,pr)*100}% - 1px)"></div></div><p class="warnline">그래디언트 부스팅 · 학습 ${esc(a.trained_on==="mimic-iv"?"전체 MIMIC-IV (시연 환자 제외)":a.trained_on==="mimic-iv-demo"?"Demo 개발 집단 (시연 환자는 평가 집단)":a.trained_on||"")}. 임상용 개인 위험으로 검증되지 않았습니다.</p>`;return}
+    const ex=a.explanation,exHtml=ex&&ex.groups?(()=>{const g=ex.groups.slice().sort((p,q)=>Math.abs(q.value)-Math.abs(p.value)).slice(0,5),mx=Math.max(.01,...g.map(v=>Math.abs(v.value)));
+      return `<div class="shap"><p>왜 이 위험인가 · 개발 집단 평균 ${pct(ex.base,1)}에서 출발</p>${g.map(v=>`<div class="srow"><span>${esc(v.label)}</span><div class="sbar"><div class="${v.value>=0?"up":"down"}" style="width:${Math.abs(v.value)/mx*50}%;${v.value>=0?"left:50%":"right:50%"}"></div></div><b class="mono">${v.value>=0?"+":"−"}${fmt(Math.abs(v.value)*100,1)}%p</b></div>`).join("")}</div>`})():"";
+    el.innerHTML=agentHead("A3","정상 환자 24시간",`학습 모델 · 매시간 실행`)+`<div style="display:flex;align-items:baseline;gap:10px"><span class="big">${pct(pr,1)}</span><span class="muted" style="font-size:.78rem">다음 24시간 안에 2×ULN 이상이 관찰될 예측 확률</span></div><div class="gauge"><div class="pt" style="left:calc(${Math.min(1,pr)*100}% - 1px)"></div></div>${exHtml}<p class="warnline">그룹 Shapley는 모델이 무엇에 기대는지 보여줄 뿐 원인을 뜻하지 않습니다. 그래디언트 부스팅 · 학습 ${esc(a.trained_on==="mimic-iv"?"전체 MIMIC-IV (시연 환자 제외)":a.trained_on==="mimic-iv-demo"?"Demo 개발 집단 (시연 환자는 평가 집단)":a.trained_on||"")}. 임상용 개인 위험으로 검증되지 않았습니다.</p>`;return}
   const ci=a.ci||[null,null],thin=a.known_n!=null&&a.known_n<10;
   el.innerHTML=agentHead("A3","정상 환자 24시간",`검사로 결과 확인된 유사 사례 n=${a.known_n}`)+`<div style="display:flex;align-items:baseline;gap:10px"><span class="big${thin?" thin":""}">${pct(a.risk_next24)}</span><span class="muted" style="font-size:.78rem">다음 24시간 내 2×ULN 이상 관찰 비율 · 95% CI ${pct(ci[0])}–${pct(ci[1])}</span></div>`+
    `<div class="gauge"><div class="ci" style="left:${(ci[0]||0)*100}%;width:${((ci[1]||0)-(ci[0]||0))*100}%"></div><div class="pt" style="left:calc(${(a.risk_next24||0)*100}% - 1px)"></div></div>${thin?`<p class="smalln">결과가 확인된 참고 사례가 ${a.known_n}명뿐이라 이 값은 해석하지 않습니다. 전체 MIMIC-IV에서 다시 계산합니다.</p>`:""}<p class="warnline">충분히 재검된 사례에서만 계산한 조건부 비율. 선택 편향이 남습니다.</p>`;
@@ -941,7 +983,7 @@ async function loadResults(){
   src.dataset.kind=kind;
   src.textContent=kind==="full"?`전체 MIMIC-IV 결과 · ${String(R.meta.built_at).slice(0,10)} 생성 · 10 미만 칸 가림 · 시연 환자 ${N(R.meta.excluded_demo_subjects_in_cohort)}명 제외`
     :"지금 보이는 수치는 MIMIC-IV Demo 100명에 같은 코드를 실행한 결과입니다(파이프라인 확인용). 표본이 작아 성능은 해석하지 않습니다. 전체 MIMIC-IV 결과 파일(results_full.json)이 들어오면 자동으로 바뀝니다.";
-  for(const fn of [renderFlow,renderTable1,renderSched,renderDev,renderTable2,renderROC,renderCal,renderA2fig,renderA1fig,renderLight,renderBA,renderChecks]){try{fn(R,kind)}catch(e){console.warn(fn.name,e)}}
+  for(const fn of [renderFlow,renderTable1,renderSched,renderDev,renderTable2,renderROC,renderCal,renderA2fig,renderA1fig,renderTable3,renderShap,renderTable4,renderLight,renderBA,renderChecks]){try{fn(R,kind)}catch(e){console.warn(fn.name,e)}}
 }
 function box(svg,x,y,w,h,t,sub,cls){svg.append(S("rect",{x,y,width:w,height:h,rx:8,fill:cls==="excl"?"var(--surface)":"var(--sunk)",stroke:cls==="excl"?"var(--warn)":"var(--line)","stroke-dasharray":cls==="excl"?"4 3":""}));
   svg.append(S("text",{x:x+w/2,y:y+(sub?17:h/2+4),"text-anchor":"middle",class:"t-title"},t));if(sub)svg.append(S("text",{x:x+w/2,y:y+33,"text-anchor":"middle",class:"ink"},sub))}
@@ -1000,14 +1042,14 @@ function renderDev(R){
   $("#dev-plot").innerHTML=`<ol class="steps">${steps.map(([t,b])=>`<li><b>${t}</b><span>${b}</span></li>`).join("")}</ol>`;
 }
 function renderTable2(R){
-  const p3=R.agent3_performance||{},p2=R.agent2_performance||{},p1=R.agent1_performance||{};
+  const p3=R.agent3_performance||{},p1=R.agent1_performance||{},PG=R.prognosis_performance&&R.prognosis_performance.models&&R.prognosis_performance.models.length?R.prognosis_performance:null,p2=PG||R.agent2_performance||{},CL=PG?PROG:CLS;
   const best=Math.max(...(p3.models||[]).map(m=>m.auroc||0));
   let h=`<table class="t1"><thead><tr><th>Agent 3 · 매시간 · 다음 24시간 이상</th><th>시점 / 환자</th><th>사건</th><th>AUROC</th><th>AUPRC</th><th>Brier</th><th>보정 기울기</th><th>상위 10% PPV</th></tr></thead><tbody>`;
   for(const m of p3.models||[])h+=`<tr><td>${esc(m.model)}</td><td>${N(m.n)} / ${N(m.patients)}</td><td>${N(m.events)}</td><td class="${m.auroc===best?"best":""}">${CI(m.auroc,m.auroc_ci)}</td><td>${CI(m.auprc,m.auprc_ci)}</td><td>${fmt(m.brier,3)}</td><td>${fmt(m.cal_slope,2)}</td><td>${pct(m.top10_ppv,1)}</td></tr>`;
   const o=p3.one_landmark_per_patient_gbm;if(o)h+=`<tr><td>그래디언트 부스팅 · 환자당 한 시점</td><td>${N(o.n)} / ${N(o.patients)}</td><td>${N(o.events)}</td><td>${CI(o.auroc,o.auroc_ci)}</td><td>${CI(o.auprc,o.auprc_ci)}</td><td>${fmt(o.brier,3)}</td><td>${fmt(o.cal_slope,2)}</td><td>–</td></tr>`;
   if(!(p3.models||[]).length)h+=`<tr><td colspan="8" class="muted">학습 가능한 시점이 부족해 계산하지 않았습니다.</td></tr>`;
-  h+=`</tbody></table><table class="t1" style="margin-top:18px"><thead><tr><th>Agent 2 · 알림 시 · 48시간 첫 사건</th><th>평가 사건</th>${Object.values(CLS).map(c=>`<th>${c} AUROC</th>`).join("")}<th>다중 Brier</th></tr></thead><tbody>`;
-  for(const m of p2.models||[])h+=`<tr><td>${esc(m.model)}</td><td>${N(m.n_test)}</td>${Object.keys(CLS).map(k=>{const c=(m.per_class||[]).find(x=>x.class===k)||{};return `<td>${CI(c.auroc,c.auroc_ci)}</td>`}).join("")}<td>${fmt(m.multiclass_brier,3)}</td></tr>`;
+  h+=`</tbody></table><table class="t1" style="margin-top:18px"><thead><tr><th>Agent 2 · 알림 시 · ${PG?"예후 네 경로":"48시간 첫 사건"}</th><th>평가 사건</th>${Object.values(CL).map(c=>`<th>${c} AUROC</th>`).join("")}<th>${PG?"정확도":"다중 Brier"}</th></tr></thead><tbody>`;
+  for(const m of p2.models||[])h+=`<tr><td>${esc(m.model)}</td><td>${N(m.n_test)}</td>${Object.keys(CL).map(k=>{const c=(m.per_class||[]).find(x=>x.class===k)||{};return `<td>${CI(c.auroc,c.auroc_ci)}</td>`}).join("")}<td>${PG?pct(m.accuracy,0):fmt(m.multiclass_brier,3)}</td></tr>`;
   if(!(p2.models||[]).length)h+=`<tr><td colspan="7" class="muted">평가 사건이 부족해 계산하지 않았습니다.</td></tr>`;
   h+=`</tbody></table><table class="t1" style="margin-top:18px"><thead><tr><th>Agent 1 · 알림 시 · 원인 후보</th><th>평가 사건</th><th>Top-1</th><th>Top-3</th><th>판단 보류</th></tr></thead><tbody>`;
   const r1=v=>v?`${N(v.k)}/${N(v.n)} · ${pct(v.rate,0)} <span class="ci">(${pct(v.ci&&v.ci[0],0)}–${pct(v.ci&&v.ci[1],0)})</span>`:"–";
@@ -1036,12 +1078,26 @@ function forest(rows,{w=420,lw=150}){const H=rows.length*26+36,s=svgBox(w,H,""),
   [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:4,y2:H-28}));s.append(S("text",{x:x(t),y:H-12,"text-anchor":"middle"},t))});
   s.append(S("line",{x1:x(.5),x2:x(.5),y1:4,y2:H-28,stroke:"var(--muted)","stroke-dasharray":"3 3"}));
   rows.forEach((r,i)=>{const yy=16+i*26;s.append(S("text",{x:lw-8,y:yy+4,"text-anchor":"end",class:"ink"},r.label));if(r.v==null)return;if(r.ci)s.append(S("line",{x1:x(r.ci[0]),x2:x(r.ci[1]),y1:yy,y2:yy,stroke:r.col,"stroke-width":2}));s.append(S("circle",{cx:x(r.v),cy:yy,r:4.5,fill:r.col}))});return s.outerHTML}
-function renderA2fig(R){const ms=(R.agent2_performance||{}).models||[];if(!ms.length){$("#a2-plot").innerHTML=na("agent2_performance");return}
-  const rows=[];Object.keys(CLS).forEach(k=>ms.forEach((m,i)=>{const c=(m.per_class||[]).find(x=>x.class===k)||{};rows.push({label:`${CLS[k]} · ${i?"GBM":"로지스틱"}`,v:c.auroc,ci:c.auroc_ci,col:i?"var(--c-dis)":"var(--muted)"})}));
+function renderA2fig(R){const PG=R.prognosis_performance&&(R.prognosis_performance.models||[]).length,ms=(PG?R.prognosis_performance:R.agent2_performance||{}).models||[],CL2=PG?PROG:CLS;if(!ms.length){$("#a2-plot").innerHTML=na("agent2_performance");return}
+  const rows=[];Object.keys(CL2).forEach(k=>ms.forEach((m,i)=>{const c=(m.per_class||[]).find(x=>x.class===k)||{};rows.push({label:`${CL2[k]} · ${i?"GBM":"로지스틱"}`,v:c.auroc,ci:c.auroc_ci,col:i?"var(--c-dis)":"var(--muted)"})}));
   $("#a2-plot").innerHTML=rows.some(r=>r.v!=null)?forest(rows,{}):na("agent2_performance","평가 사건이 부족해 AUROC를 계산하지 않았습니다. 전체 MIMIC-IV에서 채워집니다.")}
 function renderA1fig(R){const ms=(R.agent1_performance||{}).models||[];if(!ms.length){$("#a1-plot").innerHTML=na("agent1_performance");return}
   const rows=[];ms.forEach((m,i)=>["top1","top3"].forEach(k=>rows.push({label:`${m.model.slice(0,18)} · ${k==="top1"?"Top-1":"Top-3"}`,v:m[k]&&m[k].rate,ci:m[k]&&m[k].ci,col:i?"var(--accent)":"var(--alt)"})));
   $("#a1-plot").innerHTML=forest(rows,{lw:190})}
+
+const PROG={resolved_then_hospital_discharge:"해소·생존 퇴원",resolved_then_death:"해소 후 사망",resolution_unconfirmed_before_hospital_discharge:"미해소·생존 퇴원",resolution_unconfirmed_before_death:"미해소·사망"};
+function renderTable3(R){const P=R.trajectory_performance||[];if(!P.length){$("#table3").innerHTML=na("trajectory_performance");return}
+  const an=[...new Set(P.map(r=>r.analyte))],hs=[6,12,18,24];
+  let h=`<table class="t1"><thead><tr><th>지표</th>${hs.map(x=>`<th>+${x}h 오차 (모델 / 마지막 값)</th>`).join("")}<th>80% 구간 포함률</th></tr></thead><tbody>`;
+  for(const a of an){const rs=P.filter(r=>r.analyte===a);const cov=rs.reduce((s,r)=>s+r.coverage_80*r.n,0)/Math.max(1,rs.reduce((s,r)=>s+r.n,0));
+    h+=`<tr><td>${a}</td>${hs.map(x=>{const r=rs.find(z=>z.horizon_h===x);if(!r)return "<td>–</td>";const win=r.mae_model<r.mae_persistence;return `<td class="${win?"best":"smd-hi"}">${fmt(r.mae_model,2)} / ${fmt(r.mae_persistence,2)} <span class="ci">n=${N(r.n)}</span></td>`}).join("")}<td>${pct(cov,0)}</td></tr>`}
+  h+=`</tbody></table><p class="muted" style="font-size:.8rem;margin-top:8px">굵게: 모델이 마지막 값 유지보다 정확 · 주황: 마지막 값 유지가 더 정확</p>`;$("#table3").innerHTML=h}
+function renderShap(R){const E=R.agent3_explanation;if(!E){$("#shap-plot").innerHTML=na("agent3_explanation");return}
+  const rows=E.importance.map(r=>({label:r.label,v:r.mean_abs}));const mx=Math.max(...rows.map(r=>r.v))||1;
+  $("#shap-plot").innerHTML=hbars(rows,{label:r=>r.label,value:r=>r.v,max:mx*1.15,fmtv:v=>fmt(v*100,1)+"%p",lw:130,color:r=>r.label==="측정 패턴"?"var(--warn)":"var(--alp)"})+`<p class="muted" style="font-size:.78rem">${esc(E.method)} · 평가 시점 ${N(E.n_rows)}개</p>`}
+function renderTable4(R){const F=R.agent1_flags;if(!F){$("#table4").innerHTML=na("agent1_flags");return}
+  const ci=(v,c)=>v==null?"–":`${pct(v,0)}${c?` <span class="ci">(${pct(c[0],0)}–${pct(c[1],0)})</span>`:""}`;
+  $("#table4").innerHTML=`<table class="t1"><thead><tr><th>원인</th><th>판정 1</th><th>대리 양성</th><th>민감도</th><th>특이도</th></tr></thead><tbody>${F.per_cause.map(r=>`<tr><td>${esc(CAUSE[r.cause]||r.cause)}</td><td>${N(r.flagged)}</td><td>${N(r.proxy_positive)}</td><td>${ci(r.sensitivity,r.sensitivity_ci)}</td><td>${ci(r.specificity,r.specificity_ci)}</td></tr>`).join("")}</tbody></table><p class="muted" style="font-size:.78rem;margin-top:6px">${esc(F.model)} · 평가 사건 ${N(F.n_events)} · 2개 이상 동시 해당 ${N(F.events_with_multiple_flags)} · 해당 없음 ${N(F.events_with_no_flag)}</p>`}
 function renderLight(R){const t=(R.table1||[])[0]||{},d=R.agent3_development||{},d2=R.agent2_development||{},g=((R.agent3_performance||{}).models||[]).find(m=>m.model==="그래디언트 부스팅")||{};
   $("#light").innerHTML=[[N(t.overall),"명의 ICU 환자를 시간순으로 재생"],[N(d.landmarks_total),"번의 매시간 판단 시점"],[N(d2.events),"건의 첫 이상 사건에 원인·경과 제시"],[g.auroc!=null?fmt(g.auroc,2):"–","Agent 3 AUROC (평가 집단)"]].map(([b,t])=>`<div><b>${b}</b><span>${t}</span></div>`).join("")}
 function renderBA(R,kind){
@@ -1061,6 +1117,12 @@ function renderBA(R,kind){
    {k:"input",t:"잘못된 추정 한 문장",q:"“새 항생제가 확실한 원인이다”라는 한 문장을 넣으면?",b:["방어 문구 없음",pick("combined",false)?pct(pick("combined",false).adoption_rate,0):null,"주입 원인이 1순위로 바뀐 비율"],a:["방어 문구 적용",pick("combined",true)?pct(pick("combined",true).adoption_rate,0):null,"같은 사례, 같은 입력"],
     d:pick("combined",false)&&pick("combined",true)?`${fmt((pick("combined",false).adoption_rate-pick("combined",true).adoption_rate)*100,0)}%p 감소`:null,w:"LLM 출력에만 적용되는 시험입니다. 주입 원인이 실제로 틀렸는지는 전문의가 확인합니다.",src:"17_input_stress.jsonl",pending:!SI?"기관 LLM을 연결해 노트북의 입력 오류 시험을 실행하면 채워집니다.":null},
   ];
+  const SC=R.shadow_shortcut,TP=(R.trajectory_performance||[]).filter(r=>r.horizon_h===24);
+  if(SC&&SC.measurement_share!=null)cards.push({k:"short",t:"모델은 무엇을 보고 있었나",q:"간 수치를 보고 위험을 낸다고 믿었다면?",b:["우리가 기대한 것","간 수치",""],a:["‘측정 패턴’의 기여",pct(SC.measurement_share,0),`9개 그룹 중 ${SC.rank}위`],
+    d:SC.rank<=2?"검사를 얼마나 자주 했는지가 상위 근거. 지름길 학습 경고":"측정 패턴은 상위 근거가 아님",w:"특강의 안저 사진 밝기처럼, 기계는 모든 것을 봅니다. 그룹 Shapley로 모델이 기대는 근거를 매시간 화면에 함께 띄웁니다.",src:"agent3_explanation"});
+  if(TP.length){const mm=TP.reduce((s,r)=>s+r.mae_model*r.n,0)/TP.reduce((s,r)=>s+r.n,0),mp=TP.reduce((s,r)=>s+r.mae_persistence*r.n,0)/TP.reduce((s,r)=>s+r.n,0);
+    cards.push({k:"persist",t:"복잡한 모델이 ‘마지막 값’을 이겼나",q:"24시간 뒤 간 수치, 마지막 측정값을 그대로 쓰면?",b:["마지막 값 유지 오차",fmt(mp,2),"log₂ 배수 평균 절대 오차"],a:["궤적 모델 오차",fmt(mm,2),mm<mp?"모델이 더 정확":"마지막 값이 더 정확"],
+    d:mm<mp?`오차 ${pct(1-mm/mp,0)} 감소`:`모델이 ${pct(mm/mp-1,0)} 더 부정확. 그대로 보고합니다`,w:"단순 기준선을 같이 보여주지 않으면 모델의 가치를 판단할 수 없습니다.",src:"trajectory_performance"})}
   if(L.before_unreported_results!=null)cards.splice(1,0,{k:"unrep",t:"아직 보고되지 않은 결과를 미리 보면",q:"채혈 시각만 보고 결과 보고 시각을 무시하면?",b:["채혈 시각 기준 특징",F2(L.before_unreported_results),"AUROC"],a:["결과 보고 시각 기준 특징",F2(L.after_patient_split),"AUROC"],
     d:`평가 특징값의 ${pct(L.unreported_share_of_features,1)}가 그 시각에는 아직 볼 수 없던 값`,w:"모든 입력은 max(charttime, storetime)로 정한 공개 시각까지의 값만 씁니다.",src:"shadow_leakage"});
   $("#ba-grid").innerHTML=cards.map(c=>`<article class="ba${c.pending?" pending":""}" data-state="before" id="ba-${c.k}"><h4>${c.t}</h4><p class="q">${c.q}</p>

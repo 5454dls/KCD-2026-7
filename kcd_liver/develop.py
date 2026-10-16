@@ -730,3 +730,305 @@ def _json_safe(o):
     if isinstance(o, pd.Timestamp):
         return o.isoformat()
     return o
+
+
+# ================================================================== v2: explanations, trajectories, prognosis
+FEATURE_GROUPS = {
+    "liver_level": "간 수치 (현재)", "liver_change": "간 수치 변화", "measurement": "측정 패턴",
+    "perfusion": "관류·쇼크", "inflammation": "염증·감염", "renal_metabolic": "신장·대사",
+    "synthetic": "합성 기능·혈액", "respiratory": "호흡", "background": "환자 배경·병력",
+}
+TRAJ_ANALYTES = ["ALT", "AST", "ALP", "TBIL"]
+TRAJ_HORIZONS = [6, 12, 18, 24]
+TRAJ_QUANTILES = [0.1, 0.5, 0.9]
+PROGNOSIS = ["resolved_then_hospital_discharge", "resolved_then_death",
+             "resolution_unconfirmed_before_hospital_discharge", "resolution_unconfirmed_before_death"]
+
+
+def group_of(col: str) -> str:
+    base = col.split("_")[0]
+    if col.endswith("_n24") or col.endswith("_age_h"):
+        return "measurement"
+    if base in RATIO_FEATS:
+        return "liver_change" if col.endswith("_delta24") else "liver_level"
+    if base in ("MAP", "HR", "LACTATE") or col == "pressor_6h":
+        return "perfusion"
+    if base in ("WBC", "TEMP", "PLATELET"):
+        return "inflammation"
+    if base in ("CREAT", "BUN", "SODIUM", "GLUCOSE", "BICARB"):
+        return "renal_metabolic"
+    if base in ("INR", "ALBUMIN", "HEMOGLOBIN"):
+        return "synthetic"
+    if base in ("RR", "SPO2"):
+        return "respiratory"
+    return "background"
+
+
+def group_shapley(predict, X: pd.DataFrame, background: pd.DataFrame, cols: list[str], max_rows=None) -> np.ndarray:
+    """Exact Shapley values over clinical feature GROUPS (interventional, averaged over a background sample).
+
+    With 9 groups there are 2^9 coalitions, so no sampling approximation is needed.
+    Values are in the model's output units (probability) and sum to f(x) - mean f(background).
+    Grouping keeps correlated measurements of one physiology together, so credit is not split arbitrarily
+    between, e.g., ALT level and ALT change.
+    """
+    import itertools
+    groups = list(FEATURE_GROUPS)
+    gidx = {g: [i for i, c in enumerate(cols) if group_of(c) == g] for g in groups}
+    groups = [g for g in groups if gidx[g]]
+    G = len(groups)
+    Xv = X[cols].to_numpy(float)
+    Bv = background[cols].to_numpy(float)
+    K = len(Bv)
+    masks = np.array(list(itertools.product([0, 1], repeat=G)), dtype=bool)  # 2^G x G
+    from math import factorial
+    out = np.zeros((len(Xv), G))
+    for r in range(len(Xv)):
+        # rows: coalition x background
+        M = np.repeat(Bv[None, :, :], len(masks), axis=0).copy()  # C x K x p
+        for gi, g in enumerate(groups):
+            on = masks[:, gi]
+            M[np.ix_(on, np.arange(K), gidx[g])] = Xv[r, gidx[g]]
+        v = predict(M.reshape(-1, Xv.shape[1])).reshape(len(masks), K).mean(1)
+        size = masks.sum(1)
+        index = {tuple(m): i for i, m in enumerate(masks)}
+        for gi in range(G):
+            phi = 0.0
+            for i, m in enumerate(masks):
+                if m[gi]:
+                    continue
+                m2 = m.copy()
+                m2[gi] = True
+                s = size[i]
+                w = factorial(s) * factorial(G - s - 1) / factorial(G)
+                phi += w * (v[index[tuple(m2)]] - v[i])
+            out[r, gi] = phi
+    return out, groups
+
+
+def explain_rows(bundle, X: pd.DataFrame, background: pd.DataFrame | None = None) -> list[dict]:
+    """Per-row group Shapley for an Agent 3 bundle (dict with model, features, background)."""
+    cols = bundle["features"]
+    bg = background if background is not None else bundle.get("background")
+    predict = lambda A: bundle["model"].predict_proba(pd.DataFrame(A, columns=cols))[:, 1]
+    phi, groups = group_shapley(predict, X, bg, cols)
+    base = float(predict(bg[cols].to_numpy(float)).mean())
+    return [{"base": base, "groups": [{"group": g, "label": FEATURE_GROUPS[g], "value": float(v)} for g, v in zip(groups, row)]}
+            for row in phi]
+
+
+def trajectory_rows(cohort, lab, step_hours=4, horizons=TRAJ_HORIZONS, window=3, max_landmarks=300_000):
+    """Landmarks every ``step_hours`` during the ICU stay with the observed log2(value/ULN) near t+h."""
+    c = cohort[["stay_id", "subject_id", "split", "intime", "monitor_end"]].dropna()
+    rows = []
+    for r in c.itertuples():
+        n = int((r.monitor_end - r.intime).total_seconds() // 3600 // step_hours)
+        if n >= 1:
+            rows.append(pd.DataFrame({"stay_id": r.stay_id, "subject_id": r.subject_id, "split": r.split,
+                                      "t": r.intime + pd.to_timedelta(np.arange(1, n + 1) * step_hours, unit="h")}))
+    L = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(columns=["stay_id", "subject_id", "split", "t"])
+    L["t"] = pd.to_datetime(L.t).astype("datetime64[ns]")
+    if len(L) > max_landmarks:
+        L = L.sample(max_landmarks, random_state=SEED).sort_values(["stay_id", "t"]).reset_index(drop=True)
+    targets = {}
+    for a in TRAJ_ANALYTES:
+        e = lab[lab.analyte.eq(a) & lab.ratio.gt(0)][["stay_id", "charttime", "ratio"]].dropna().sort_values("charttime")
+        e = e.assign(y=np.log2(e.ratio))
+        for h in horizons:
+            Q = L[["stay_id", "t"]].assign(_i=np.arange(len(L)), th=L.t + pd.Timedelta(hours=h)).sort_values("th")
+            m = pd.merge_asof(Q, e[["stay_id", "charttime", "y"]], left_on="th", right_on="charttime", by="stay_id",
+                              direction="nearest", tolerance=pd.Timedelta(hours=window)).sort_values("_i")
+            ok = m.charttime.values > L.t.values  # the target must be drawn after t
+            targets[(a, h)] = np.where(ok, m.y.values, np.nan)
+    return L, targets
+
+
+def fit_trajectory(L, targets, X, cols, max_rows=400_000, boot_rows=None):
+    """Quantile gradient boosting per analyte with horizon as a feature; persistence baseline for comparison."""
+    from sklearn.ensemble import HistGradientBoostingRegressor
+    models, perf = {}, []
+    tr = L.split.eq("development").values
+    for a in TRAJ_ANALYTES:
+        last = X[f"{a}_latest"].to_numpy(float)
+        Xs, ys, hs, sp, lastv = [], [], [], [], []
+        for h in TRAJ_HORIZONS:
+            y = targets[(a, h)]
+            keep = ~np.isnan(y) & ~np.isnan(last)  # forecast only analytes measured in the last 24 h
+            Xs.append(X.loc[keep, cols].assign(horizon_h=float(h)))
+            ys.append(y[keep]); hs.append(np.full(keep.sum(), h)); sp.append(tr[keep]); lastv.append(np.log2(np.clip(last[keep], 1e-3, None)))
+        if not sum(len(y) for y in ys):
+            continue
+        XA = pd.concat(Xs, ignore_index=True)
+        yA, hA, trA, lastA = np.concatenate(ys), np.concatenate(hs), np.concatenate(sp), np.concatenate(lastv)
+        idx_tr = np.where(trA)[0]
+        if len(idx_tr) > max_rows:
+            idx_tr = np.random.default_rng(SEED).choice(idx_tr, max_rows, replace=False)
+        if len(idx_tr) < 30 or (~trA).sum() < 5:
+            continue
+        qs = {}
+        for q in TRAJ_QUANTILES:
+            m = HistGradientBoostingRegressor(loss="quantile", quantile=q, learning_rate=0.05, max_leaf_nodes=31,
+                                              max_iter=300, early_stopping="auto", random_state=SEED)
+            m.fit(XA.iloc[idx_tr], yA[idx_tr])
+            qs[q] = m
+        models[a] = qs
+        te = ~trA
+        P = _noncrossing({q: qs[q].predict(XA[te]) for q in TRAJ_QUANTILES})
+        for h in TRAJ_HORIZONS:
+            sel = hA[te] == h
+            if sel.sum() < 3:
+                continue
+            yy = yA[te][sel]
+            perf.append({"analyte": a, "horizon_h": h, "n": int(sel.sum()),
+                         "mae_model": float(np.mean(np.abs(P[0.5][sel] - yy))),
+                         "mae_persistence": float(np.mean(np.abs(lastA[te][sel] - yy))),
+                         "coverage_80": float(np.mean((yy >= P[0.1][sel]) & (yy <= P[0.9][sel])))})
+    return models, perf
+
+
+def _noncrossing(P: dict) -> dict:
+    """Monotone rearrangement: sort each row's quantile predictions so q10 <= q50 <= q90 (Chernozhukov et al. 2010)."""
+    qs = sorted(P)
+    M = np.sort(np.stack([P[q] for q in qs], 1), axis=1)
+    return {q: M[:, i] for i, q in enumerate(qs)}
+
+
+def forecast_rows(traj_bundle, X: pd.DataFrame) -> list[dict]:
+    """Per-row 24 h trajectory: for each analyte and horizon the 10/50/90% quantiles in x ULN."""
+    cols = traj_bundle["features"]
+    out = [dict() for _ in range(len(X))]
+    for a, qs in traj_bundle["models"].items():
+        has = X[f"{a}_latest"].notna().to_numpy()
+        for h in TRAJ_HORIZONS:
+            XA = X[cols].assign(horizon_h=float(h))
+            pred = {q: 2 ** v for q, v in _noncrossing({q: qs[q].predict(XA) for q in TRAJ_QUANTILES}).items()}
+            for i in range(len(X)):
+                if has[i]:
+                    out[i].setdefault(a, []).append({"h": h, "q10": float(pred[0.1][i]), "q50": float(pred[0.5][i]),
+                                                     "q90": float(pred[0.9][i])})
+    return out
+
+
+def evaluate_flags(events, lab, context, hist, diagnoses, llm_rows=None):
+    """Per-cause 0/1 agreement with discharge-ICD proxy categories (evaluation events only)."""
+    from .rule_agent import CAUSE_FLAGS
+    proxy = icd_proxy(events, diagnoses)
+    ev = events[events.split.eq("evaluation")]
+    lab_g = {k: g for k, g in lab[lab.stay_id.isin(set(ev.stay_id))].groupby("stay_id")}
+    ctx_g = {k: g for k, g in context[context.stay_id.isin(set(ev.stay_id))].groupby("stay_id")}
+    hist_i = hist.set_index("stay_id").to_dict("index") if hist is not None else {}
+    pred, ref = [], []
+    for e in ev.itertuples():
+        a = rule_agent1(snapshot_payload(e.stay_id, e.t0, lab_g, ctx_g, hist_i.get(e.stay_id)))
+        pred.append({c: a["flags"][c]["present"] for c in CAUSE_FLAGS})
+        ref.append({c: int(c in proxy.get(int(e.hadm_id), set())) for c in CAUSE_FLAGS})
+    rows = []
+    for c in CAUSE_FLAGS:
+        p = np.array([r[c] for r in pred], int)
+        y = np.array([r[c] for r in ref], int)
+        tp, fp, fn, tn = int(((p == 1) & (y == 1)).sum()), int(((p == 1) & (y == 0)).sum()), int(((p == 0) & (y == 1)).sum()), int(((p == 0) & (y == 0)).sum())
+        sens, spec = wilson(tp, tp + fn), wilson(tn, tn + fp)
+        rows.append({"cause": c, "flagged": int(p.sum()), "proxy_positive": int(y.sum()), "tp": tp, "fp": fp, "fn": fn, "tn": tn,
+                     "sensitivity": tp / (tp + fn) if tp + fn else None, "sensitivity_ci": list(sens) if tp + fn else None,
+                     "specificity": tn / (tn + fp) if tn + fp else None, "specificity_ci": list(spec) if tn + fp else None})
+    n = len(pred)
+    multi = int(sum(sum(r.values()) >= 2 for r in pred))
+    return {"model": RULE_VERSION, "n_events": n, "per_cause": rows, "events_with_multiple_flags": multi,
+            "events_with_no_flag": int(sum(sum(r.values()) == 0 for r in pred))}
+
+
+def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_dir=None, min_cell=10, boot=200,
+               traj_step_hours=4, log=print):
+    """Adds trajectories, group-Shapley explanations, 4-class prognosis and 0/1 cause flags to results ``R``."""
+    import joblib
+    D = load_private(out_dir)
+    cohort, lab, events, context, outcomes = D["cohort"], D["lab"], D["events"], D["context"], D["outcomes"]
+    excluded = set(exclude_subjects or [])
+    cohort = cohort[~cohort.subject_id.isin(excluded)].copy()
+    keep = set(cohort.stay_id)
+    lab, context, events = lab[lab.stay_id.isin(keep)], context[context.stay_id.isin(keep)], events[events.stay_id.isin(keep)].copy()
+    hist = history_flags(cohort, admissions, diagnoses)
+    if model_dir:
+        Path(model_dir).mkdir(parents=True, exist_ok=True)
+
+    # ---- Agent 3 explanations (global group Shapley on evaluation landmarks)
+    a3p = Path(model_dir) / "agent3_gbm.joblib" if model_dir else None
+    if a3p and a3p.exists():
+        log("v2: group Shapley for Agent 3")
+        b = joblib.load(a3p)
+        L = agent3_landmarks(cohort, lab, events, step_hours=1)
+        L["label"] = agent3_labels(L, lab) if len(L) else []
+        K = L[L.eligible & L.label.isin(["abnormal_observed", "no_abnormality_observed"])]
+        if len(K):
+            X = build_features(K[["stay_id", "t"]], lab, context, cohort, hist)
+            dev, te = K.split.eq("development").values, K.split.eq("evaluation").values
+            rng = np.random.default_rng(SEED)
+            bg = X.loc[dev, b["features"]].sample(min(10, int(dev.sum())), random_state=SEED) if dev.any() else X[b["features"]].head(10)
+            b["background"] = bg.reset_index(drop=True)
+            joblib.dump(b, a3p)
+            pick = np.where(te)[0]
+            pick = rng.choice(pick, min(300, len(pick)), replace=False) if len(pick) else pick
+            if len(pick):
+                ex = explain_rows(b, X.iloc[pick].reset_index(drop=True))
+                G = pd.DataFrame([{g["group"]: g["value"] for g in e["groups"]} for e in ex])
+                imp = [{"group": g, "label": FEATURE_GROUPS[g], "mean_abs": float(G[g].abs().mean()), "mean": float(G[g].mean())}
+                       for g in G.columns]
+                imp.sort(key=lambda r: -r["mean_abs"])
+                R["agent3_explanation"] = {"method": "exact group Shapley (9 clinical groups, interventional, 10 background rows)",
+                                           "n_rows": int(len(pick)), "importance": imp}
+                tot = sum(r["mean_abs"] for r in imp) or 1
+                m = next((r for r in imp if r["group"] == "measurement"), None)
+                R["shadow_shortcut"] = {"measurement_share": m["mean_abs"] / tot if m else None,
+                                        "rank": [r["group"] for r in imp].index("measurement") + 1 if m else None,
+                                        "groups": len(imp)}
+
+    # ---- 24 h trajectories
+    log("v2: trajectory landmarks")
+    Lt, targets = trajectory_rows(cohort, lab, step_hours=traj_step_hours)
+    if len(Lt):
+        Xt = build_features(Lt[["stay_id", "t"]], lab, context, cohort, hist)
+        cols_t = feature_columns(Xt)
+        models, perf = fit_trajectory(Lt, targets, Xt, cols_t)
+        R["trajectory_performance"] = perf
+        R["trajectory_development"] = {"landmarks": int(len(Lt)), "step_hours": traj_step_hours, "horizons": TRAJ_HORIZONS,
+                                       "analytes": TRAJ_ANALYTES, "quantiles": TRAJ_QUANTILES,
+                                       "targets_available": {f"{a}_{h}": int(np.isfinite(targets[(a, h)]).sum()) for a, h in targets}}
+        if model_dir and models:
+            joblib.dump({"models": models, "features": cols_t, "kind": "trajectory_qgbm", "trained_on": R["meta"]["source"]},
+                        Path(model_dir) / "trajectory_qgbm.joblib")
+
+    # ---- Agent 2: 4-class prognosis (resolution x death)
+    if len(outcomes):
+        ev2 = events.merge(outcomes[["case_id", "observed_path"]], on="case_id", how="inner")
+        ev2 = ev2[ev2.observed_path.isin(PROGNOSIS)]
+        R["prognosis_development"] = {"events": int(len(ev2)), "label_counts": ev2.observed_path.value_counts().to_dict()}
+        perf = {"models": []}
+        if len(ev2) and ev2.split.eq("evaluation").any() and ev2[ev2.split.eq("development")].observed_path.nunique() >= 2:
+            from sklearn.base import clone
+            X2 = build_features(ev2.rename(columns={"t0": "t"})[["stay_id", "t"]], lab, context, cohort, hist)
+            cols2 = feature_columns(X2)
+            Xa = X2[cols2].astype(float)
+            tr = ev2.split.eq("development").values
+            y = ev2.observed_path.values
+            lr, gbm = _models()
+            for name, m in [("다항 로지스틱 회귀", clone(lr)), ("그래디언트 부스팅", gbm(0.05, 15))]:
+                m.fit(Xa[tr], y[tr])
+                P = m.predict_proba(Xa[~tr])
+                cls = list(m.classes_)
+                res = {"model": name, "n_test": int((~tr).sum()), "per_class": []}
+                for c in PROGNOSIS:
+                    yy = (y[~tr] == c).astype(int)
+                    pp = P[:, cls.index(c)] if c in cls else np.zeros(len(yy))
+                    res["per_class"].append({"class": c, **binary_metrics(yy, pp, np.arange(len(yy)), boot)})
+                pred = np.array(cls)[P.argmax(1)]
+                res["accuracy"] = float(np.mean(pred == y[~tr]))
+                res["confusion"] = {f"{a}|{b}": int(((y[~tr] == a) & (pred == b)).sum()) for a in PROGNOSIS for b in PROGNOSIS}
+                perf["models"].append(res)
+                if name == "그래디언트 부스팅" and model_dir:
+                    joblib.dump({"model": m, "features": cols2, "kind": "prognosis_gbm", "classes": cls,
+                                 "trained_on": R["meta"]["source"]}, Path(model_dir) / "prognosis_gbm.joblib")
+        R["prognosis_performance"] = perf
+
+    # ---- Agent 1: 0/1 flags
+    R["agent1_flags"] = evaluate_flags(events, lab, context, hist, diagnoses)
+    return _suppress_counts(_json_safe(R), min_cell)

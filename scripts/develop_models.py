@@ -99,6 +99,9 @@ def main(argv=None):
         excl = []  # the demo run cannot exclude itself
     R = develop(a.out_dir, adm, dx, excl, source=a.source, min_cell=a.min_cell if a.source == "mimic-iv" else None,
                 step_hours=a.step_hours, boot=a.boot, model_dir=a.model_dir)
+    from kcd_liver.develop import develop_v2
+    R = develop_v2(R, a.out_dir, adm, dx, excl, model_dir=a.model_dir, min_cell=a.min_cell if a.source == "mimic-iv" else None,
+                   boot=a.boot)
     R["meta"]["runtime_minutes"] = round((time.time() - t) / 60, 1)
     res = a.results or a.out_dir / ("results_full.json" if a.source == "mimic-iv" else f"results_{a.source}.json")
     res.write_text(json.dumps(R, ensure_ascii=False, indent=1), encoding="utf-8")
