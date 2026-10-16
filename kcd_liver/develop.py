@@ -717,7 +717,9 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
     return _suppress_counts(_json_safe(R), min_cell)
 
 
-NOT_COUNTS = {"seed", "landmark_step_hours", "max_leaf_nodes", "n_features", "cutoff_fold_uln", "min_cell_suppression"}
+NOT_COUNTS = {"seed", "landmark_step_hours", "max_leaf_nodes", "n_features", "cutoff_fold_uln", "min_cell_suppression",
+              # settings and ranks, not patient counts
+              "horizon_h", "horizon_hours", "horizons", "step_hours", "hour", "rank", "k_selected", "n_clusters", "n_boot", "stable_threshold"}
 
 
 def _suppress_counts(o, min_cell, key=None):

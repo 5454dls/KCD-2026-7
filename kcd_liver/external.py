@@ -107,7 +107,7 @@ def validate(out_dir, model_dir, admissions=None, diagnoses=None, boot=200, min_
     if len(events):
         log("external: agent 1 flags")
         R["agent1_flags"] = evaluate_flags(events, lab, context, hist, diagnoses)
-    cm = load("08c_cluster_models.joblib")
+    cm = load("cluster_models.joblib") or load("08c_cluster_models.joblib")
     fp = Path(out_dir) / "08_features.csv"
     if cm and fp.exists():
         from .pattern import assign_clusters
@@ -117,7 +117,7 @@ def validate(out_dir, model_dir, admissions=None, diagnoses=None, boot=200, min_
             m = cm.get(k)
             if m:
                 lab_k = assign_clusters(m, F)
-                cl[k] = {"k": m["k"], "stable_in_development": m["stable"],
+                cl[k] = {"n_clusters": m["k"], "stable_in_development": m["stable"],
                          "sizes": [int(s) for s in np.bincount(lab_k, minlength=m["k"])]}
                 if "liver_pattern" in F:
                     t = pd.crosstab(pd.Series(lab_k, name="cluster"), F.liver_pattern)

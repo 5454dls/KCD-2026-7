@@ -84,8 +84,8 @@ def gmm_explore(df: pd.DataFrame, cols, ks=range(2, 9), n_boot=50, seed=0, min_n
     for k in ks:
         if k >= len(X):
             break
-        bic.append({"k": int(k), "bic": float(fit(k, X, seed).bic(X))})
-    k_best = min(bic, key=lambda r: r["bic"])["k"]
+        bic.append({"n_clusters": int(k), "bic": float(fit(k, X, seed).bic(X))})
+    k_best = min(bic, key=lambda r: r["bic"])["n_clusters"]
     ref_model = fit(k_best, X, seed)
     ref = ref_model.predict(X)
     rng = np.random.default_rng(seed)
