@@ -1,248 +1,266 @@
 {
- "source": "mimic-iv-demo",
- "min_cell_suppression": null,
+ "source": "mimic-iv",
+ "min_cell_suppression": 10,
  "cohort_flow": [
   {
    "step": "all_icu_stays",
-   "n": 140
+   "n": 94458
   },
   {
    "step": "first_icu_per_patient",
-   "n": 100
+   "n": 65366
   },
   {
    "step": "adult_valid_stay",
-   "n": 100
+   "n": 65354
   },
   {
    "step": "analysis_sample",
-   "n": 100
+   "n": 65354
+  },
+  {
+   "step": "excluded_pre_icu_abnormal",
+   "n": 2631
+  },
+  {
+   "step": "no_pre_icu_abnormality",
+   "n": 62723
   },
   {
    "step": "first_abnormal_event",
-   "n": 16
+   "n": 8743
   }
  ],
  "event_groups": [
   {
    "split": "development",
    "group": "incident",
-   "n": 2
+   "n": 726
   },
   {
    "split": "development",
    "group": "initial_abnormal",
-   "n": 9
+   "n": 4637
   },
   {
    "split": "development",
    "group": "onset_unknown",
-   "n": 2
+   "n": 749
   },
   {
    "split": "evaluation",
    "group": "incident",
-   "n": 1
+   "n": 314
   },
   {
    "split": "evaluation",
    "group": "initial_abnormal",
-   "n": 2
+   "n": 1985
+  },
+  {
+   "split": "evaluation",
+   "group": "onset_unknown",
+   "n": 332
   }
  ],
  "alert_aggregation": [
   {
    "comparison": "raw_abnormal_lab_records",
-   "n": 177
+   "n": 52167
   },
   {
    "comparison": "first_patient_event_alerts",
-   "n": 16
+   "n": 8743
   }
  ],
  "threshold_sensitivity": [
   {
-   "cutoff_fold_uln": 1.5,
-   "n_patients_flagged": 21,
-   "note": "mechanical threshold sensitivity; not clinical utility"
-  },
-  {
    "cutoff_fold_uln": 2.0,
-   "n_patients_flagged": 16,
+   "n_patients_flagged": 8743,
    "note": "mechanical threshold sensitivity; not clinical utility"
   },
   {
    "cutoff_fold_uln": 3.0,
-   "n_patients_flagged": 11,
+   "n_patients_flagged": 6286,
+   "note": "mechanical threshold sensitivity; not clinical utility"
+  },
+  {
+   "cutoff_fold_uln": 4.0,
+   "n_patients_flagged": 5024,
    "note": "mechanical threshold sensitivity; not clinical utility"
   },
   {
    "cutoff_fold_uln": 5.0,
-   "n_patients_flagged": 7,
+   "n_patients_flagged": 4161,
    "note": "mechanical threshold sensitivity; not clinical utility"
   }
  ],
  "cause_validation": null,
  "stress_before_after_specialist": null,
- "agent2_complete_case_scores": [
-  {
-   "method": "joint_resolution",
-   "complete_n": 1,
-   "all_n": 3,
-   "binary_resolution_brier_complete_cases": 0.8520710059171599
-  },
-  {
-   "method": "naive_resolution",
-   "complete_n": 1,
-   "all_n": 3,
-   "binary_resolution_brier_complete_cases": 0.8520710059171599
-  }
- ],
+ "agent2_complete_case_scores": null,
  "agent3_complete_case_scores": null,
  "paired_test": null,
  "horizon_hours": 48,
  "lab_qc": [
   {
-   "analyte": "SODIUM",
-   "n": 1257,
-   "unit_invalid": 0,
+   "analyte": "POTASSIUM",
+   "n": 495485,
+   "unit_invalid": 379,
    "missing_uln": 0
   },
   {
-   "analyte": "POTASSIUM",
-   "n": 1254,
-   "unit_invalid": 3,
+   "analyte": "SODIUM",
+   "n": 493640,
+   "unit_invalid": 106,
    "missing_uln": 0
   },
   {
    "analyte": "CREAT",
-   "n": 1182,
+   "n": 467471,
+   "unit_invalid": 313,
+   "missing_uln": 0
+  },
+  {
+   "analyte": "BUN",
+   "n": 465841,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "BICARB",
-   "n": 1182,
-   "unit_invalid": 0,
-   "missing_uln": 0
-  },
-  {
-   "analyte": "BUN",
-   "n": 1178,
+   "n": 465730,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "GLUCOSE",
-   "n": 1154,
-   "unit_invalid": 0,
+   "n": 454465,
+   "unit_invalid": 88,
    "missing_uln": 0
   },
   {
    "analyte": "PLATELET",
-   "n": 1107,
-   "unit_invalid": 4,
+   "n": 434005,
+   "unit_invalid": 1840,
    "missing_uln": 0
   },
   {
    "analyte": "HEMOGLOBIN",
-   "n": 1094,
-   "unit_invalid": 1,
+   "n": 431388,
+   "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "WBC",
-   "n": 1082,
-   "unit_invalid": 1,
+   "n": 425386,
+   "unit_invalid": 1425,
    "missing_uln": 0
   },
   {
    "analyte": "PH",
-   "n": 770,
+   "n": 416233,
+   "unit_invalid": 189,
+   "missing_uln": 0
+  },
+  {
+   "analyte": "PO2_UNSPECIFIED",
+   "n": 388969,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "PTT",
-   "n": 717,
-   "unit_invalid": 5,
+   "n": 325059,
+   "unit_invalid": 0,
    "missing_uln": 0
   },
   {
-   "analyte": "PO2_UNSPECIFIED",
-   "n": 701,
+   "analyte": "INR",
+   "n": 290843,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "PT",
-   "n": 699,
-   "unit_invalid": 5,
-   "missing_uln": 0
-  },
-  {
-   "analyte": "INR",
-   "n": 699,
+   "n": 290829,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "LACTATE",
-   "n": 487,
-   "unit_invalid": 0,
-   "missing_uln": 0
-  },
-  {
-   "analyte": "TBIL",
-   "n": 327,
-   "unit_invalid": 0,
-   "missing_uln": 0
-  },
-  {
-   "analyte": "AST",
-   "n": 323,
+   "n": 243968,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "ALT",
-   "n": 322,
-   "unit_invalid": 1,
+   "n": 137930,
+   "unit_invalid": 0,
+   "missing_uln": 0
+  },
+  {
+   "analyte": "AST",
+   "n": 137819,
+   "unit_invalid": 0,
+   "missing_uln": 0
+  },
+  {
+   "analyte": "TBIL",
+   "n": 137214,
+   "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "ALP",
-   "n": 317,
+   "n": 134838,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "LDH",
-   "n": 156,
+   "n": 79394,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "ALBUMIN",
-   "n": 138,
+   "n": 72808,
+   "unit_invalid": 46,
+   "missing_uln": 0
+  },
+  {
+   "analyte": "FIBRINOGEN",
+   "n": 52376,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "CK",
-   "n": 109,
-   "unit_invalid": 0,
-   "missing_uln": 0
-  },
-  {
-   "analyte": "FIBRINOGEN",
-   "n": 80,
+   "n": 50729,
    "unit_invalid": 0,
    "missing_uln": 0
   },
   {
    "analyte": "DBIL",
-   "n": 24,
+   "n": 10348,
+   "unit_invalid": 0,
+   "missing_uln": 0
+  },
+  {
+   "analyte": "HAPTO",
+   "n": 8753,
+   "unit_invalid": 0,
+   "missing_uln": 0
+  },
+  {
+   "analyte": "NTPROBNP",
+   "n": 5067,
+   "unit_invalid": 0,
+   "missing_uln": 0
+  },
+  {
+   "analyte": "GGT",
+   "n": 1073,
    "unit_invalid": 0,
    "missing_uln": 0
   }
@@ -251,27 +269,33 @@
   {
    "analyte": "ALP",
    "bin": "2-3",
-   "count": 1
+   "count": 831
   },
   {
    "analyte": "ALP",
    "bin": "3-5",
-   "count": 0
+   "count": 324
   },
   {
    "analyte": "ALP",
    "bin": "5-10",
-   "count": 0
+   "count": 109
   },
   {
    "analyte": "ALP",
    "bin": "10-20",
-   "count": 0
+   "count": null,
+   "_suppressed": [
+    "count"
+   ]
   },
   {
    "analyte": "ALP",
    "bin": "20-50",
-   "count": 0
+   "count": null,
+   "_suppressed": [
+    "count"
+   ]
   },
   {
    "analyte": "ALP",
@@ -281,57 +305,57 @@
   {
    "analyte": "ALT",
    "bin": "2-3",
-   "count": 3
+   "count": 2081
   },
   {
    "analyte": "ALT",
    "bin": "3-5",
-   "count": 4
+   "count": 1452
   },
   {
    "analyte": "ALT",
    "bin": "5-10",
-   "count": 1
+   "count": 1108
   },
   {
    "analyte": "ALT",
    "bin": "10-20",
-   "count": 0
+   "count": 539
   },
   {
    "analyte": "ALT",
    "bin": "20-50",
-   "count": 2
+   "count": 332
   },
   {
    "analyte": "ALT",
    "bin": "≥50",
-   "count": 1
+   "count": 265
   },
   {
    "analyte": "TBIL",
    "bin": "2-3",
-   "count": 3
+   "count": 866
   },
   {
    "analyte": "TBIL",
    "bin": "3-5",
-   "count": 0
+   "count": 414
   },
   {
    "analyte": "TBIL",
    "bin": "5-10",
-   "count": 0
+   "count": 259
   },
   {
    "analyte": "TBIL",
    "bin": "10-20",
-   "count": 1
+   "count": 117
   },
   {
    "analyte": "TBIL",
    "bin": "20-50",
-   "count": 0
+   "count": 37
   },
   {
    "analyte": "TBIL",
@@ -342,154 +366,683 @@
  "cluster_profile": {
   "features": [
    "ALT_ratio",
-   "ALT_slope24",
-   "ALT_delta24",
    "ALP_ratio",
-   "ALP_slope24",
-   "ALP_delta24",
    "TBIL_ratio",
-   "TBIL_slope24",
-   "TBIL_delta24"
+   "R_ratio"
   ],
+  "grouping": "liver_pattern",
   "rows": [
    {
-    "cluster": 0,
-    "n": 9,
-    "ALT_ratio": 3.25,
-    "ALT_slope24": null,
-    "ALT_delta24": null,
-    "ALP_ratio": 1.1307692307692307,
-    "ALP_slope24": null,
-    "ALP_delta24": null,
-    "TBIL_ratio": 0.4666666666666666,
-    "TBIL_slope24": -5.3204473689255534e-18,
-    "TBIL_delta24": 0.0
+    "cluster": "cholestatic",
+    "n": 1388,
+    "ALT_ratio": 1.625,
+    "ALP_ratio": 2.4761904761904763,
+    "TBIL_ratio": 0.7333333333333334,
+    "R_ratio": 0.5514705882352942
    },
    {
-    "cluster": 1,
-    "n": 2,
-    "ALT_ratio": 17.3,
-    "ALT_slope24": 0.5822052945592171,
-    "ALT_delta24": 4.237500000000001,
-    "ALP_ratio": 0.5776556776556776,
-    "ALP_slope24": 0.003166812291905037,
-    "ALP_delta24": 0.011355311355311343,
-    "TBIL_ratio": 1.1,
-    "TBIL_slope24": -0.06600343081412736,
-    "TBIL_delta24": -0.4
+    "cluster": "hepatocellular",
+    "n": 2013,
+    "ALT_ratio": 7.325,
+    "ALP_ratio": 0.5692307692307692,
+    "TBIL_ratio": 0.5333333333333333,
+    "R_ratio": 11.331081081081082
    },
    {
-    "cluster": 2,
-    "n": 1,
-    "ALT_ratio": 0.375,
-    "ALT_slope24": 0.038904899135446674,
-    "ALT_delta24": 0.225,
-    "ALP_ratio": 0.34285714285714286,
-    "ALP_slope24": 0.013174145738987227,
-    "ALP_delta24": 0.0761904761904762,
-    "TBIL_ratio": 2.0,
-    "TBIL_slope24": 0.1844380403458213,
-    "TBIL_delta24": 1.0666666666666669
+    "cluster": "isolated_bilirubin",
+    "n": 1233,
+    "ALT_ratio": 0.7625,
+    "ALP_ratio": 0.8197802197802198,
+    "TBIL_ratio": 2.9333333333333336,
+    "R_ratio": 0.9442741935483872
    },
    {
-    "cluster": 3,
-    "n": 1,
-    "ALT_ratio": 0.225,
-    "ALT_slope24": -9.674676650969742e-19,
-    "ALT_delta24": 0.0,
-    "ALP_ratio": 0.5619047619047619,
-    "ALP_slope24": -0.003034901365705619,
-    "ALP_delta24": -0.06666666666666665,
-    "TBIL_ratio": 14.266666666666666,
-    "TBIL_slope24": -0.04855842185128994,
-    "TBIL_delta24": -1.0666666666666682
+    "cluster": "mixed",
+    "n": 1321,
+    "ALT_ratio": 2.75,
+    "ALP_ratio": 0.8952380952380953,
+    "TBIL_ratio": 0.5333333333333333,
+    "R_ratio": 3.320785984848485
    }
   ],
   "z": [
    {
-    "cluster": 0,
-    "ALT_ratio": -0.28944190558714494,
-    "ALT_slope24": null,
-    "ALT_delta24": null,
-    "ALP_ratio": 1.6415193964901353,
-    "ALP_slope24": null,
-    "ALP_delta24": null,
-    "TBIL_ratio": -0.701647191725972,
-    "TBIL_slope24": -0.1757679478077104,
-    "TBIL_delta24": 0.12921914767618475
+    "cluster": "cholestatic",
+    "ALT_ratio": -0.5890869006188831,
+    "ALP_ratio": 1.7096197461705958,
+    "TBIL_ratio": -0.443937261300291,
+    "R_ratio": -0.8026261562336986
    },
    {
-    "cluster": 1,
-    "ALT_ratio": 1.7064642409156208,
-    "ALT_slope24": 1.411685697784786,
-    "ALT_delta24": 1.412638356497238,
-    "ALP_ratio": -0.2600489109130899,
-    "ALP_slope24": -0.18996278739066375,
-    "ALP_delta24": 0.07526210984414454,
-    "TBIL_ratio": -0.5903211237276967,
-    "TBIL_slope24": -0.8398733014385472,
-    "TBIL_delta24": -0.3876574430285526
+    "cluster": "hepatocellular",
+    "ALT_ratio": 1.6635221281627586,
+    "ALP_ratio": -0.8253504613384106,
+    "TBIL_ratio": -0.641242710767087,
+    "R_ratio": 1.6797049889269142
    },
    {
-    "cluster": 2,
-    "ALT_ratio": -0.6978568643910917,
-    "ALT_slope24": -0.6326470976331082,
-    "ALT_delta24": -0.6485294273010045,
-    "ALP_ratio": -1.0672709539895582,
-    "ALP_slope24": 1.3086269781041728,
-    "ALP_delta24": 1.1853782300452806,
-    "TBIL_ratio": -0.43212092183541073,
-    "TBIL_slope24": 1.6799884650941366,
-    "TBIL_delta24": 1.5075567228888178
+    "cluster": "isolated_bilirubin",
+    "ALT_ratio": -0.9299422141845262,
+    "ALP_ratio": -0.4922886822496361,
+    "TBIL_ratio": 1.7264226828344653,
+    "R_ratio": -0.7121712530581896
    },
    {
-    "cluster": 3,
-    "ALT_ratio": -0.7191654709373846,
-    "ALT_slope24": -0.7790386001516781,
-    "ALT_delta24": -0.764108929196233,
-    "ALP_ratio": -0.3141995315874862,
-    "ALP_slope24": -1.118664190713509,
-    "ALP_delta24": -1.2606403398894253,
-    "TBIL_ratio": 1.7240892372890797,
-    "TBIL_slope24": -0.664347215847879,
-    "TBIL_delta24": -1.24911842753645
+    "cluster": "mixed",
+    "ALT_ratio": -0.14449301335934858,
+    "ALP_ratio": -0.39198060258254896,
+    "TBIL_ratio": -0.641242710767087,
+    "R_ratio": -0.16490757963502545
    }
   ]
  },
+ "clustering_check": {
+  "method": "GaussianMixture(diag), log2 for positive labs, K by BIC, bootstrap ARI",
+  "n": 6112,
+  "features": [
+   "ALT_ratio",
+   "ALP_ratio",
+   "TBIL_ratio",
+   "R_ratio"
+  ],
+  "stable_threshold": 0.75,
+  "status": "ok",
+  "bic": [
+   {
+    "n_clusters": 2,
+    "bic": 27014.135345737566
+   },
+   {
+    "n_clusters": 3,
+    "bic": 19643.168956708705
+   },
+   {
+    "n_clusters": 4,
+    "bic": 14822.88773760654
+   },
+   {
+    "n_clusters": 5,
+    "bic": 13040.148186393832
+   },
+   {
+    "n_clusters": 6,
+    "bic": 10400.514160694662
+   },
+   {
+    "n_clusters": 7,
+    "bic": 9597.500635353033
+   },
+   {
+    "n_clusters": 8,
+    "bic": 7264.6701990402935
+   }
+  ],
+  "k_selected": 8,
+  "ari_q25": 0.6981083090720878,
+  "ari_median": 0.8322380983820087,
+  "ari_q75": 0.8950866288466606,
+  "n_boot": 50,
+  "used": true,
+  "sizes": [
+   1308,
+   931,
+   366,
+   683,
+   775,
+   150,
+   1015,
+   884
+  ],
+  "crosstab_pattern": [
+   {
+    "cluster": 0,
+    "pattern": "cholestatic",
+    "n": 299
+   },
+   {
+    "cluster": 0,
+    "pattern": "hepatocellular",
+    "n": null,
+    "_suppressed": [
+     "n"
+    ]
+   },
+   {
+    "cluster": 0,
+    "pattern": "isolated_bilirubin",
+    "n": 305
+   },
+   {
+    "cluster": 0,
+    "pattern": "mixed",
+    "n": 627
+   },
+   {
+    "cluster": 0,
+    "pattern": "unclassifiable",
+    "n": 76
+   },
+   {
+    "cluster": 1,
+    "pattern": "cholestatic",
+    "n": 847
+   },
+   {
+    "cluster": 1,
+    "pattern": "hepatocellular",
+    "n": 0
+   },
+   {
+    "cluster": 1,
+    "pattern": "isolated_bilirubin",
+    "n": 84
+   },
+   {
+    "cluster": 1,
+    "pattern": "mixed",
+    "n": 0
+   },
+   {
+    "cluster": 1,
+    "pattern": "unclassifiable",
+    "n": 0
+   },
+   {
+    "cluster": 2,
+    "pattern": "cholestatic",
+    "n": 0
+   },
+   {
+    "cluster": 2,
+    "pattern": "hepatocellular",
+    "n": 358
+   },
+   {
+    "cluster": 2,
+    "pattern": "isolated_bilirubin",
+    "n": 0
+   },
+   {
+    "cluster": 2,
+    "pattern": "mixed",
+    "n": 0
+   },
+   {
+    "cluster": 2,
+    "pattern": "unclassifiable",
+    "n": null,
+    "_suppressed": [
+     "n"
+    ]
+   },
+   {
+    "cluster": 3,
+    "pattern": "cholestatic",
+    "n": 242
+   },
+   {
+    "cluster": 3,
+    "pattern": "hepatocellular",
+    "n": 18
+   },
+   {
+    "cluster": 3,
+    "pattern": "isolated_bilirubin",
+    "n": 38
+   },
+   {
+    "cluster": 3,
+    "pattern": "mixed",
+    "n": 332
+   },
+   {
+    "cluster": 3,
+    "pattern": "unclassifiable",
+    "n": 53
+   },
+   {
+    "cluster": 4,
+    "pattern": "cholestatic",
+    "n": 0
+   },
+   {
+    "cluster": 4,
+    "pattern": "hepatocellular",
+    "n": 0
+   },
+   {
+    "cluster": 4,
+    "pattern": "isolated_bilirubin",
+    "n": 775
+   },
+   {
+    "cluster": 4,
+    "pattern": "mixed",
+    "n": 0
+   },
+   {
+    "cluster": 4,
+    "pattern": "unclassifiable",
+    "n": 0
+   },
+   {
+    "cluster": 5,
+    "pattern": "cholestatic",
+    "n": 0
+   },
+   {
+    "cluster": 5,
+    "pattern": "hepatocellular",
+    "n": 146
+   },
+   {
+    "cluster": 5,
+    "pattern": "isolated_bilirubin",
+    "n": 0
+   },
+   {
+    "cluster": 5,
+    "pattern": "mixed",
+    "n": 0
+   },
+   {
+    "cluster": 5,
+    "pattern": "unclassifiable",
+    "n": null,
+    "_suppressed": [
+     "n"
+    ]
+   },
+   {
+    "cluster": 6,
+    "pattern": "cholestatic",
+    "n": 0
+   },
+   {
+    "cluster": 6,
+    "pattern": "hepatocellular",
+    "n": 638
+   },
+   {
+    "cluster": 6,
+    "pattern": "isolated_bilirubin",
+    "n": 26
+   },
+   {
+    "cluster": 6,
+    "pattern": "mixed",
+    "n": 350
+   },
+   {
+    "cluster": 6,
+    "pattern": "unclassifiable",
+    "n": null,
+    "_suppressed": [
+     "n"
+    ]
+   },
+   {
+    "cluster": 7,
+    "pattern": "cholestatic",
+    "n": 0
+   },
+   {
+    "cluster": 7,
+    "pattern": "hepatocellular",
+    "n": 852
+   },
+   {
+    "cluster": 7,
+    "pattern": "isolated_bilirubin",
+    "n": null,
+    "_suppressed": [
+     "n"
+    ]
+   },
+   {
+    "cluster": 7,
+    "pattern": "mixed",
+    "n": 12
+   },
+   {
+    "cluster": 7,
+    "pattern": "unclassifiable",
+    "n": 15
+   }
+  ],
+  "clinical_phenotype_gmm": {
+   "method": "GaussianMixture(diag), log2 for positive labs, K by BIC, bootstrap ARI",
+   "n": 6112,
+   "features": [
+    "age",
+    "female",
+    "ALT_ratio",
+    "ALP_ratio",
+    "TBIL_ratio",
+    "INR_latest",
+    "LACTATE_latest",
+    "CREAT_latest",
+    "BUN_latest",
+    "PLATELET_latest",
+    "WBC_latest",
+    "SODIUM_latest",
+    "GLUCOSE_latest",
+    "MAP_min24",
+    "HR_latest",
+    "RR_latest",
+    "SPO2_min24",
+    "TEMP_C_latest",
+    "urine_recorded_sum6",
+    "pressor_record6"
+   ],
+   "stable_threshold": 0.75,
+   "status": "ok",
+   "bic": [
+    {
+     "n_clusters": 2,
+     "bic": 314649.219927719
+    },
+    {
+     "n_clusters": 3,
+     "bic": 240718.63913641582
+    },
+    {
+     "n_clusters": 4,
+     "bic": 238616.6903886591
+    },
+    {
+     "n_clusters": 5,
+     "bic": 239759.3082219716
+    },
+    {
+     "n_clusters": 6,
+     "bic": 223858.69643521676
+    },
+    {
+     "n_clusters": 7,
+     "bic": 224537.46822621056
+    },
+    {
+     "n_clusters": 8,
+     "bic": 221237.10100016918
+    }
+   ],
+   "k_selected": 8,
+   "ari_q25": 0.29908143489766487,
+   "ari_median": 0.33681092314545535,
+   "ari_q75": 0.3825372112483089,
+   "n_boot": 50,
+   "used": false,
+   "sizes": [
+    603,
+    846,
+    23,
+    1322,
+    1144,
+    575,
+    1535,
+    64
+   ],
+   "crosstab_pattern": [
+    {
+     "cluster": 0,
+     "pattern": "cholestatic",
+     "n": 22
+    },
+    {
+     "cluster": 0,
+     "pattern": "hepatocellular",
+     "n": 480
+    },
+    {
+     "cluster": 0,
+     "pattern": "isolated_bilirubin",
+     "n": 29
+    },
+    {
+     "cluster": 0,
+     "pattern": "mixed",
+     "n": 55
+    },
+    {
+     "cluster": 0,
+     "pattern": "unclassifiable",
+     "n": 17
+    },
+    {
+     "cluster": 1,
+     "pattern": "cholestatic",
+     "n": 246
+    },
+    {
+     "cluster": 1,
+     "pattern": "hepatocellular",
+     "n": 136
+    },
+    {
+     "cluster": 1,
+     "pattern": "isolated_bilirubin",
+     "n": 231
+    },
+    {
+     "cluster": 1,
+     "pattern": "mixed",
+     "n": 214
+    },
+    {
+     "cluster": 1,
+     "pattern": "unclassifiable",
+     "n": 19
+    },
+    {
+     "cluster": 2,
+     "pattern": "cholestatic",
+     "n": 0
+    },
+    {
+     "cluster": 2,
+     "pattern": "hepatocellular",
+     "n": 22
+    },
+    {
+     "cluster": 2,
+     "pattern": "isolated_bilirubin",
+     "n": 0
+    },
+    {
+     "cluster": 2,
+     "pattern": "mixed",
+     "n": 0
+    },
+    {
+     "cluster": 2,
+     "pattern": "unclassifiable",
+     "n": null,
+     "_suppressed": [
+      "n"
+     ]
+    },
+    {
+     "cluster": 3,
+     "pattern": "cholestatic",
+     "n": 416
+    },
+    {
+     "cluster": 3,
+     "pattern": "hepatocellular",
+     "n": 147
+    },
+    {
+     "cluster": 3,
+     "pattern": "isolated_bilirubin",
+     "n": 488
+    },
+    {
+     "cluster": 3,
+     "pattern": "mixed",
+     "n": 245
+    },
+    {
+     "cluster": 3,
+     "pattern": "unclassifiable",
+     "n": 26
+    },
+    {
+     "cluster": 4,
+     "pattern": "cholestatic",
+     "n": 268
+    },
+    {
+     "cluster": 4,
+     "pattern": "hepatocellular",
+     "n": 315
+    },
+    {
+     "cluster": 4,
+     "pattern": "isolated_bilirubin",
+     "n": 274
+    },
+    {
+     "cluster": 4,
+     "pattern": "mixed",
+     "n": 253
+    },
+    {
+     "cluster": 4,
+     "pattern": "unclassifiable",
+     "n": 34
+    },
+    {
+     "cluster": 5,
+     "pattern": "cholestatic",
+     "n": 49
+    },
+    {
+     "cluster": 5,
+     "pattern": "hepatocellular",
+     "n": 389
+    },
+    {
+     "cluster": 5,
+     "pattern": "isolated_bilirubin",
+     "n": 55
+    },
+    {
+     "cluster": 5,
+     "pattern": "mixed",
+     "n": 60
+    },
+    {
+     "cluster": 5,
+     "pattern": "unclassifiable",
+     "n": 22
+    },
+    {
+     "cluster": 6,
+     "pattern": "cholestatic",
+     "n": 379
+    },
+    {
+     "cluster": 6,
+     "pattern": "hepatocellular",
+     "n": 490
+    },
+    {
+     "cluster": 6,
+     "pattern": "isolated_bilirubin",
+     "n": 151
+    },
+    {
+     "cluster": 6,
+     "pattern": "mixed",
+     "n": 477
+    },
+    {
+     "cluster": 6,
+     "pattern": "unclassifiable",
+     "n": 38
+    },
+    {
+     "cluster": 7,
+     "pattern": "cholestatic",
+     "n": null,
+     "_suppressed": [
+      "n"
+     ]
+    },
+    {
+     "cluster": 7,
+     "pattern": "hepatocellular",
+     "n": 34
+    },
+    {
+     "cluster": 7,
+     "pattern": "isolated_bilirubin",
+     "n": null,
+     "_suppressed": [
+      "n"
+     ]
+    },
+    {
+     "cluster": 7,
+     "pattern": "mixed",
+     "n": 17
+    },
+    {
+     "cluster": 7,
+     "pattern": "unclassifiable",
+     "n": 0
+    }
+   ]
+  },
+  "role": "supplementary description only; Agent 1 uses the fixed R-ratio pattern and 8 evidence rules"
+ },
  "outcome_paths": [
   {
-   "path": "resolved_then_hospital_discharge",
-   "n": 9
+   "path": "unrecovered_alive_icu",
+   "n": 3754
   },
   {
-   "path": "resolution_unconfirmed_before_death",
-   "n": 4
+   "path": "unassessable_alive_icu",
+   "n": 1601
   },
   {
-   "path": "resolution_unconfirmed_before_hospital_discharge",
-   "n": 2
+   "path": "recovered_alive_icu",
+   "n": 1492
   },
   {
-   "path": "resolved_then_death",
-   "n": 1
+   "path": "unrecovered_died_icu",
+   "n": 1228
+  },
+  {
+   "path": "unassessable_died_icu",
+   "n": 422
+  },
+  {
+   "path": "recovered_died_icu",
+   "n": 246
   }
  ],
  "first_event_48h": [
   {
    "event": "no_event_observed",
-   "n": 7
+   "n": 2997
+  },
+  {
+   "event": "discharge_before_resolution",
+   "n": 2655
   },
   {
    "event": "insufficient_measurement",
-   "n": 5
+   "n": 1266
   },
   {
    "event": "resolution",
-   "n": 2
+   "n": 1005
   },
   {
    "event": "death_before_resolution",
-   "n": 2
+   "n": 820
   }
  ],
  "cif_development": {
@@ -547,610 +1100,640 @@
   "cif": {
    "resolution": [
     0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769,
-    0.0769
+    0.0005,
+    0.0007,
+    0.0015,
+    0.0029,
+    0.0047,
+    0.0069,
+    0.0097,
+    0.0113,
+    0.0129,
+    0.0142,
+    0.0167,
+    0.019,
+    0.0211,
+    0.0234,
+    0.0257,
+    0.028,
+    0.0298,
+    0.0324,
+    0.0348,
+    0.0376,
+    0.0412,
+    0.0466,
+    0.0546,
+    0.0633,
+    0.069,
+    0.0713,
+    0.0736,
+    0.0756,
+    0.0779,
+    0.0787,
+    0.0808,
+    0.0828,
+    0.0862,
+    0.088,
+    0.089,
+    0.0905,
+    0.0916,
+    0.0931,
+    0.0933,
+    0.0942,
+    0.0964,
+    0.0985,
+    0.0995,
+    0.1006,
+    0.1039,
+    0.1062,
+    0.1099,
+    0.1135
    ],
    "death": [
     0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0769,
-    0.0769,
-    0.1538,
-    0.1538,
-    0.1538
+    0.0021,
+    0.0047,
+    0.0087,
+    0.0111,
+    0.0151,
+    0.0183,
+    0.0209,
+    0.0234,
+    0.0277,
+    0.0306,
+    0.0334,
+    0.0358,
+    0.0393,
+    0.0425,
+    0.0455,
+    0.047,
+    0.0483,
+    0.0504,
+    0.0528,
+    0.0551,
+    0.0563,
+    0.0579,
+    0.0605,
+    0.0623,
+    0.0638,
+    0.0651,
+    0.0672,
+    0.0684,
+    0.069,
+    0.0704,
+    0.071,
+    0.072,
+    0.0744,
+    0.0759,
+    0.0784,
+    0.08,
+    0.082,
+    0.0836,
+    0.0841,
+    0.0856,
+    0.0874,
+    0.089,
+    0.0902,
+    0.0905,
+    0.0913,
+    0.0928,
+    0.0934,
+    0.0944
    ],
-   "hospital_discharge": [
+   "icu_discharge": [
     0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0
+    0.0023,
+    0.0043,
+    0.007,
+    0.01,
+    0.0128,
+    0.0154,
+    0.0196,
+    0.0255,
+    0.0316,
+    0.0393,
+    0.0484,
+    0.0586,
+    0.069,
+    0.0818,
+    0.0939,
+    0.1042,
+    0.1124,
+    0.1196,
+    0.1273,
+    0.1342,
+    0.1405,
+    0.1456,
+    0.152,
+    0.1576,
+    0.1639,
+    0.1697,
+    0.1741,
+    0.1783,
+    0.1826,
+    0.186,
+    0.1908,
+    0.1955,
+    0.2026,
+    0.2107,
+    0.2196,
+    0.2276,
+    0.2364,
+    0.2443,
+    0.2531,
+    0.2628,
+    0.2706,
+    0.2772,
+    0.2821,
+    0.2889,
+    0.2929,
+    0.297,
+    0.3004,
+    0.3056
    ]
   },
   "naive_resolution": [
    0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769,
-   0.0769
+   0.0005,
+   0.0007,
+   0.0015,
+   0.003,
+   0.0048,
+   0.007,
+   0.0099,
+   0.0116,
+   0.0134,
+   0.0148,
+   0.0174,
+   0.0199,
+   0.0223,
+   0.0249,
+   0.0275,
+   0.0302,
+   0.0324,
+   0.0355,
+   0.0385,
+   0.0419,
+   0.0464,
+   0.0532,
+   0.0634,
+   0.0745,
+   0.082,
+   0.085,
+   0.088,
+   0.0906,
+   0.0937,
+   0.0948,
+   0.0977,
+   0.1004,
+   0.1052,
+   0.1078,
+   0.1092,
+   0.1114,
+   0.1131,
+   0.1153,
+   0.1155,
+   0.1171,
+   0.1205,
+   0.1239,
+   0.1256,
+   0.1275,
+   0.133,
+   0.1369,
+   0.1434,
+   0.1496
   ],
   "at_risk": [
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   13,
-   12,
-   12,
-   12,
-   12,
-   12,
-   12,
-   12,
-   12,
-   12,
-   12,
-   12,
-   11,
-   11,
-   10,
-   10,
-   10
+   6112,
+   6082,
+   6053,
+   6008,
+   5965,
+   5914,
+   5864,
+   5807,
+   5744,
+   5672,
+   5598,
+   5511,
+   5419,
+   5323,
+   5209,
+   5103,
+   5017,
+   4950,
+   4875,
+   4798,
+   4725,
+   4658,
+   4583,
+   4480,
+   4383,
+   4300,
+   4241,
+   4187,
+   4142,
+   4098,
+   4064,
+   4019,
+   3971,
+   3892,
+   3822,
+   3748,
+   3680,
+   3607,
+   3540,
+   3481,
+   3407,
+   3335,
+   3274,
+   3229,
+   3178,
+   3129,
+   3082,
+   3033,
+   2973
   ],
-  "n": 13
- },
- "agent3": {
-  "n_all": 6,
-  "n_known": 1,
-  "truth_counts": [
-   {
-    "truth": "insufficient_measurement",
-    "n": 4
-   },
-   {
-    "truth": "death_or_hospital_discharge_before_observation_end",
-    "n": 1
-   },
-   {
-    "truth": "no_abnormality_observed",
-    "n": 1
-   }
-  ],
-  "auroc": null,
-  "auprc": null,
-  "prevalence": 0.0,
-  "brier": 0.0,
-  "calibration": [
-   {
-    "bin": "0.00-0.05",
-    "mean_predicted": 0.0,
-    "observed": 0.0,
-    "ci_low": 0.0,
-    "ci_high": 0.7934506882081973,
-    "n": 1,
-    "k": 0
-   }
-  ]
+  "n": 6112
  },
  "measurement_coverage": [
   {
    "split": "development",
    "group": "incident",
-   "ALT_missing": 0.0,
-   "ALT_n24": 1.0,
-   "AST_missing": 0.0,
-   "AST_n24": 1.0,
-   "ALP_missing": 0.0,
-   "ALP_n24": 1.0,
-   "TBIL_missing": 0.0,
-   "TBIL_n24": 1.0,
-   "DBIL_missing": 0.5,
-   "DBIL_n24": 0.5,
-   "INR_missing": 0.5,
-   "INR_n24": 0.5,
-   "LACTATE_missing": 0.0,
-   "LACTATE_n24": 4.0,
-   "CK_missing": 1.0,
-   "CK_n24": 0.0,
-   "LDH_missing": 1.0,
-   "LDH_n24": 0.0,
-   "CREAT_missing": 0.0,
-   "CREAT_n24": 2.5,
-   "GGT_missing": 1.0,
-   "GGT_n24": 0.0,
-   "ALBUMIN_missing": 0.5,
-   "ALBUMIN_n24": 0.5,
-   "BUN_missing": 0.0,
-   "BUN_n24": 2.5,
-   "SODIUM_missing": 0.5,
-   "SODIUM_n24": 2.5,
-   "POTASSIUM_missing": 0.5,
-   "POTASSIUM_n24": 2.5,
-   "BICARB_missing": 0.0,
-   "BICARB_n24": 3.0,
-   "GLUCOSE_missing": 0.0,
-   "GLUCOSE_n24": 3.0,
-   "PLATELET_missing": 0.5,
-   "PLATELET_n24": 0.5,
-   "WBC_missing": 0.0,
-   "WBC_n24": 1.0,
-   "HEMOGLOBIN_missing": 0.0,
-   "HEMOGLOBIN_n24": 1.0,
-   "PT_missing": 0.5,
-   "PT_n24": 0.5,
-   "PTT_missing": 0.5,
-   "PTT_n24": 0.5,
-   "FIBRINOGEN_missing": 1.0,
-   "FIBRINOGEN_n24": 0.0,
-   "PH_missing": 0.0,
-   "PH_n24": 5.0,
-   "PO2_UNSPECIFIED_missing": 0.0,
-   "PO2_UNSPECIFIED_n24": 5.0,
-   "DBP_missing": 0.0,
-   "FIO2_missing": 0.0,
-   "HR_missing": 0.0,
-   "MAP_missing": 0.0,
-   "PEEP_missing": 0.0,
-   "RR_missing": 0.0,
-   "SBP_missing": 0.0,
-   "SPO2_missing": 0.0,
-   "TEMP_C_missing": 0.0
+   "ALT_missing": 0.0137741046831955,
+   "ALT_n24": 1.3415977961432506,
+   "AST_missing": 0.0330578512396694,
+   "AST_n24": 1.31267217630854,
+   "ALP_missing": 0.0137741046831955,
+   "ALP_n24": 1.3360881542699723,
+   "TBIL_missing": 0.0344352617079889,
+   "TBIL_n24": 1.340220385674931,
+   "DBIL_missing": 0.9380165289256198,
+   "DBIL_n24": 0.0661157024793388,
+   "INR_missing": 0.2438016528925619,
+   "INR_n24": 1.4077134986225894,
+   "LACTATE_missing": 0.3292011019283746,
+   "LACTATE_n24": 2.6611570247933884,
+   "CK_missing": 0.7920110192837465,
+   "CK_n24": 0.3429752066115702,
+   "LDH_missing": 0.453168044077135,
+   "LDH_n24": 0.7245179063360881,
+   "CREAT_missing": 0.0041322314049586,
+   "CREAT_n24": 2.3884297520661155,
+   "GGT_missing": 0.9986225895316804,
+   "GGT_n24": 0.0013774104683195,
+   "ALBUMIN_missing": 0.5564738292011019,
+   "ALBUMIN_n24": 0.5151515151515151,
+   "BUN_missing": 0.0041322314049586,
+   "BUN_n24": 2.3650137741046837,
+   "SODIUM_missing": 0.0082644628099173,
+   "SODIUM_n24": 2.4490358126721765,
+   "POTASSIUM_missing": 0.0068870523415977,
+   "POTASSIUM_n24": 2.4297520661157024,
+   "BICARB_missing": 0.0055096418732782,
+   "BICARB_n24": 2.34297520661157,
+   "GLUCOSE_missing": 0.0027548209366391,
+   "GLUCOSE_n24": 2.3608815426997247,
+   "PLATELET_missing": 0.0289256198347107,
+   "PLATELET_n24": 2.15702479338843,
+   "WBC_missing": 0.0206611570247933,
+   "WBC_n24": 2.118457300275482,
+   "HEMOGLOBIN_missing": 0.0179063360881542,
+   "HEMOGLOBIN_n24": 2.173553719008265,
+   "PT_missing": 0.2438016528925619,
+   "PT_n24": 1.4077134986225894,
+   "PTT_missing": 0.2479338842975206,
+   "PTT_n24": 1.5826446280991735,
+   "FIBRINOGEN_missing": 0.7754820936639119,
+   "FIBRINOGEN_n24": 0.396694214876033,
+   "PH_missing": 0.2314049586776859,
+   "PH_n24": 3.7176308539944896,
+   "PO2_UNSPECIFIED_missing": 0.2479338842975206,
+   "PO2_UNSPECIFIED_n24": 3.628099173553719,
+   "DBP_missing": 0.0027548209366391,
+   "FIO2_missing": 0.1983471074380165,
+   "HR_missing": 0.0027548209366391,
+   "MAP_missing": 0.0027548209366391,
+   "PEEP_missing": 0.2782369146005509,
+   "RR_missing": 0.0027548209366391,
+   "SBP_missing": 0.0027548209366391,
+   "SPO2_missing": 0.0041322314049586,
+   "TEMP_C_missing": 0.0482093663911845
   },
   {
    "split": "development",
    "group": "initial_abnormal",
-   "ALT_missing": 0.0,
-   "ALT_n24": 1.6666666666666667,
-   "AST_missing": 0.0,
-   "AST_n24": 1.6666666666666667,
-   "ALP_missing": 0.0,
-   "ALP_n24": 1.6666666666666667,
-   "TBIL_missing": 0.0,
-   "TBIL_n24": 1.7777777777777777,
-   "DBIL_missing": 0.8888888888888888,
-   "DBIL_n24": 0.2222222222222222,
-   "INR_missing": 0.0,
-   "INR_n24": 2.888888888888889,
-   "LACTATE_missing": 0.0,
-   "LACTATE_n24": 3.888888888888889,
-   "CK_missing": 0.5555555555555556,
-   "CK_n24": 0.4444444444444444,
-   "LDH_missing": 0.6666666666666666,
-   "LDH_n24": 0.4444444444444444,
-   "CREAT_missing": 0.0,
-   "CREAT_n24": 2.7777777777777777,
-   "GGT_missing": 1.0,
-   "GGT_n24": 0.0,
-   "ALBUMIN_missing": 0.5555555555555556,
-   "ALBUMIN_n24": 0.5555555555555556,
-   "BUN_missing": 0.0,
-   "BUN_n24": 2.888888888888889,
-   "SODIUM_missing": 0.0,
-   "SODIUM_n24": 2.6666666666666665,
-   "POTASSIUM_missing": 0.0,
-   "POTASSIUM_n24": 2.6666666666666665,
-   "BICARB_missing": 0.0,
-   "BICARB_n24": 2.4444444444444446,
-   "GLUCOSE_missing": 0.0,
-   "GLUCOSE_n24": 2.888888888888889,
-   "PLATELET_missing": 0.0,
-   "PLATELET_n24": 3.2222222222222223,
-   "WBC_missing": 0.0,
-   "WBC_n24": 3.2222222222222223,
-   "HEMOGLOBIN_missing": 0.0,
-   "HEMOGLOBIN_n24": 3.2222222222222223,
-   "PT_missing": 0.0,
-   "PT_n24": 2.888888888888889,
-   "PTT_missing": 0.0,
-   "PTT_n24": 2.888888888888889,
-   "FIBRINOGEN_missing": 0.7777777777777778,
-   "FIBRINOGEN_n24": 0.3333333333333333,
-   "PH_missing": 0.0,
-   "PH_n24": 4.777777777777778,
-   "PO2_UNSPECIFIED_missing": 0.0,
-   "PO2_UNSPECIFIED_n24": 4.777777777777778,
-   "DBP_missing": 0.0,
-   "FIO2_missing": 0.3333333333333333,
-   "HR_missing": 0.0,
-   "MAP_missing": 0.0,
-   "PEEP_missing": 0.3333333333333333,
-   "RR_missing": 0.0,
-   "SBP_missing": 0.0,
-   "SPO2_missing": 0.0,
-   "TEMP_C_missing": 0.1111111111111111
+   "ALT_missing": 0.0528358852706491,
+   "ALT_n24": 1.0366616346775932,
+   "AST_missing": 0.0806555962907051,
+   "AST_n24": 1.0043131334914817,
+   "ALP_missing": 0.0252318309251671,
+   "ALP_n24": 1.063834375673927,
+   "TBIL_missing": 0.0284666810437783,
+   "TBIL_n24": 1.0670692257925385,
+   "DBIL_missing": 0.9350873409532025,
+   "DBIL_n24": 0.0675005391416864,
+   "INR_missing": 0.2536122492991158,
+   "INR_n24": 1.0871252965279274,
+   "LACTATE_missing": 0.3088203579900798,
+   "LACTATE_n24": 1.5328876428725469,
+   "CK_missing": 0.7588958378261808,
+   "CK_n24": 0.2991158076342463,
+   "LDH_missing": 0.5402199698080655,
+   "LDH_n24": 0.4921285313780461,
+   "CREAT_missing": 0.0390338580979081,
+   "CREAT_n24": 1.392279491050248,
+   "GGT_missing": 0.9978434332542592,
+   "GGT_n24": 0.0021565667457407,
+   "ALBUMIN_missing": 0.4757386241104162,
+   "ALBUMIN_n24": 0.5620012939400475,
+   "BUN_missing": 0.0185464740133707,
+   "BUN_n24": 1.4136295018330818,
+   "SODIUM_missing": 0.0709510459348716,
+   "SODIUM_n24": 1.343109769247358,
+   "POTASSIUM_missing": 0.0851843864567608,
+   "POTASSIUM_n24": 1.33103299547121,
+   "BICARB_missing": 0.0806555962907051,
+   "BICARB_n24": 1.3116238947595429,
+   "GLUCOSE_missing": 0.0288979943929264,
+   "GLUCOSE_n24": 1.3843001940910071,
+   "PLATELET_missing": 0.1045934871684278,
+   "PLATELET_n24": 1.4065128315721371,
+   "WBC_missing": 0.0787146862195384,
+   "WBC_n24": 1.3851628207893034,
+   "HEMOGLOBIN_missing": 0.0655596290705197,
+   "HEMOGLOBIN_n24": 1.408885054992452,
+   "PT_missing": 0.2525339659262454,
+   "PT_n24": 1.0888505499245202,
+   "PTT_missing": 0.2682769031701531,
+   "PTT_n24": 1.0728919560060384,
+   "FIBRINOGEN_missing": 0.7875781755445331,
+   "FIBRINOGEN_n24": 0.3599309898641363,
+   "PH_missing": 0.3640284666810437,
+   "PH_n24": 1.6290705197325857,
+   "PO2_UNSPECIFIED_missing": 0.3804183739486737,
+   "PO2_UNSPECIFIED_n24": 1.577528574509381,
+   "DBP_missing": 0.0383868880741858,
+   "FIO2_missing": 0.5434548199266768,
+   "HR_missing": 0.0336424412335561,
+   "MAP_missing": 0.0377399180504636,
+   "PEEP_missing": 0.5710588742721587,
+   "RR_missing": 0.0211343541082596,
+   "SBP_missing": 0.0379555747250377,
+   "SPO2_missing": 0.0379555747250377,
+   "TEMP_C_missing": 0.1063187405650204
   },
   {
    "split": "development",
    "group": "onset_unknown",
-   "ALT_missing": 0.0,
-   "ALT_n24": 1.0,
-   "AST_missing": 0.0,
-   "AST_n24": 1.0,
-   "ALP_missing": 0.0,
-   "ALP_n24": 1.0,
-   "TBIL_missing": 0.0,
-   "TBIL_n24": 1.0,
-   "DBIL_missing": 1.0,
-   "DBIL_n24": 0.0,
-   "INR_missing": 0.0,
-   "INR_n24": 1.5,
-   "LACTATE_missing": 0.5,
-   "LACTATE_n24": 0.5,
-   "CK_missing": 1.0,
-   "CK_n24": 0.0,
-   "LDH_missing": 0.5,
-   "LDH_n24": 0.5,
-   "CREAT_missing": 0.0,
-   "CREAT_n24": 2.0,
-   "GGT_missing": 1.0,
-   "GGT_n24": 0.0,
-   "ALBUMIN_missing": 0.0,
-   "ALBUMIN_n24": 1.5,
-   "BUN_missing": 0.0,
-   "BUN_n24": 2.0,
-   "SODIUM_missing": 0.0,
-   "SODIUM_n24": 1.5,
-   "POTASSIUM_missing": 0.0,
-   "POTASSIUM_n24": 2.0,
-   "BICARB_missing": 0.0,
-   "BICARB_n24": 2.0,
-   "GLUCOSE_missing": 0.0,
-   "GLUCOSE_n24": 2.0,
-   "PLATELET_missing": 0.0,
-   "PLATELET_n24": 1.5,
-   "WBC_missing": 0.0,
-   "WBC_n24": 1.5,
-   "HEMOGLOBIN_missing": 0.0,
-   "HEMOGLOBIN_n24": 1.5,
-   "PT_missing": 0.0,
-   "PT_n24": 1.5,
-   "PTT_missing": 0.0,
-   "PTT_n24": 1.5,
-   "FIBRINOGEN_missing": 1.0,
-   "FIBRINOGEN_n24": 0.0,
-   "PH_missing": 0.5,
-   "PH_n24": 0.5,
-   "PO2_UNSPECIFIED_missing": 0.5,
-   "PO2_UNSPECIFIED_n24": 0.5,
-   "DBP_missing": 0.0,
-   "FIO2_missing": 0.5,
-   "HR_missing": 0.0,
-   "MAP_missing": 0.0,
-   "PEEP_missing": 0.5,
-   "RR_missing": 0.0,
-   "SBP_missing": 0.0,
-   "SPO2_missing": 0.0,
-   "TEMP_C_missing": 0.0
+   "ALT_missing": 0.0293724966622162,
+   "ALT_n24": 0.97196261682243,
+   "AST_missing": 0.0520694259012016,
+   "AST_n24": 0.951935914552737,
+   "ALP_missing": 0.0373831775700934,
+   "ALP_n24": 0.9626168224299064,
+   "TBIL_missing": 0.0440587449933244,
+   "TBIL_n24": 0.9639519359145527,
+   "DBIL_missing": 0.9706275033377836,
+   "DBIL_n24": 0.0293724966622162,
+   "INR_missing": 0.3164218958611482,
+   "INR_n24": 1.0881174899866488,
+   "LACTATE_missing": 0.4712950600801068,
+   "LACTATE_n24": 1.5700934579439252,
+   "CK_missing": 0.8638184245660881,
+   "CK_n24": 0.2510013351134846,
+   "LDH_missing": 0.5727636849132176,
+   "LDH_n24": 0.4472630173564753,
+   "CREAT_missing": 0.0013351134846461,
+   "CREAT_n24": 2.0026702269692924,
+   "GGT_missing": 0.9986648865153538,
+   "GGT_n24": 0.0013351134846461,
+   "ALBUMIN_missing": 0.5994659546061415,
+   "ALBUMIN_n24": 0.4205607476635514,
+   "BUN_missing": 0.0026702269692923,
+   "BUN_n24": 1.9893190921228303,
+   "SODIUM_missing": 0.0066755674232309,
+   "SODIUM_n24": 2.149532710280374,
+   "POTASSIUM_missing": 0.0093457943925233,
+   "POTASSIUM_n24": 2.157543391188251,
+   "BICARB_missing": 0.0026702269692923,
+   "BICARB_n24": 1.958611481975968,
+   "GLUCOSE_missing": 0.0053404539385847,
+   "GLUCOSE_n24": 1.9492656875834449,
+   "PLATELET_missing": 0.0133511348464619,
+   "PLATELET_n24": 1.6929238985313753,
+   "WBC_missing": 0.0093457943925233,
+   "WBC_n24": 1.6635514018691588,
+   "HEMOGLOBIN_missing": 0.0066755674232309,
+   "HEMOGLOBIN_n24": 1.7209612817089452,
+   "PT_missing": 0.3164218958611482,
+   "PT_n24": 1.0881174899866488,
+   "PTT_missing": 0.3271028037383177,
+   "PTT_n24": 1.1869158878504673,
+   "FIBRINOGEN_missing": 0.8985313751668892,
+   "FIBRINOGEN_n24": 0.1775700934579439,
+   "PH_missing": 0.3324432576769025,
+   "PH_n24": 2.5300400534045395,
+   "PO2_UNSPECIFIED_missing": 0.3724966622162884,
+   "PO2_UNSPECIFIED_n24": 2.3658210947930574,
+   "DBP_missing": 0.0026702269692923,
+   "FIO2_missing": 0.2990654205607476,
+   "HR_missing": 0.0026702269692923,
+   "MAP_missing": 0.0026702269692923,
+   "PEEP_missing": 0.4165554072096128,
+   "RR_missing": 0.0040053404539385,
+   "SBP_missing": 0.0026702269692923,
+   "SPO2_missing": 0.0026702269692923,
+   "TEMP_C_missing": 0.0747663551401869
   },
   {
    "split": "evaluation",
    "group": "incident",
-   "ALT_missing": 0.0,
-   "ALT_n24": 1.0,
-   "AST_missing": 0.0,
-   "AST_n24": 1.0,
-   "ALP_missing": 0.0,
-   "ALP_n24": 1.0,
-   "TBIL_missing": 0.0,
-   "TBIL_n24": 1.0,
-   "DBIL_missing": 1.0,
-   "DBIL_n24": 0.0,
-   "INR_missing": 0.0,
-   "INR_n24": 1.0,
-   "LACTATE_missing": 1.0,
-   "LACTATE_n24": 0.0,
-   "CK_missing": 1.0,
-   "CK_n24": 0.0,
-   "LDH_missing": 1.0,
-   "LDH_n24": 0.0,
+   "ALT_missing": 0.0031847133757961,
+   "ALT_n24": 1.3375796178343948,
+   "AST_missing": 0.0286624203821656,
+   "AST_n24": 1.2961783439490446,
+   "ALP_missing": 0.0222929936305732,
+   "ALP_n24": 1.302547770700637,
+   "TBIL_missing": 0.0286624203821656,
+   "TBIL_n24": 1.32484076433121,
+   "DBIL_missing": 0.9554140127388536,
+   "DBIL_n24": 0.054140127388535,
+   "INR_missing": 0.2388535031847133,
+   "INR_n24": 1.3312101910828025,
+   "LACTATE_missing": 0.410828025477707,
+   "LACTATE_n24": 2.2229299363057327,
+   "CK_missing": 0.7993630573248408,
+   "CK_n24": 0.3184713375796178,
+   "LDH_missing": 0.4426751592356688,
+   "LDH_n24": 0.7070063694267515,
    "CREAT_missing": 0.0,
-   "CREAT_n24": 1.0,
+   "CREAT_n24": 2.356687898089172,
    "GGT_missing": 1.0,
    "GGT_n24": 0.0,
-   "ALBUMIN_missing": 1.0,
-   "ALBUMIN_n24": 0.0,
-   "BUN_missing": 0.0,
-   "BUN_n24": 1.0,
-   "SODIUM_missing": 0.0,
-   "SODIUM_n24": 1.0,
-   "POTASSIUM_missing": 0.0,
-   "POTASSIUM_n24": 1.0,
-   "BICARB_missing": 0.0,
-   "BICARB_n24": 1.0,
+   "ALBUMIN_missing": 0.5636942675159236,
+   "ALBUMIN_n24": 0.5254777070063694,
+   "BUN_missing": 0.0095541401273885,
+   "BUN_n24": 2.315286624203821,
+   "SODIUM_missing": 0.0127388535031847,
+   "SODIUM_n24": 2.4426751592356686,
+   "POTASSIUM_missing": 0.0095541401273885,
+   "POTASSIUM_n24": 2.449044585987261,
+   "BICARB_missing": 0.0031847133757961,
+   "BICARB_n24": 2.3471337579617835,
    "GLUCOSE_missing": 0.0,
-   "GLUCOSE_n24": 1.0,
-   "PLATELET_missing": 0.0,
-   "PLATELET_n24": 1.0,
-   "WBC_missing": 0.0,
-   "WBC_n24": 1.0,
-   "HEMOGLOBIN_missing": 0.0,
-   "HEMOGLOBIN_n24": 1.0,
-   "PT_missing": 0.0,
-   "PT_n24": 1.0,
-   "PTT_missing": 0.0,
-   "PTT_n24": 1.0,
-   "FIBRINOGEN_missing": 1.0,
-   "FIBRINOGEN_n24": 0.0,
-   "PH_missing": 1.0,
-   "PH_n24": 0.0,
-   "PO2_UNSPECIFIED_missing": 1.0,
-   "PO2_UNSPECIFIED_n24": 0.0,
-   "DBP_missing": 0.0,
-   "FIO2_missing": 1.0,
-   "HR_missing": 0.0,
-   "MAP_missing": 0.0,
-   "PEEP_missing": 1.0,
-   "RR_missing": 0.0,
-   "SBP_missing": 0.0,
-   "SPO2_missing": 0.0,
-   "TEMP_C_missing": 0.0
+   "GLUCOSE_n24": 2.4012738853503186,
+   "PLATELET_missing": 0.0222929936305732,
+   "PLATELET_n24": 2.089171974522293,
+   "WBC_missing": 0.0063694267515923,
+   "WBC_n24": 2.0605095541401277,
+   "HEMOGLOBIN_missing": 0.0063694267515923,
+   "HEMOGLOBIN_n24": 2.1305732484076434,
+   "PT_missing": 0.2388535031847133,
+   "PT_n24": 1.3343949044585988,
+   "PTT_missing": 0.232484076433121,
+   "PTT_n24": 1.4968152866242035,
+   "FIBRINOGEN_missing": 0.8439490445859873,
+   "FIBRINOGEN_n24": 0.2834394904458598,
+   "PH_missing": 0.2961783439490446,
+   "PH_n24": 3.0987261146496814,
+   "PO2_UNSPECIFIED_missing": 0.3184713375796178,
+   "PO2_UNSPECIFIED_n24": 3.0,
+   "DBP_missing": 0.0063694267515923,
+   "FIO2_missing": 0.2515923566878981,
+   "HR_missing": 0.0063694267515923,
+   "MAP_missing": 0.0063694267515923,
+   "PEEP_missing": 0.321656050955414,
+   "RR_missing": 0.0063694267515923,
+   "SBP_missing": 0.0063694267515923,
+   "SPO2_missing": 0.0063694267515923,
+   "TEMP_C_missing": 0.0477707006369426
   },
   {
    "split": "evaluation",
    "group": "initial_abnormal",
-   "ALT_missing": 0.0,
-   "ALT_n24": 1.0,
-   "AST_missing": 0.0,
-   "AST_n24": 1.0,
-   "ALP_missing": 0.0,
-   "ALP_n24": 1.0,
-   "TBIL_missing": 0.5,
-   "TBIL_n24": 0.5,
-   "DBIL_missing": 1.0,
-   "DBIL_n24": 0.0,
-   "INR_missing": 0.0,
-   "INR_n24": 2.0,
-   "LACTATE_missing": 0.0,
-   "LACTATE_n24": 2.0,
-   "CK_missing": 1.0,
-   "CK_n24": 0.0,
-   "LDH_missing": 0.5,
-   "LDH_n24": 0.5,
+   "ALT_missing": 0.0634760705289672,
+   "ALT_n24": 1.0277078085642315,
+   "AST_missing": 0.0937027707808564,
+   "AST_n24": 0.9889168765743072,
+   "ALP_missing": 0.0287153652392947,
+   "ALP_n24": 1.0629722921914355,
+   "TBIL_missing": 0.0327455919395466,
+   "TBIL_n24": 1.067506297229219,
+   "DBIL_missing": 0.9329974811083124,
+   "DBIL_n24": 0.0680100755667506,
+   "INR_missing": 0.2544080604534005,
+   "INR_n24": 1.121410579345088,
+   "LACTATE_missing": 0.306801007556675,
+   "LACTATE_n24": 1.6110831234256926,
+   "CK_missing": 0.7556675062972292,
+   "CK_n24": 0.3032745591939547,
+   "LDH_missing": 0.5435768261964735,
+   "LDH_n24": 0.4957178841309824,
+   "CREAT_missing": 0.034256926952141,
+   "CREAT_n24": 1.4085642317380354,
+   "GGT_missing": 0.997984886649874,
+   "GGT_n24": 0.0020151133501259,
+   "ALBUMIN_missing": 0.4569269521410579,
+   "ALBUMIN_n24": 0.5848866498740554,
+   "BUN_missing": 0.0171284634760705,
+   "BUN_n24": 1.4246851385390429,
+   "SODIUM_missing": 0.0654911838790932,
+   "SODIUM_n24": 1.36272040302267,
+   "POTASSIUM_missing": 0.0831234256926952,
+   "POTASSIUM_n24": 1.3506297229219144,
+   "BICARB_missing": 0.0740554156171284,
+   "BICARB_n24": 1.3395465994962217,
+   "GLUCOSE_missing": 0.0277078085642317,
+   "GLUCOSE_n24": 1.4045340050377837,
+   "PLATELET_missing": 0.0997481108312342,
+   "PLATELET_n24": 1.4287153652392948,
+   "WBC_missing": 0.0785894206549118,
+   "WBC_n24": 1.4100755667506295,
+   "HEMOGLOBIN_missing": 0.0624685138539042,
+   "HEMOGLOBIN_n24": 1.4322418136020152,
+   "PT_missing": 0.2544080604534005,
+   "PT_n24": 1.121410579345088,
+   "PTT_missing": 0.271536523929471,
+   "PTT_n24": 1.0997481108312344,
+   "FIBRINOGEN_missing": 0.7853904282115869,
+   "FIBRINOGEN_n24": 0.3576826196473551,
+   "PH_missing": 0.3667506297229219,
+   "PH_n24": 1.668513853904282,
+   "PO2_UNSPECIFIED_missing": 0.3884130982367758,
+   "PO2_UNSPECIFIED_n24": 1.621662468513854,
+   "DBP_missing": 0.0327455919395466,
+   "FIO2_missing": 0.5370277078085642,
+   "HR_missing": 0.0277078085642317,
+   "MAP_missing": 0.0327455919395466,
+   "PEEP_missing": 0.5707808564231738,
+   "RR_missing": 0.0206549118387909,
+   "SBP_missing": 0.0327455919395466,
+   "SPO2_missing": 0.036272040302267,
+   "TEMP_C_missing": 0.107808564231738
+  },
+  {
+   "split": "evaluation",
+   "group": "onset_unknown",
+   "ALT_missing": 0.0391566265060241,
+   "ALT_n24": 0.963855421686747,
+   "AST_missing": 0.0542168674698795,
+   "AST_n24": 0.9487951807228916,
+   "ALP_missing": 0.0512048192771084,
+   "ALP_n24": 0.9518072289156626,
+   "TBIL_missing": 0.0572289156626506,
+   "TBIL_n24": 0.966867469879518,
+   "DBIL_missing": 0.9518072289156626,
+   "DBIL_n24": 0.0542168674698795,
+   "INR_missing": 0.322289156626506,
+   "INR_n24": 1.1114457831325302,
+   "LACTATE_missing": 0.5301204819277109,
+   "LACTATE_n24": 1.3855421686746987,
+   "CK_missing": 0.8644578313253012,
+   "CK_n24": 0.2259036144578313,
+   "LDH_missing": 0.5391566265060241,
+   "LDH_n24": 0.4909638554216867,
    "CREAT_missing": 0.0,
-   "CREAT_n24": 2.5,
+   "CREAT_n24": 2.0903614457831323,
    "GGT_missing": 1.0,
    "GGT_n24": 0.0,
-   "ALBUMIN_missing": 0.5,
-   "ALBUMIN_n24": 0.5,
-   "BUN_missing": 0.0,
-   "BUN_n24": 2.5,
+   "ALBUMIN_missing": 0.5813253012048193,
+   "ALBUMIN_n24": 0.4367469879518072,
+   "BUN_missing": 0.003012048192771,
+   "BUN_n24": 2.075301204819277,
    "SODIUM_missing": 0.0,
-   "SODIUM_n24": 2.5,
-   "POTASSIUM_missing": 0.0,
-   "POTASSIUM_n24": 2.5,
-   "BICARB_missing": 0.0,
-   "BICARB_n24": 2.5,
+   "SODIUM_n24": 2.1626506024096384,
+   "POTASSIUM_missing": 0.0060240963855421,
+   "POTASSIUM_n24": 2.213855421686747,
+   "BICARB_missing": 0.0060240963855421,
+   "BICARB_n24": 2.0512048192771086,
    "GLUCOSE_missing": 0.0,
-   "GLUCOSE_n24": 2.5,
-   "PLATELET_missing": 0.0,
-   "PLATELET_n24": 2.5,
-   "WBC_missing": 0.0,
-   "WBC_n24": 2.5,
-   "HEMOGLOBIN_missing": 0.0,
-   "HEMOGLOBIN_n24": 2.5,
-   "PT_missing": 0.0,
-   "PT_n24": 2.0,
-   "PTT_missing": 0.0,
-   "PTT_n24": 2.0,
-   "FIBRINOGEN_missing": 1.0,
-   "FIBRINOGEN_n24": 0.0,
-   "PH_missing": 0.0,
-   "PH_n24": 1.5,
-   "PO2_UNSPECIFIED_missing": 0.0,
-   "PO2_UNSPECIFIED_n24": 1.5,
-   "DBP_missing": 0.5,
-   "FIO2_missing": 1.0,
-   "HR_missing": 0.5,
-   "MAP_missing": 0.5,
-   "PEEP_missing": 1.0,
-   "RR_missing": 0.5,
-   "SBP_missing": 0.5,
-   "SPO2_missing": 0.5,
-   "TEMP_C_missing": 0.5
+   "GLUCOSE_n24": 2.0512048192771086,
+   "PLATELET_missing": 0.0240963855421686,
+   "PLATELET_n24": 1.855421686746988,
+   "WBC_missing": 0.0150602409638554,
+   "WBC_n24": 1.8343373493975903,
+   "HEMOGLOBIN_missing": 0.0150602409638554,
+   "HEMOGLOBIN_n24": 1.8734939759036144,
+   "PT_missing": 0.322289156626506,
+   "PT_n24": 1.1114457831325302,
+   "PTT_missing": 0.3132530120481928,
+   "PTT_n24": 1.2439759036144578,
+   "FIBRINOGEN_missing": 0.8975903614457831,
+   "FIBRINOGEN_n24": 0.1867469879518072,
+   "PH_missing": 0.3614457831325301,
+   "PH_n24": 2.165662650602409,
+   "PO2_UNSPECIFIED_missing": 0.3885542168674699,
+   "PO2_UNSPECIFIED_n24": 2.0572289156626504,
+   "DBP_missing": 0.0,
+   "FIO2_missing": 0.2801204819277108,
+   "HR_missing": 0.0,
+   "MAP_missing": 0.0,
+   "PEEP_missing": 0.3704819277108434,
+   "RR_missing": 0.0,
+   "SBP_missing": 0.0,
+   "SPO2_missing": 0.0,
+   "TEMP_C_missing": 0.036144578313253
   }
  ]
 }

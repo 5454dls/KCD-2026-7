@@ -3,26 +3,21 @@
  "cases": [
   {
    "case_key": "Patient-01",
-   "max_hour": 119,
-   "group": "initial_abnormal"
-  },
-  {
-   "case_key": "Patient-02",
    "max_hour": 53,
    "group": "initial_abnormal"
   },
   {
-   "case_key": "Patient-03",
+   "case_key": "Patient-02",
    "max_hour": 120,
    "group": "incident"
   },
   {
-   "case_key": "Patient-04",
-   "max_hour": 117,
+   "case_key": "Patient-03",
+   "max_hour": 120,
    "group": "normal"
   },
   {
-   "case_key": "Patient-05",
+   "case_key": "Patient-04",
    "max_hour": 120,
    "group": "normal"
   }
@@ -33,25 +28,25 @@
   "threshold": 2.0,
   "LLM_enabled": true,
   "agent1_backend": "rule",
-  "agent1_model": "rule_baseline_v1.2",
-  "cluster_k": 4,
+  "agent1_model": "rule_baseline_v2.1",
+  "cluster_k": null,
   "backend": "csv",
   "m4_reviewed_commit": "f3c434205e36966409af0ec33a0379f4813db58e",
-  "python": "3.13.16",
-  "pandas": "3.0.5",
+  "python": "3.11.15",
+  "pandas": "2.3.3",
   "installed_versions": {
    "m4-infra": "not installed",
    "gradio": "not installed",
-   "numpy": "2.5.3",
-   "scikit-learn": "1.9.1"
+   "numpy": "2.4.6",
+   "scikit-learn": "1.9.0"
   }
  },
  "summaries": {
   "summary.json": {
-   "source": "mimic-iv-demo",
-   "built_at": "2026-10-16T11:06:29+00:00"
+   "source": "mimic-iv",
+   "built_at": "2026-10-16T15:43:58+00:00"
   }
  },
- "built_at": "2026-10-16T11:06:29+00:00",
+ "built_at": "2026-10-16T15:43:58+00:00",
  "git_commit": null
 }

@@ -425,7 +425,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 <section id="methods"><div class="wrap">
   <div class="sec-head">
     <h2>연구 설계</h2>
-    <p>성인 첫 ICU 입실 환자를 환자 단위로 개발·평가 집단에 나누고, 세 모델을 개발 집단에서만 학습한 뒤 평가 집단에서 검증했습니다. 공개 시연에 쓰는 MIMIC-IV Demo 100명은 학습과 평가에서 모두 제외했습니다.</p>
+    <p>성인 첫 ICU 입실 환자를 환자 단위로 개발·평가 집단에 나누고, 네 모델을 개발 집단에서만 학습한 뒤 평가 집단에서 검증했습니다. 공개 시연에 쓰는 MIMIC-IV Demo 100명은 학습과 평가에서 모두 제외했습니다.</p>
     <p class="res-src" id="res-src"></p>
   </div>
   <div class="paper">
@@ -433,7 +433,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
       <figcaption><b>Figure 1.</b> 연구 대상 선정과 분석 단위. 왼쪽은 매시간 실행되는 Agent 3의 랜드마크(환자·시각), 오른쪽은 첫 이상 사건마다 한 번 실행되는 Agent 1·2의 분석 단위입니다. 결과를 확인할 수 없는 시점은 음성으로 바꾸지 않고 제외하며 그 수를 보고합니다.</figcaption></figure>
     <figure class="wide" id="tab1"><div class="fig-title"><span>TABLE 1</span>기초 특성</div><div class="plot" id="table1"></div>
       <figcaption><b>Table 1.</b> 연속형은 중앙값 [사분위범위], 범주형은 n (%). SMD는 표준화 평균차이이며 0.1 미만이면 두 집단이 비슷하다고 봅니다. 이전 입원 진단 코드는 ICU 입실 전에 퇴원이 끝난 입원만 사용했습니다.</figcaption></figure>
-    <figure id="fig-sched"><div class="fig-title"><span>FIGURE 2</span>세 모델이 실행되는 시점</div><div class="plot" id="sched-plot"></div>
+    <figure id="fig-sched"><div class="fig-title"><span>FIGURE 2</span>네 모델이 실행되는 시점</div><div class="plot" id="sched-plot"></div>
       <figcaption><b>Figure 2.</b> 한 ICU 재원의 도식. Agent 3은 세 항목이 최근 24시간 안에 측정되어 모두 기준 미만인 매시간 실행되고, 2×ULN 알림이 뜨는 순간 멈춥니다. Agent 1·2는 알림 시점에 한 번 실행되며, Agent 1은 간 패널이나 새 약물이 공개될 때만 다시 실행합니다.</figcaption></figure>
     <figure id="fig-dev"><div class="fig-title"><span>FIGURE 3</span>모델 개발 과정</div><div class="plot" id="dev-plot"></div>
       <figcaption><b>Figure 3.</b> TRIPOD+AI 보고 항목에 맞춘 개발 절차. 하이퍼파라미터는 개발 집단 안에서 환자 단위 3겹 교차검증으로 고르고, 평가 집단은 최종 한 번만 사용했습니다. 신뢰구간은 같은 환자의 반복 시점을 한 묶음으로 뽑는 환자 군집 부트스트랩으로 계산했습니다.</figcaption></figure>
@@ -447,14 +447,14 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
     <p>평가 집단 환자에서 측정한 결과입니다. 평가 환자는 학습에 한 번도 쓰이지 않았습니다.</p>
   </div>
   <div class="paper">
-    <figure class="wide" id="tab2"><div class="fig-title"><span>TABLE 2</span>세 모델의 평가 집단 성능</div><div class="plot" id="table2"></div>
+    <figure class="wide" id="tab2"><div class="fig-title"><span>TABLE 2</span>네 모델의 평가 집단 성능</div><div class="plot" id="table2"></div>
       <figcaption><b>Table 2.</b> 괄호는 95% 신뢰구간. Agent 3은 환자 군집 부트스트랩, Agent 1은 Wilson 구간입니다. Agent 1의 기준은 같은 입원의 퇴원 진단 코드로 만든 대리 범주이며 전문의 참조 판정이 아닙니다. 전문의 판정은 별도 행으로 채웁니다.</figcaption></figure>
     <figure id="fig-roc"><div class="fig-title"><span>FIGURE 4</span>Agent 3 판별: ROC 곡선</div><div class="plot" id="roc-plot"></div>
-      <figcaption><b>Figure 4.</b> 평가 집단의 매시간 랜드마크에서 다음 24시간 내 2×ULN 이상 관찰을 예측한 ROC 곡선. 점선은 무작위 판별.</figcaption></figure>
+      <figcaption><b>Figure 4.</b> 평가 집단의 매시간 랜드마크에서 다음 24시간 내 5×ULN 이상 관찰을 예측한 ROC 곡선. 점선은 무작위 판별.</figcaption></figure>
     <figure id="fig-cal"><div class="fig-title"><span>FIGURE 5</span>Agent 3 보정</div><div class="plot" id="cal-plot"></div>
       <figcaption><b>Figure 5.</b> 예측 위험 10분위별 평균 예측값과 관찰 비율(95% Wilson CI). 점선은 완전 보정선입니다. 보정 기울기 1, 절편 0이 이상적입니다.</figcaption></figure>
     <figure id="fig-a2"><div class="fig-title"><span>FIGURE 6</span>Agent 2: 예후 네 경로 판별</div><div class="plot" id="a2-plot"></div>
-      <figcaption><b>Figure 6.</b> 첫 알림 시점에 예측한 예후 네 경로(수치 해소 여부 × ICU 사망 여부, 추적은 ICU 퇴실까지)별 일대다 AUROC. ‘미해소’에는 ICU 퇴실·사망 전 재검이 없어 해소를 확인하지 못한 경우가 포함됩니다.</figcaption></figure>
+      <figcaption><b>Figure 6.</b> 첫 알림 시점에 예측한 예후 네 경로(수치 해소 여부 × ICU 사망 여부, 추적은 ICU 퇴실까지)별 일대다 AUROC. 회복 = ICU 퇴실 시점 마지막 ALT·ALP·총빌리루빈이 모두 2×ULN 미만, 사망 = ICU 퇴실 후 24시간 이내 사망까지. 사건 뒤 다시 재지 않은 항목이 있어 회복을 판정할 수 없는 사건은 이 모델에서 빼고, ICU 사망 모델에는 넣었습니다.</figcaption></figure>
     <figure id="fig-a1"><div class="fig-title"><span>FIGURE 7</span>Agent 1: 원인 후보 일치</div><div class="plot" id="a1-plot"></div>
       <figcaption><b>Figure 7.</b> 대리 범주가 하나 이상 있는 평가 사건에서 1순위 또는 3순위 안에 대리 범주가 포함된 비율. 규칙 모델과 LLM은 같은 사례에서 비교하며 짝지은 McNemar 검정을 함께 표시합니다.</figcaption></figure>
     <figure class="wide" id="tab3"><div class="fig-title"><span>TABLE 3</span>향후 24시간 간 수치 궤적 예측</div><div class="plot" id="table3"></div>
@@ -1009,10 +1009,10 @@ function renderFlow(R){
   const left=[["매시간 랜드마크",`${N(d3.landmarks_total)} 시점 · ${N(d3.patients_total)}명`],["세 항목 24h 내 측정 · 모두 기준 미만",`${N(d3.eligible)} 시점`],["다음 24h 결과 확인 (≥5×ULN 여부)",`${N(d3.known)} 시점 · ${N(d3.known_patients)}명`],["학습 / 평가",`${N(d3.train_rows)} · ${N(d3.train_patients)}명 / ${N(d3.test_rows)} · ${N(d3.test_patients)}명`]];
   let yl=y;left.forEach(([t,sub],i)=>{box(s,L,yl,bw,44,t,sub);if(i<left.length-1)arrow(s,L+bw/2,yl+44,L+bw/2,yl+62);yl+=62});
   box(s,L+xo,y+62+44,128,26,`판정 불가 ${N(lc.insufficient_measurement)}`,null,"excl");box(s,L+xo,y+62+74,128,26,`사망·퇴원 먼저 ${N(lc.death_or_icu_discharge_before_observation_end)}`,null,"excl");
-  const ev=d2.events,exc=d2.excluded_insufficient;
-  const right=[["첫 이상 사건 (2×ULN)",`${N(ev)} 건`],["Agent 2 분석 (해소 판정 가능)",`${N(ev!=null&&exc!=null?ev-exc:null)} 건`],["Agent 1 평가 사건",`${N(a1.n_eval_events)} 건 · 대리 범주 있음 ${N(a1.n_with_proxy)}`]];
+  const PD=R.prognosis_development,ev=PD?PD.events:d2.events,exc=PD?(PD.events!=null&&PD.assessable!=null?PD.events-PD.assessable:null):d2.excluded_insufficient;
+  const right=[["첫 이상 사건 (2×ULN)",`${N(ev)} 건`],[PD?"Agent 2 예후 (회복 판정 가능)":"Agent 2 분석 (해소 판정 가능)",`${N(ev!=null&&exc!=null?ev-exc:null)} 건${PD?" · 사망 모델은 전체":""}`],["Agent 1 평가 사건",`${N(a1.n_eval_events)} 건 · 대리 범주 있음 ${N(a1.n_with_proxy)}`]];
   let yr=y;right.forEach(([t,sub],i)=>{box(s,Rx,yr,bw,44,t,sub);if(i<right.length-1)arrow(s,Rx+bw/2,yr+44,Rx+bw/2,yr+62);yr+=62});
-  box(s,Rx+xo,y+48,128,26,`판정 불가 ${N(exc)}`,null,"excl");
+  box(s,Rx+xo,y+48,128,26,`${PD?"회복 판정 불가":"판정 불가"} ${N(exc)}`,null,"excl");
   $("#flow-plot").innerHTML=s.outerHTML;
 }
 function renderTable1(R){
@@ -1042,20 +1042,22 @@ function renderDev(R){
     ["특징",`${N(d.n_features)}개: 간 검사 배수·24시간 변화·측정 횟수·경과 시간, 혈액·생화학, 활력징후, 승압제, 나이·성별, 이전 입원 진단. 모두 그 시각까지 결과가 보고된 값`],
     ["학습",`로지스틱 회귀와 그래디언트 부스팅. 개발 집단 안에서 환자 단위 3겹 교차검증으로 ${(d.gbm_grid||[]).length}개 조합 중 선택 (학습률 ${sel.learning_rate??"–"}, 잎 ${sel.max_leaf_nodes??"–"})`],
     ["평가",`평가 집단 ${N(d.test_rows)} 시점 · ${N(d.test_patients)}명. AUROC·AUPRC·Brier·보정, 환자 군집 부트스트랩 95% CI, 환자당 한 시점 민감도 분석`],
-    ["Agent 2",`첫 사건 ${N(d2.events)}건, 해소 판정 불가 ${N(d2.excluded_insufficient)}건 제외 후 다항 로지스틱·그래디언트 부스팅`],
+    R.prognosis_development?["Agent 2",`첫 사건 ${N(R.prognosis_development.events)}건. 예후 4경로는 회복 판정 가능 ${N(R.prognosis_development.assessable)}건으로, ICU 사망(퇴실 후 24시간 포함)은 전체 사건으로 다항 로지스틱·그래디언트 부스팅 학습`]:["Agent 2",`첫 사건 ${N(d2.events)}건, 해소 판정 불가 ${N(d2.excluded_insufficient)}건 제외 후 다항 로지스틱·그래디언트 부스팅`],
     ["Agent 1",`규칙 모델 ${esc(R.meta.rule_model||"")} (평가 전에 동결) + 기관 LLM. 퇴원 진단 대리 범주와 전문의 판정으로 평가`]];
   $("#dev-plot").innerHTML=`<ol class="steps">${steps.map(([t,b])=>`<li><b>${t}</b><span>${b}</span></li>`).join("")}</ol>`;
 }
 function renderTable2(R){
-  const p3=R.agent3_performance||{},p1=R.agent1_performance||{},PG=R.prognosis_performance&&R.prognosis_performance.models&&R.prognosis_performance.models.length?R.prognosis_performance:null,p2=PG||R.agent2_performance||{},CL=PG?PROG:CLS;
+  const p3=R.agent3_performance||{},p1=R.agent1_performance||{},PG=R.prognosis_performance&&R.prognosis_performance.models&&R.prognosis_performance.models.length?R.prognosis_performance:null,p2=PG||R.agent2_performance||{};let CL=PG?PROG:CLS;
   const best=Math.max(...(p3.models||[]).map(m=>m.auroc||0));
   let h=`<table class="t1"><thead><tr><th>Agent 3 · 매시간 · 다음 24시간 이상</th><th>시점 / 환자</th><th>사건</th><th>AUROC</th><th>AUPRC</th><th>Brier</th><th>보정 기울기</th><th>상위 10% PPV</th></tr></thead><tbody>`;
   for(const m of p3.models||[])h+=`<tr><td>${esc(m.model)}</td><td>${N(m.n)} / ${N(m.patients)}</td><td>${N(m.events)}</td><td class="${m.auroc===best?"best":""}">${CI(m.auroc,m.auroc_ci)}</td><td>${CI(m.auprc,m.auprc_ci)}</td><td>${fmt(m.brier,3)}</td><td>${fmt(m.cal_slope,2)}</td><td>${pct(m.top10_ppv,1)}</td></tr>`;
   const o=p3.one_landmark_per_patient_gbm;if(o)h+=`<tr><td>그래디언트 부스팅 · 환자당 한 시점</td><td>${N(o.n)} / ${N(o.patients)}</td><td>${N(o.events)}</td><td>${CI(o.auroc,o.auroc_ci)}</td><td>${CI(o.auprc,o.auprc_ci)}</td><td>${fmt(o.brier,3)}</td><td>${fmt(o.cal_slope,2)}</td><td>–</td></tr>`;
   if(!(p3.models||[]).length)h+=`<tr><td colspan="8" class="muted">학습 가능한 시점이 부족해 계산하지 않았습니다.</td></tr>`;
+  const CLk=Object.keys(CL).filter(k=>(p2.models||[]).some(m=>(m.per_class||[]).some(x=>x.class===k&&x.auroc!=null)));if(CLk.length)CL=Object.fromEntries(CLk.map(k=>[k,(PG?PROG:CLS)[k]]));
   h+=`</tbody></table><table class="t1" style="margin-top:18px"><thead><tr><th>Agent 2 · 알림 시 · ${PG?"예후 네 경로":"48시간 첫 사건"}</th><th>평가 사건</th>${Object.values(CL).map(c=>`<th>${c} AUROC</th>`).join("")}<th>${PG?"정확도":"다중 Brier"}</th></tr></thead><tbody>`;
   for(const m of p2.models||[])h+=`<tr><td>${esc(m.model)}</td><td>${N(m.n_test)}</td>${Object.keys(CL).map(k=>{const c=(m.per_class||[]).find(x=>x.class===k)||{};return `<td>${CI(c.auroc,c.auroc_ci)}</td>`}).join("")}<td>${PG?pct(m.accuracy,0):fmt(m.multiclass_brier,3)}</td></tr>`;
   if(!(p2.models||[]).length)h+=`<tr><td colspan="7" class="muted">평가 사건이 부족해 계산하지 않았습니다.</td></tr>`;
+  const DI=R.death_icu_performance;if(DI&&DI.auroc!=null)h+=`</tbody></table><table class="t1" style="margin-top:18px"><thead><tr><th>Agent 2 · 알림 시 · ICU 사망 (퇴실 후 24시간 포함)</th><th>평가 사건</th><th>사망</th><th>AUROC</th><th>AUPRC</th><th>Brier</th><th>보정 기울기</th><th>상위 10% PPV</th></tr></thead><tbody><tr><td>그래디언트 부스팅</td><td>${N(DI.n)}</td><td>${N(DI.events)}</td><td>${CI(DI.auroc,DI.auroc_ci)}</td><td>${CI(DI.auprc,DI.auprc_ci)}</td><td>${fmt(DI.brier,3)}</td><td>${fmt(DI.cal_slope,2)}</td><td>${pct(DI.top10_ppv,1)}</td></tr>`;
   h+=`</tbody></table><table class="t1" style="margin-top:18px"><thead><tr><th>Agent 1 · 알림 시 · 원인 후보</th><th>평가 사건</th><th>Top-1</th><th>Top-3</th><th>판단 보류</th></tr></thead><tbody>`;
   const r1=v=>v?`${N(v.k)}/${N(v.n)} · ${pct(v.rate,0)} <span class="ci">(${pct(v.ci&&v.ci[0],0)}–${pct(v.ci&&v.ci[1],0)})</span>`:"–";
   for(const m of p1.models||[])h+=`<tr><td>${esc(m.model)} · 퇴원 진단 대리 기준</td><td>${N(m.n)}</td><td>${r1(m.top1)}</td><td>${r1(m.top3)}</td><td>${pct(m.abstain_rate,0)}</td></tr>`;
@@ -1084,7 +1086,7 @@ function forest(rows,{w=420,lw=150}){const H=rows.length*26+36,s=svgBox(w,H,""),
   s.append(S("line",{x1:x(.5),x2:x(.5),y1:4,y2:H-28,stroke:"var(--muted)","stroke-dasharray":"3 3"}));
   rows.forEach((r,i)=>{const yy=16+i*26;s.append(S("text",{x:lw-8,y:yy+4,"text-anchor":"end",class:"ink"},r.label));if(r.v==null)return;if(r.ci)s.append(S("line",{x1:x(r.ci[0]),x2:x(r.ci[1]),y1:yy,y2:yy,stroke:r.col,"stroke-width":2}));s.append(S("circle",{cx:x(r.v),cy:yy,r:4.5,fill:r.col}))});return s.outerHTML}
 function renderA2fig(R){const PG=R.prognosis_performance&&(R.prognosis_performance.models||[]).length,ms=(PG?R.prognosis_performance:R.agent2_performance||{}).models||[],CL2=PG?PROG:CLS;if(!ms.length){$("#a2-plot").innerHTML=na("agent2_performance");return}
-  const rows=[];Object.keys(CL2).forEach(k=>ms.forEach((m,i)=>{const c=(m.per_class||[]).find(x=>x.class===k)||{};rows.push({label:`${CL2[k]} · ${i?"GBM":"로지스틱"}`,v:c.auroc,ci:c.auroc_ci,col:i?"var(--c-dis)":"var(--muted)"})}));
+  const rows=[];Object.keys(CL2).filter(k=>ms.some(m=>(m.per_class||[]).some(x=>x.class===k&&x.auroc!=null))).forEach(k=>ms.forEach((m,i)=>{const c=(m.per_class||[]).find(x=>x.class===k)||{};rows.push({label:`${CL2[k]} · ${i?"GBM":"로지스틱"}`,v:c.auroc,ci:c.auroc_ci,col:i?"var(--c-dis)":"var(--muted)"})}));
   $("#a2-plot").innerHTML=rows.some(r=>r.v!=null)?forest(rows,{}):na("agent2_performance","평가 사건이 부족해 AUROC를 계산하지 않았습니다. 전체 MIMIC-IV에서 채워집니다.")}
 function renderA1fig(R){const ms=(R.agent1_performance||{}).models||[];if(!ms.length){$("#a1-plot").innerHTML=na("agent1_performance");return}
   const rows=[];ms.forEach((m,i)=>["top1","top3"].forEach(k=>rows.push({label:`${m.model.slice(0,18)} · ${k==="top1"?"Top-1":"Top-3"}`,v:m[k]&&m[k].rate,ci:m[k]&&m[k].ci,col:i?"var(--accent)":"var(--alt)"})));
@@ -1107,7 +1109,7 @@ function renderTable2b(R){const E=R.event_thresholds,A=R.agent3_by_threshold;if(
   $("#table2b").innerHTML=h}
 function renderTable4(R){const F=R.agent1_flags;if(!F){$("#table4").innerHTML=na("agent1_flags");return}
   const ci=(v,c)=>v==null?"–":`${pct(v,0)}${c?` <span class="ci">(${pct(c[0],0)}–${pct(c[1],0)})</span>`:""}`;
-  $("#table4").innerHTML=`<table class="t1"><thead><tr><th>원인</th><th>판정 1</th><th>대리 양성</th><th>민감도</th><th>특이도</th></tr></thead><tbody>${F.per_cause.map(r=>`<tr><td>${esc(CAUSE[r.cause]||r.cause)}</td><td>${N(r.flagged)}</td><td>${N(r.proxy_positive)}</td>${r.assessable===false?`<td colspan="2" class="muted">판단 불가 (영상·국소 소견 필요)</td>`:r.proxy_available===false?`<td colspan="2" class="muted">대리 기준 없음 (해당 ICD 없음)</td>`:`<td>${ci(r.sensitivity,r.sensitivity_ci)}</td><td>${ci(r.specificity,r.specificity_ci)}</td>`}</tr>`).join("")}</tbody></table><p class="muted" style="font-size:.78rem;margin-top:6px">${esc(F.model)} · 평가 사건 ${N(F.n_events)} · 2개 이상 동시 해당 ${N(F.events_with_multiple_flags)} · 해당 없음 ${N(F.events_with_no_flag)}</p>`}
+  $("#table4").innerHTML=`<table class="t1"><thead><tr><th>원인</th><th>판정 1</th><th>대리 양성</th><th>민감도</th><th>특이도</th></tr></thead><tbody>${F.per_cause.map(r=>`<tr><td>${esc(CAUSE[r.cause]||r.cause)}</td>${r._suppressed?`<td colspan="4" class="muted">10 미만 칸이 있어 가림 (빼기로 역산되지 않게 함께 가림)</td>`:`<td>${N(r.flagged)}</td><td>${N(r.proxy_positive)}</td>${r.assessable===false?`<td colspan="2" class="muted">판단 불가 (영상·국소 소견 필요)</td>`:r.proxy_available===false?`<td colspan="2" class="muted">대리 기준 없음 (해당 ICD 없음)</td>`:`<td>${ci(r.sensitivity,r.sensitivity_ci)}</td><td>${ci(r.specificity,r.specificity_ci)}</td>`}`}</tr>`).join("")}</tbody></table><p class="muted" style="font-size:.78rem;margin-top:6px">${esc(F.model)} · 평가 사건 ${N(F.n_events)} · 2개 이상 동시 해당 ${N(F.events_with_multiple_flags)} · 해당 없음 ${N(F.events_with_no_flag)}</p>`}
 function renderLight(R){const t=(R.table1||[])[0]||{},d=R.agent3_development||{},d2=R.agent2_development||{},g=((R.agent3_performance||{}).models||[]).find(m=>m.model==="그래디언트 부스팅")||{};
   $("#light").innerHTML=[[N(t.overall),"명의 ICU 환자를 시간순으로 재생"],[N(d.landmarks_total),"번의 매시간 판단 시점"],[N(d2.events),"건의 첫 이상 사건에 원인·경과 제시"],[g.auroc!=null?fmt(g.auroc,2):"–","Agent 3 AUROC (평가 집단)"]].map(([b,t])=>`<div><b>${b}</b><span>${t}</span></div>`).join("")}
 function renderBA(R,kind){

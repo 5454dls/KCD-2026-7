@@ -822,13 +822,13 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
         from .evaluation import adoption_table
         rows = [json.loads(x) for x in sp.read_text(encoding="utf-8").splitlines() if x.strip()]
         R["shadow_input"] = adoption_table(rows, rows[0].get("injected_cause", "drug_related") if rows else "drug_related")
-    return _suppress_counts(_json_safe(R), min_cell)
+    return public_postprocess(_suppress_counts(_json_safe(R), min_cell), min_cell)
 
 
 NOT_COUNTS = {"seed", "landmark_step_hours", "max_leaf_nodes", "n_features", "cutoff_fold_uln", "min_cell_suppression",
               # settings and ranks, not patient counts
               "horizon_h", "horizon_hours", "horizons", "step_hours", "hour", "rank", "k_selected", "n_clusters", "n_boot", "stable_threshold",
-              "threshold_x_uln"}
+              "threshold_x_uln", "groups"}
 
 
 # groups of counts that add up to a shown total: hiding one cell alone would let it be recovered by subtraction
@@ -866,6 +866,43 @@ def _suppress_label_counts(d: dict, total: int | None, min_cell):
         if rest:
             d[rest[0]] = None
     return d
+
+
+def public_postprocess(R: dict, min_cell) -> dict:
+    """Close subtraction leaks left after per-cell suppression (run on every public results file).
+
+    - cause 2x2 tables: flagged = tp+fp, proxy_positive = tp+fn and sensitivity/specificity reveal a hidden cell,
+      so a row with any hidden cell hides those too, and a second cell when only one is hidden.
+    - confusion matrices: row totals (per-class events) and accuracy reveal a hidden cell, so the matrix is dropped.
+    """
+    if not min_cell or not isinstance(R, dict):
+        return R
+    cells = ("tp", "fp", "fn", "tn")
+    for r in (R.get("agent1_flags") or {}).get("per_cause") or []:
+        hidden = [c for c in cells if c in r and r[c] is None]
+        if not hidden:
+            continue
+        if len(hidden) == 1:
+            rest = sorted((c for c in cells if isinstance(r.get(c), int) and r[c] > 0), key=lambda c: r[c])
+            if rest:
+                r[rest[0]] = None
+        for k in ("flagged", "proxy_positive", "sensitivity", "sensitivity_ci", "specificity", "specificity_ci"):
+            if k in r:
+                r[k] = None
+        r["_suppressed"] = True
+    for sect in ("prognosis_performance",):
+        for m in (R.get(sect) or {}).get("models") or []:
+            conf = m.get("confusion")
+            if isinstance(conf, dict) and any(v is None for v in conf.values()):
+                m["confusion"] = None
+                m["confusion_note"] = f"withheld: a cell under {min_cell} could be recovered from class totals"
+    sc, ex = R.get("shadow_shortcut"), (R.get("agent3_explanation") or {}).get("importance")
+    if isinstance(sc, dict) and sc.get("measurement_share") is None and ex:
+        tot = sum(abs(g.get("mean_abs") or 0) for g in ex)
+        m = next((g for g in ex if g.get("group") == "measurement"), None)
+        if m and tot:
+            sc.update(measurement_share=m["mean_abs"] / tot, groups=len(ex))
+    return R
 
 
 def _suppress_counts(o, min_cell, key=None):
@@ -1262,4 +1299,4 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
                                                 events=ev_eval, log=log)
     except Exception as ex:  # reported, never silently dropped
         R["shadow_data_error"] = {"status": "failed", "error": f"{type(ex).__name__}: {ex}"}
-    return _suppress_counts(_json_safe(R), min_cell)
+    return public_postprocess(_suppress_counts(_json_safe(R), min_cell), min_cell)
