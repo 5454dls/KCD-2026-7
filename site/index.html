@@ -187,12 +187,12 @@ a.node:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 
 .labs tr.hi td{color:var(--crit);font-weight:600}
 .labs tr.stale td{color:var(--muted)}
 .labs-wrap{overflow-x:auto;max-height:230px;overflow-y:auto}
-.log{margin-top:12px;display:grid;gap:4px;font-size:.78rem;max-height:150px;overflow:auto}
+.log{margin-top:12px;display:grid;gap:4px;font-size:.78rem;height:150px;overflow:auto;align-content:start}
 .log div{display:grid;grid-template-columns:44px 1fr;gap:8px;color:var(--muted)}
 .log div b{font:600 .74rem var(--f-mono);color:var(--ink)}
 .log div.alert{color:var(--crit)}
 .agents{display:grid;gap:12px}
-.agent{border:1px solid var(--line);border-radius:12px;padding:12px 13px;position:relative;transition:opacity .25s,border-color .25s}
+.agent{border:1px solid var(--line);border-radius:12px;padding:12px 13px;position:relative;transition:opacity .25s,border-color .25s;min-height:150px}
 .agent[data-active="false"]{opacity:.55}
 .agent[data-active="true"]{border-color:var(--agent-c)}
 .agent.a1{--agent-c:var(--alt)} .agent.a2{--agent-c:var(--c-dis)} .agent.a3{--agent-c:var(--alp)}
@@ -303,6 +303,12 @@ figcaption code{font:500 .76rem var(--f-mono);background:var(--sunk);padding:1px
 .ba .why{font-size:.82rem;color:var(--muted)}
 .ba .src-line{font:500 .72rem var(--f-mono);color:var(--muted)}
 .ba .toggle{justify-self:start}
+.how3{list-style:none;margin:0 0 26px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.how3 li{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--line);min-width:0}
+.how3 b{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--paper);font:800 .9rem var(--f-display)}
+.how3 span{font-weight:700;font-size:.92rem;display:grid;gap:4px}
+.how3 small{font-weight:400;font-size:.78rem;color:var(--muted)}
+@media (max-width:760px){.how3{grid-template-columns:1fr}}
 .ba.pending .flip{opacity:.5}
 .sub-h{margin:8px 0 14px}
 .flag-sum{font-size:.8rem;color:var(--muted);margin-bottom:6px}
@@ -389,7 +395,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 <section class="hero"><div class="wrap">
   <div class="hero-grid">
   <div>
-    <h1>간 검사 이상이 보이는 순간, 원인과 경과를 함께 읽는 세 에이전트</h1>
+    <h1>ICU 간 검사 이상, 생기기 전에 알리고 생기면 원인과 경과를 읽는 네 모델</h1>
     <p class="lede">ICU 환자의 ALT·ALP·총빌리루빈을 한 시간 단위로 다시 재생합니다. 2×ULN 알림이 뜨면 그 시점까지 공개된 자료만으로 원인 후보와 근거를 정리하고, 해소·퇴원·사망의 경쟁 경로를 함께 보여줍니다. 아직 정상인 환자에게는 다음 24시간 이상 발생 가능성을 참고값으로 제시합니다.</p>
     <div class="cta"><a class="btn primary" href="#demo">시연 시작<span class="btn-ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a><a class="btn" href="#methods">연구 설계</a><a class="btn" href="#results">모델 성능</a></div>
     <p class="notice">Korea Clinical Datathon 2026 연구용 시연입니다. 원인 후보는 확진이 아니며, 경과와 24시간 값은 검증된 개인 위험 확률이 아닙니다. 임상 의사결정에 사용하지 마십시오.</p>
@@ -403,10 +409,10 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
   </div></div>
   </div>
   <div class="qstrip" aria-label="프로젝트가 답할 질문">
-    <div class="q"><b>Q1</b><span>어떤 검사 변화가, 언제 공개되었는가?</span></div>
-    <div class="q"><b>Q2</b><span>가능한 원인은 무엇이고 근거는 어느 기록에 있는가?</span></div>
-    <div class="q"><b>Q3</b><span>해소를 기다리는 동안 ICU에서 퇴실하거나 사망하면 해석은 어떻게 바뀌는가?</span></div>
-    <div class="q"><b>Q4</b><span>잘못된 주장 한 문장이 들어가면 결론은 얼마나 흔들리는가?</span></div>
+    <div class="q"><b>미리</b><span>지금 정상인 환자가 24시간 안에 크게(5×ULN) 나빠질까? · Agent 3</span></div>
+    <div class="q"><b>원인</b><span>이상이 처음 생기면, 원인 10가지 중 무엇이 해당하고 근거는 어느 기록인가? · Agent 1</span></div>
+    <div class="q"><b>경과</b><span>이 환자는 ICU 퇴실 때 회복해 있을까, ICU에서 사망할까? · Agent 2</span></div>
+    <div class="q"><b>궤적</b><span>앞으로 24시간 간 수치는 어디로 움직일까? · 궤적 모델</span></div>
   </div>
 </div></section>
 
@@ -505,7 +511,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 <section id="demo"><div class="wrap">
   <div class="sec-head">
     <h2><span class="seq">시연 1</span>같은 환자를 시간순으로 다시 재생합니다</h2>
-    <p>재생 버튼을 누르면 한 시간씩 진행됩니다. 그래프에는 그 시각까지 공개된 검사만 나타나고, 오른쪽 세 에이전트는 환자 상태에 따라 켜지고 꺼집니다. 단축키: Space 재생, ←/→ 한 시간, 1–4 환자 선택.</p>
+    <p>재생을 누르면 ICU 입실 후 시간이 흐릅니다. 그래프에는 그 시각까지 결과가 나온 검사만 보이고, 오른쪽 모델들은 환자 상태에 따라 켜지고 꺼집니다. 간 수치가 2×ULN을 넘는 순간 잠깐 멈췄다가 원인과 예후가 뜹니다. 단축키: Space 재생, ←/→ 한 시간, 1–4 환자 선택.</p>
   </div>
   <div class="console-bezel"><div class="console monitor" id="console">
     <div class="console-top">
@@ -514,11 +520,11 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
         <button class="play" id="play" aria-label="재생"><svg viewBox="0 0 16 16" id="play-ico"><path d="M4 2l10 6-10 6z"/></svg></button>
         <div class="clock"><b id="clock">0 h</b><span>ICU 입실 후 · 시뮬레이션</span></div>
         <label class="muted" style="font-size:.75rem" for="speed">속도</label>
-        <select class="speed" id="speed"><option value="900">1×</option><option value="450" selected>2×</option><option value="180">5×</option></select>
+        <select class="speed" id="speed"><option value="1.5">느리게</option><option value="3" selected>보통</option><option value="8">빠르게</option></select>
       </div>
     </div>
     <div class="scrub">
-      <input type="range" id="hour" min="0" max="96" value="0" step="1" aria-label="시뮬레이션 시각">
+      <input type="range" id="hour" min="0" max="96" value="0" step="any" aria-label="시뮬레이션 시각">
       <div class="ticks" id="ticks"></div>
     </div>
     <div class="console-body">
@@ -544,19 +550,24 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
 <hr class="rule">
 <section id="shadow"><div class="wrap">
   <div class="sec-head">
-    <h2><span class="seq">시연 2</span>작동하는 도구를 만든 뒤, 스스로 시험한 네 가지 질문</h2>
-    <p>현재 시연 환자 하나로 장면을 보여주고, 바로 옆에 평가 집단 전체의 결과를 붙였습니다. 한 사례의 인상과 집단 수치를 구분하기 위해서입니다.</p>
+    <h2><span class="seq">시연 2</span>그림자: 잘 돌아가는 것처럼 보여도 틀릴 수 있는 곳</h2>
+    <p>시연 1이 이 도구가 하는 일(빛)이라면, 여기는 같은 도구가 조용히 틀리는 지점(그림자)입니다. 흔한 실수를 일부러 넣어 보고, 결과가 얼마나 달라지는지 <b>잘못한 방법(전)</b>과 <b>바로잡은 방법(후)</b>으로 나란히 보여줍니다. 숫자는 모두 전체 MIMIC-IV 평가 결과입니다.</p>
   </div>
+  <h3 class="sub-h">빛: 이 도구가 한 일</h3>
   <div class="light" id="light"></div>
-  <blockquote class="turn">그런데 이 화면을 실제 병원에서 쓴다고 상상하니 질문이 생겼습니다. 측정하지 않은 환자는 정상일까요? 회복을 기다리는 동안 퇴원하거나 사망하는 환자는 어떻게 설명할까요? 잘못된 추정 한 문장으로 원인 후보가 바뀐다면요? 그래서 저희는 직접 시험했습니다.</blockquote>
-  <div class="ba-head"><h3>전과 후</h3><button class="btn" id="ba-all">모두 뒤집기</button></div>
+  <ol class="how3" aria-label="그림자 시험 방법">
+    <li><b>1</b><span>흔한 실수 하나를 일부러 넣는다<small>예: 환자를 섞어 나누기, 측정 안 한 시간을 정상으로 보기, 값 하나 잘못 입력</small></span></li>
+    <li><b>2</b><span>결과가 얼마나 달라지는지 잰다<small>성능, 확률, 알림 수, 원인 판정</small></span></li>
+    <li><b>3</b><span>바로잡은 방법과 나란히 둔다<small>실제 발표 수치는 모두 바로잡은 쪽</small></span></li>
+  </ol>
+  <div class="ba-head"><h3>그림자 카드: 왼쪽 = 잘못한 방법, 오른쪽 = 바로잡은 방법</h3></div>
   <div class="ba-grid" id="ba-grid"></div>
-  <h3 class="sub-h">같은 장면을 한 환자로 보기</h3>
+  <h3 class="sub-h">시연 환자 한 명으로 다시 보기</h3>
   <div class="tabs" role="tablist" id="tabs">
-    <button class="tab" role="tab" aria-selected="true" data-tab="t-stress"><small>그림자 1</small>잘못된 값</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="t-compete"><small>그림자 2</small>경쟁 사건</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="t-ground"><small>그림자 3</small>근거 검증</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="t-alert"><small>그림자 4</small>알림 통합</button>
+    <button class="tab" role="tab" aria-selected="true" data-tab="t-stress"><small>값 하나를 잘못 적으면?</small>입력 오류</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="t-compete"><small>회복 전에 퇴실·사망하면?</small>경쟁 사건</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="t-ground"><small>모델이 댄 근거가 실제로 있나?</small>근거 확인</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="t-alert"><small>검사마다 알림을 울리면?</small>알림 수</button>
   </div>
   <div class="panel" id="t-stress" role="tabpanel">
     <div class="card"><h3>이 환자의 값 하나를 잘못 적으면</h3><p>정상 구간의 한 시각을 미리 정해 두고, 값 하나만 흔한 입력 오류로 바꿔 세 에이전트에 다시 넣었습니다. 전은 현재 파이프라인, 후는 값 검증 규칙을 더한 결과입니다.</p><div id="stress-case"></div></div>
@@ -725,9 +736,9 @@ function render(){
 function drawTrend(c,h){
   const svg=$("#trend");svg.innerHTML="";const W=640,H=260,m={l:40,r:14,t:14,b:26};
   const hasFc=c.frames.some(f=>f.forecast&&Object.keys(f.forecast).length),X1=c.max_hour+(hasFc?24:0);
-  const x=lin(0,X1,m.l,W-m.r);const lmin=Math.log10(.3),lmax=Math.log10(60);
+  const x=lin(0,X1,m.l,W-m.r);st.xs=x;st.xr=W-m.r;const lmin=Math.log10(.3),lmax=Math.log10(60);
   const y=v=>lin(lmin,lmax,H-m.b,m.t)(Math.log10(Math.max(.3,Math.min(60,v))));
-  svg.append(S("rect",{class:"future",x:x(h),y:m.t,width:Math.max(0,W-m.r-x(h)),height:H-m.t-m.b,fill:"var(--sunk)"}));
+  svg.append(S("rect",{class:"future",x:x(st.playing?st.t:h),y:m.t,width:Math.max(0,W-m.r-x(h)),height:H-m.t-m.b,fill:"var(--sunk)"}));
   if(h<c.max_hour)svg.append(S("text",{x:(x(h)+W-m.r)/2,y:m.t+14,"text-anchor":"middle"},hasFc?"아직 공개되지 않은 시간 · 점선과 띠는 예측":"아직 공개되지 않은 시간"));
   for(const v of [.5,1,2,5,10,20,50]){svg.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)}));svg.append(S("text",{x:m.l-6,y:y(v)+3,"text-anchor":"end"},v+"×"))}
   const step=X1>72?24:12;for(let t=0;t<=X1;t+=step)svg.append(S("text",{x:x(t),y:H-8,"text-anchor":"middle"},t+"h"));
@@ -746,7 +757,7 @@ function drawTrend(c,h){
     svg.append(S("polygon",{points:up.concat(dn).join(" "),fill:COL[a],"fill-opacity":.16,stroke:"none"}));
     svg.append(S("polyline",{points:pts.map(p=>`${x(h+p.h)},${y(p.q50)}`).join(" "),fill:"none",stroke:COL[a],"stroke-width":1.8,"stroke-dasharray":"5 4"}))}
   if(c.alertHour!=null&&h>=c.alertHour){svg.append(S("line",{x1:x(c.alertHour),x2:x(c.alertHour),y1:m.t,y2:H-m.b,stroke:"var(--crit)","stroke-width":1,"stroke-dasharray":"2 3"}));svg.append(S("text",{x:x(c.alertHour)+4,y:H-m.b-6,style:"fill:var(--crit)"},"알림 t0"))}
-  svg.append(S("line",{class:"now",x1:x(h),x2:x(h),y1:m.t,y2:H-m.b,stroke:"var(--ink)"}));
+  const xn=x(st.playing?st.t:h);svg.append(S("line",{class:"now",x1:xn,x2:xn,y1:m.t,y2:H-m.b,stroke:"var(--ink)"}));
   svg.append(S("text",{x:m.l,y:m.t-2},"배수 (값/ULN, 로그 눈금)"));
 }
 function agentHead(tag,title,meta){return `<div class="agent-h"><h3><i>${tag}</i>${title}</h3><small>${meta||""}</small></div>`}
@@ -794,21 +805,29 @@ function renderA3(f){
    `<div class="gauge"><div class="ci" style="left:${(ci[0]||0)*100}%;width:${((ci[1]||0)-(ci[0]||0))*100}%"></div><div class="pt" style="left:calc(${(a.risk_next24||0)*100}% - 1px)"></div></div>${thin?`<p class="smalln">결과가 확인된 참고 사례가 ${a.known_n}명뿐이라 이 값은 해석하지 않습니다. 전체 MIMIC-IV에서 다시 계산합니다.</p>`:""}<p class="warnline">충분히 재검된 사례에서만 계산한 조건부 비율. 선택 편향이 남습니다.</p>`;
 }
 
-function tick(){const c=st.cases[st.key];if(!c)return;if(st.hour>=c.max_hour){stop();return}st.hour++;$("#hour").value=st.hour;render();
-  if(c.alertHour!=null&&st.hour===c.alertHour){stop();flash()}}
+function moveNow(t){const c=st.cases[st.key],X=st.xs;if(!c||!X)return;const xp=X(t);
+  const n=$("#trend .now"),fu=$("#trend .future");if(n){n.setAttribute("x1",xp);n.setAttribute("x2",xp)}if(fu){fu.setAttribute("x",xp);fu.setAttribute("width",Math.max(0,st.xr-xp))}
+  $("#clock").textContent=`${Math.floor(t)} h`;$("#hour").value=t}
+function tick(now){if(!st.playing)return;const c=st.cases[st.key];if(!c)return;
+  const dt=Math.min(.1,(now-(st.last||now))/1000);st.last=now;
+  if(st.hold>0){st.hold-=dt;st.raf=requestAnimationFrame(tick);return}
+  st.t=Math.min(c.max_hour,st.t+dt*(+$("#speed").value));const h=Math.floor(st.t);
+  if(h!==st.hour){st.hour=h;render();if(c.alertHour!=null&&h===c.alertHour){st.hold=1.6;flash()}}
+  moveNow(st.t);
+  if(st.t>=c.max_hour){stop();return}
+  st.raf=requestAnimationFrame(tick)}
 function flash(){const el=$("#ag1");el.animate?.([{boxShadow:"0 0 0 0 var(--crit)"},{boxShadow:"0 0 0 6px transparent"}],{duration:900,iterations:2})}
-function play(){const c=st.cases[st.key];if(c&&st.hour>=c.max_hour)st.hour=0;st.playing=true;$("#play").setAttribute("aria-label","일시정지");$("#play-ico").innerHTML='<path d="M3 2h4v12H3zM9 2h4v12H9z"/>';st.timer=setInterval(tick,+$("#speed").value)}
-function stop(){st.playing=false;clearInterval(st.timer);$("#play").setAttribute("aria-label","재생");$("#play-ico").innerHTML='<path d="M4 2l10 6-10 6z"/>'}
+function play(){const c=st.cases[st.key];if(c&&st.hour>=c.max_hour){st.hour=0;render()}st.t=st.hour;st.last=null;st.hold=0;st.playing=true;$("#play").setAttribute("aria-label","일시정지");$("#play-ico").innerHTML='<path d="M3 2h4v12H3zM9 2h4v12H9z"/>';st.raf=requestAnimationFrame(tick)}
+function stop(){st.playing=false;cancelAnimationFrame(st.raf);$("#play").setAttribute("aria-label","재생");$("#play-ico").innerHTML='<path d="M4 2l10 6-10 6z"/>'}
 function wire(){
   $("#play").onclick=()=>st.playing?stop():play();
-  $("#speed").onchange=()=>{if(st.playing){stop();play()}};
-  $("#hour").oninput=e=>{st.hour=+e.target.value;render()};
+  $("#hour").oninput=e=>{st.hour=Math.floor(+e.target.value);st.t=st.hour;render()};
   $("#reveal-btn").onclick=()=>{const c=st.cases[st.key],o=c.observed||{};const out=$("#reveal-out");out.hidden=false;
     out.innerHTML=o.observed_path?`<b>${esc(PATH[o.observed_path]||o.observed_path)}</b> · 48시간 첫 사건: ${esc(FIRST[o.first_event_48h]||o.first_event_48h)} <span class="muted">(관찰 결과, 예측 아님)</span>`:`${o.status==="no_abnormal_event_during_ICU"?"ICU 재원 중 이상 사건 없음":esc(o.status||"관찰 결과 없음")} <span class="muted">(관찰 결과)</span>`};
   document.addEventListener("keydown",e=>{if(["INPUT","SELECT","TEXTAREA"].includes(e.target.tagName)&&e.target.type!=="range")return;
     if(e.code==="Space"&&!e.target.closest("button")){e.preventDefault();st.playing?stop():play()}
-    else if(e.key==="ArrowRight"&&e.target.type!=="range"){stop();const c=st.cases[st.key];st.hour=Math.min(c.max_hour,st.hour+1);$("#hour").value=st.hour;render()}
-    else if(e.key==="ArrowLeft"&&e.target.type!=="range"){stop();st.hour=Math.max(0,st.hour-1);$("#hour").value=st.hour;render()}
+    else if(e.key==="ArrowRight"&&e.target.type!=="range"){stop();const c=st.cases[st.key];st.hour=Math.min(c.max_hour,st.hour+1);st.t=st.hour;$("#hour").value=st.hour;render()}
+    else if(e.key==="ArrowLeft"&&e.target.type!=="range"){stop();st.hour=Math.max(0,st.hour-1);st.t=st.hour;$("#hour").value=st.hour;render()}
     else if(/^[1-9]$/.test(e.key)){const cs=st.manifest.cases;if(cs[+e.key-1])selectCase(cs[+e.key-1].case_key)}});
   $("#tabs").querySelectorAll(".tab").forEach(t=>t.onclick=()=>{$("#tabs").querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x===t));
     document.querySelectorAll("#shadow [role=tabpanel]").forEach(p=>p.hidden=p.id!==t.dataset.tab)});
@@ -1107,12 +1126,9 @@ function renderBA(R,kind){
     d:mm<mp?`오차 ${pct(1-mm/mp,0)} 감소`:`모델이 ${pct(mm/mp-1,0)} 더 부정확. 그대로 보고합니다`,w:"단순 기준선을 같이 보여주지 않으면 모델의 가치를 판단할 수 없습니다.",src:"trajectory_performance"})}
   if(L.before_unreported_results!=null)cards.splice(1,0,{k:"unrep",t:"아직 보고되지 않은 결과를 미리 보면",q:"채혈 시각만 보고 결과 보고 시각을 무시하면?",b:["채혈 시각 기준 특징",F2(L.before_unreported_results),"AUROC"],a:["결과 보고 시각 기준 특징",F2(L.after_patient_split),"AUROC"],
     d:`평가 특징값의 ${pct(L.unreported_share_of_features,1)}가 그 시각에는 아직 볼 수 없던 값`,w:"모든 입력은 max(charttime, storetime)로 정한 공개 시각까지의 값만 씁니다.",src:"shadow_leakage"});
-  $("#ba-grid").innerHTML=cards.map(c=>`<article class="ba${c.pending?" pending":""}" data-state="before" id="ba-${c.k}"><h4>${c.t}</h4><p class="q">${c.q}</p>
-    <div class="flip"><div class="side before"><small>전 · ${c.b[0]}</small><b>${c.b[1]??"–"}</b><span>${c.b[2]}</span></div><div class="side after"><small>후 · ${c.a[0]}</small><b>${c.a[1]??"–"}</b><span>${c.a[2]}</span></div></div>
-    <p class="delta">${c.pending?esc(c.pending):c.d||""}</p><p class="why">${c.w}</p><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><button class="btn toggle">후 보기</button><span class="src-line">${c.src}${kind==="demo"?" · Demo 100명":""}</span></div></article>`).join("");
-  const flip=(el,to)=>{el.dataset.state=to||(el.dataset.state==="before"?"after":"before");el.querySelector(".toggle").textContent=el.dataset.state==="before"?"후 보기":"전 보기"};
-  $("#ba-grid").querySelectorAll(".ba").forEach(el=>el.querySelector(".toggle").onclick=()=>flip(el));
-  $("#ba-all").onclick=()=>{const els=[...$("#ba-grid").querySelectorAll(".ba")],to=els.some(e=>e.dataset.state==="before")?"after":"before";els.forEach((e,i)=>setTimeout(()=>flip(e,to),i*160))};
+  $("#ba-grid").innerHTML=cards.map(c=>`<article class="ba${c.pending?" pending":""}" data-state="both" id="ba-${c.k}"><h4>${c.t}</h4><p class="q">${c.q}</p>
+    <div class="flip"><div class="side before"><small>잘못한 방법 · ${c.b[0]}</small><b>${c.b[1]??"–"}</b><span>${c.b[2]}</span></div><div class="side after"><small>바로잡은 방법 · ${c.a[0]}</small><b>${c.a[1]??"–"}</b><span>${c.a[2]}</span></div></div>
+    <p class="delta">${c.pending?esc(c.pending):c.d||""}</p><p class="why">${c.w}</p><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="src-line">${c.src}${kind==="demo"?" · Demo 100명":""}</span></div></article>`).join("");
 }
 function formatAudit(R){const A=R.value_format_audit;if(!A||!A.length)return "";const by={};A.forEach(r=>{by[r.kind]=(by[r.kind]||0)+(r.n||0)});const sup=A.some(r=>r.n==null);
   const K={malformed_number:"형식 오류 (예: 37..5)",censored:"검출 한계 표기 (예: <5)",deidentified:"비식별 처리 (___)",text:"기타 문자",empty:"빈 값"};
