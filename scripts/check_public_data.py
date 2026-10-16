@@ -31,6 +31,13 @@ def main() -> int:
         s = json.loads(f.read_text(encoding="utf-8"))
         if s.get("source") == "mimic-iv" and not s.get("min_cell_suppression"):
             problems.append(f"{f.name}: full MIMIC-IV aggregates without small-cell suppression")
+    for f in data.glob("results*.json"):
+        r = json.loads(f.read_text(encoding="utf-8"))
+        meta = r.get("meta", {})
+        if meta.get("source") == "mimic-iv" and not meta.get("min_cell_suppression"):
+            problems.append(f"{f.name}: full MIMIC-IV results without small-cell suppression")
+        if f.name == "results_full.json" and meta.get("source") != "mimic-iv":
+            problems.append(f"{f.name}: expected source mimic-iv, found {meta.get('source')!r}")
     for p in problems:
         print("DATA GUARD:", p)
     print("public data check:", "FAILED" if problems else "ok", f"(source={manifest.get('source')}, cases={len(cases)})")
