@@ -462,7 +462,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
     <figure id="fig-shap"><div class="fig-title"><span>FIGURE 8</span>Agent 3이 기대는 것: 그룹 Shapley</div><div class="plot" id="shap-plot"></div>
       <figcaption><b>Figure 8.</b> 평가 시점별로 9개 임상 그룹의 정확한 Shapley 값을 계산한 뒤 절댓값 평균. 서로 상관된 지표를 그룹으로 묶어 기여도가 임의로 쪼개지지 않게 했습니다. ‘측정 패턴’이 크면 모델이 질병보다 검사를 얼마나 자주 했는지를 배우고 있다는 경고입니다.</figcaption></figure>
     <figure id="tab2b"><div class="fig-title"><span>TABLE 2B</span>이상 기준 2·3·4·5배</div><div class="plot" id="table2b"></div>
-      <figcaption><b>Table 2B.</b> 위: 기준별 첫 이상 사건 환자 수와 그 뒤 경과(회복 = ICU 퇴실 시점 마지막 ALT·ALP·총빌리루빈이 모두 2×ULN 미만; 미회복 = 하나라도 2×ULN 이상; 회복 판정 불가 = 사건 이후 다시 재지 않은 항목이 있음; 사망 = ICU 사망). ICU 입실 전 병동에서 이미 2×ULN 이상이던 환자는 제외했습니다. 아래: 같은 조기 예측 모델을 기준별로 학습했을 때의 평가 집단 성능. 주 모델은 5×ULN이며, 원인 10개와 예후 4경로는 2×ULN 첫 사건에서 실행합니다.</figcaption></figure>
+      <figcaption><b>Table 2B.</b> 위: 기준별 첫 이상 사건 환자 수와 그 뒤 경과(회복 = ICU 퇴실 시점 마지막 ALT·ALP·총빌리루빈이 모두 2×ULN 미만; 미회복 = 하나라도 2×ULN 이상; 회복 판정 불가 = 사건 이후 다시 재지 않은 항목이 있음; 사망 = ICU 퇴실 후 24시간 이내 사망). ICU 입실 전 병동에서 이미 2×ULN 이상이던 환자는 제외했습니다. 아래: 같은 조기 예측 모델을 기준별로 학습했을 때의 평가 집단 성능. 주 모델은 5×ULN이며, 원인 10개와 예후 4경로는 2×ULN 첫 사건에서 실행합니다.</figcaption></figure>
     <figure id="tab4"><div class="fig-title"><span>TABLE 4</span>원인 10개, 각각 0/1 판정</div><div class="plot" id="table4"></div>
       <figcaption><b>Table 4.</b> 평가 사건마다 10개 원인을 독립적으로 판정하고 같은 입원의 퇴원 진단 대리 범주와 비교한 민감도·특이도(95% Wilson CI). 한 사건에 여러 원인이 동시에 해당할 수 있습니다. 대리 기준은 전문의 판정이 아닙니다. 정맥영양 관련 간기능 이상은 해당 ICD 코드가 없어 대리 기준이 없고, 담낭염은 국소 소견과 영상이 없어 구조화 자료로는 판단하지 않습니다.</figcaption></figure>
   </div>
