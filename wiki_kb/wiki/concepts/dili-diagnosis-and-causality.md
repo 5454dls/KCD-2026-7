@@ -2,7 +2,7 @@
 type: concept
 title: DILI 진단 기준과 인과성 평가
 tags: [DILI, diagnosis, R-ratio, causality, RUCAM, RECAM, exclusion]
-related: [aasld-dili-guidance, rucam, recam, livertox, dili-phenotypes-and-latency, dili-management-and-rechallenge, herbal-dietary-supplement-injury, liver-chemistry-patterns-r-ratio, normal-alt-and-uln, hepatocellular-injury-workup, cholestatic-injury-workup, viral-hepatitis-testing, hypoxic-hepatitis, icu-liver-cause-evidence-map]
+related: [aasld-dili-guidance, rucam, recam, livertox, dili-phenotypes-and-latency, dili-management-and-rechallenge, herbal-dietary-supplement-injury, liver-chemistry-patterns-r-ratio, normal-alt-and-uln, hepatocellular-injury-workup, cholestatic-injury-workup, viral-hepatitis-testing, hypoxic-hepatitis, isolated-hyperbilirubinemia, sepsis-liver-and-organ-dysfunction, icu-liver-cause-evidence-map]
 sources: ["aasld-dili-practice-guidance.pdf"]
 created: 2026-10-16
 updated: 2026-10-16

@@ -2,7 +2,7 @@
 type: concept
 title: 한약·생약·건강기능식품(HDS) 간손상
 tags: [HDS, herbal, dietary-supplement, DILI, green-tea-extract, HLA]
-related: [aasld-dili-guidance, dili-diagnosis-and-causality, dili-phenotypes-and-latency, dili-management-and-rechallenge, green-tea-extract, rucam, recam, livertox, icu-liver-cause-evidence-map]
+related: [aasld-dili-guidance, dili-diagnosis-and-causality, dili-phenotypes-and-latency, dili-management-and-rechallenge, green-tea-extract, rucam, recam, livertox, sepsis-nutrition, icu-liver-cause-evidence-map]
 sources: ["aasld-dili-practice-guidance.pdf"]
 created: 2026-10-16
 updated: 2026-10-16
