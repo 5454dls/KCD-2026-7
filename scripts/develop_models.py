@@ -82,9 +82,9 @@ def flat_tables(R: dict, out: Path):
                       ("agent3_by_threshold.csv", "agent3_by_threshold")]:
         if R.get(key):
             pd.DataFrame(R[key]).to_csv(out / name, index=False, encoding="utf-8-sig")
-    if R.get("death_1y_performance"):
-        pd.DataFrame([{k: v for k, v in R["death_1y_performance"].items() if not isinstance(v, (list, dict))}]).to_csv(
-            out / "death_1y_performance.csv", index=False, encoding="utf-8-sig")
+    if R.get("death_icu_performance"):
+        pd.DataFrame([{k: v for k, v in R["death_icu_performance"].items() if not isinstance(v, (list, dict))}]).to_csv(
+            out / "death_icu_performance.csv", index=False, encoding="utf-8-sig")
     pre = (R.get("preprocessing") or {}).get("variables")
     if pre:
         pd.DataFrame(pre).to_csv(out / "preprocessing_variables.csv", index=False, encoding="utf-8-sig")

@@ -19,9 +19,9 @@ from matplotlib import font_manager
 PALETTE = {"ALT": "#0e7a84", "ALP": "#6a4cb0", "TBIL": "#c0850b", "res": "#2e7a4c", "death": "#b53636",
            "dis": "#3d6fb0", "muted": "#56686d", "accent": "#a8660e", "crit": "#b53636", "ok": "#2e7a4c", "line": "#d3dedb"}
 GROUP_KO = {"initial_abnormal": "입실 초기", "incident": "신규", "onset_unknown": "시점 불명"}
-PATH_KO = {"recovered_alive_1y": "회복 · 1년 생존",
-           "unrecovered_alive_1y": "회복 미확인 · 1년 생존",
-           "unrecovered_died_1y": "회복 미확인 · 1년 내 사망", "recovered_died_1y": "회복 · 1년 내 사망"}
+PATH_KO = {"recovered_alive_icu": "회복 · 생존 ICU 퇴실",
+           "unrecovered_alive_icu": "회복 미확인 · 생존 ICU 퇴실",
+           "unrecovered_died_icu": "회복 미확인 · ICU 사망", "recovered_died_icu": "회복 · ICU 사망"}
 STEP_KO = {"all_icu_stays": "전체 ICU 입실", "first_icu_per_patient": "환자별 첫 ICU 입실", "adult_valid_stay": "성인·유효 입실",
            "analysis_sample": "분석 표본", "excluded_pre_icu_abnormal": "제외: ICU 입실 전 이미 이상",
            "no_pre_icu_abnormality": "입실 전 이상 없음", "first_abnormal_event": "첫 이상 사건"}

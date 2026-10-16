@@ -341,7 +341,7 @@ def preprocessing_report(X: pd.DataFrame, cols, dev_mask, lr_pipeline=None) -> d
 
 def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) -> list[dict]:
     """First event at 2/3/4/5x ULN (any of ALT/ALP/TBIL) during ICU monitoring, with recovery judged at ICU discharge
-    (last value of all three after the event < 2x), not assessable when a trigger was not re-measured, and death within 1 year."""
+    (last value of all three after the event < 2x), not assessable when a trigger was not re-measured, and ICU death."""
     thresholds = THRESHOLDS if thresholds is None else thresholds
     c = cohort.set_index("stay_id")
     trig = lab[lab.analyte.isin(TRIGGERS) & lab.ratio.notna()].sort_values("charttime")
@@ -368,13 +368,11 @@ def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) ->
                 rec += 1
             else:
                 unass += 1
-            year = t0 + pd.Timedelta(days=365)
-            dt, dod = r.get("deathtime"), r.get("dod")
-            died += bool((pd.notna(dt) and pd.Timestamp(dt) <= year) or (pd.notna(dod) and pd.Timestamp(dod) <= year.normalize()))
+            died += bool(r.get("icu_death")) if "icu_death" in c else 0  # team decision: ICU death only
         out.append({"threshold_x_uln": k, "patients_with_event": n, "recovered_before_icu_discharge": rec,
                     "unrecovered_before_icu_discharge": n - rec - unass, "recovery_unassessable": unass,
-                    "icu_death": icu_death, "alive_icu_discharge": n - icu_death, "died_within_1y": died,
-                    "recovered_rate": rec / n if n else None, "died_1y_rate": died / n if n else None})
+                    "icu_death": icu_death, "alive_icu_discharge": n - icu_death,
+                    "recovered_rate": rec / n if n else None, "died_icu_rate": icu_death / n if n else None})
     return out
 
 
@@ -890,8 +888,8 @@ FEATURE_GROUPS = {
 TRAJ_ANALYTES = ["ALT", "AST", "ALP", "TBIL"]
 TRAJ_HORIZONS = [6, 12, 18, 24]
 TRAJ_QUANTILES = [0.1, 0.5, 0.9]
-PROGNOSIS = ["recovered_alive_1y", "recovered_died_1y",
-             "unrecovered_alive_1y", "unrecovered_died_1y"]  # recovery-assessable events; unassessable_* kept for death only
+PROGNOSIS = ["recovered_alive_icu", "recovered_died_icu",
+             "unrecovered_alive_icu", "unrecovered_died_icu"]  # recovery-assessable events; unassessable_* kept for death only
 
 
 def group_of(col: str) -> str:
@@ -1162,22 +1160,22 @@ def develop_v2(R, out_dir, admissions, diagnoses, exclude_subjects=None, model_d
 
     # ---- Agent 2: 4-class prognosis (resolution x death)
     if len(outcomes):
-        ev_all = events.merge(outcomes[["case_id", "observed_path"] + (["died_1y"] if "died_1y" in outcomes else [])], on="case_id", how="inner")
+        ev_all = events.merge(outcomes[["case_id", "observed_path"] + (["died_icu"] if "died_icu" in outcomes else [])], on="case_id", how="inner")
         ev2 = ev_all[ev_all.observed_path.isin(PROGNOSIS)]  # recovery assessable
         R["prognosis_development"] = {"events": int(len(ev_all)), "assessable": int(len(ev2)),
                                       "label_counts": ev_all.observed_path.value_counts().to_dict(),
-                                      "definition": "recovery = at ICU discharge the last ALT/ALP/TBIL after the event are all < 2x; unrecovered = any last >= 2x; unassessable = not all re-measured; death = within 1 year"}
+                                      "definition": "recovery = at ICU discharge the last ALT/ALP/TBIL after the event are all < 2x; unrecovered = any last >= 2x; unassessable = not all re-measured; death = ICU death"}
         death_bundle = None
-        if "died_1y" in ev_all and ev_all.split.eq("evaluation").any() and ev_all[ev_all.split.eq("development")].died_1y.astype(bool).nunique() == 2:
+        if "died_icu" in ev_all and ev_all.split.eq("evaluation").any() and ev_all[ev_all.split.eq("development")].died_icu.astype(bool).nunique() == 2:
             # 1-year death on ALL events, including those whose recovery cannot be assessed
             Xd = build_features(ev_all.rename(columns={"t0": "t"})[["stay_id", "t"]], lab, context, cohort, hist)
             trd = ev_all.split.eq("development").to_numpy()
             cold = feature_columns(Xd, trd)
-            yd = ev_all.died_1y.astype(str).str.lower().isin(["true", "1"]).astype(int).to_numpy()
+            yd = ev_all.died_icu.astype(str).str.lower().isin(["true", "1"]).astype(int).to_numpy()
             _, gbm_d = _models()
             md = gbm_d(0.05, 15).fit(Xd[cold].astype(float)[trd], yd[trd])
             pdx = md.predict_proba(Xd[cold].astype(float)[~trd])[:, 1]
-            R["death_1y_performance"] = {"n_events": int(len(ev_all)), **binary_metrics(yd[~trd], pdx, ev_all.subject_id.to_numpy()[~trd], boot)}
+            R["death_icu_performance"] = {"n_events": int(len(ev_all)), **binary_metrics(yd[~trd], pdx, ev_all.subject_id.to_numpy()[~trd], boot)}
             death_bundle = {"death_model": md, "death_features": cold}
         perf = {"models": []}
         if len(ev2) and ev2.split.eq("evaluation").any() and ev2[ev2.split.eq("development")].observed_path.nunique() >= 2:
