@@ -176,7 +176,7 @@ def main(argv=None):
     config_path = args.out_dir / "run_config.json"
     config = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
     public_config = {k: config.get(k) for k in
-                     ["seed", "max_patients", "threshold", "LLM_enabled", "cluster_k", "backend",
+                     ["seed", "max_patients", "threshold", "LLM_enabled", "agent1_backend", "agent1_model", "cluster_k", "backend",
                       "m4_reviewed_commit", "python", "pandas", "installed_versions"] if k in config}
     if not args.aggregates_only:
         db = args.out_dir / "replay.sqlite"

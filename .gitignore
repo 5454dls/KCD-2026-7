@@ -13,3 +13,4 @@ m4_data/
 __pycache__/
 .ipynb_checkpoints/
 .pytest_cache/
+data/

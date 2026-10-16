@@ -5,6 +5,19 @@ MIMIC-IV ICU 환자의 ALT·ALP·총빌리루빈을 한 시간 단위로 재생�
 - **시연 페이지**: GitHub Pages (`site/`). 저장소 Settings → Pages → Source: GitHub Actions 설정 후 `main`에 병합하면 배포됩니다.
 - **검토 문서**: [docs/REVIEW.md](docs/REVIEW.md) (계획 검토, 수정 내역, 발표 전략, 오늘 밤 실행 순서)
 
+## 현재 상태
+
+- 시연 페이지의 환자 재생과 그림은 **MIMIC-IV Demo 100명 실데이터**로 노트북을 실제 실행한 결과입니다.
+- Agent 1은 기관 LLM이 연결되기 전까지 **규칙 기반 기준 모델(`kcd_liver/rule_agent.py`, LLM 아님)**로 동작하며, 화면에도 그렇게 표시됩니다.
+- 전문의 참조 판정 기반 성능 수치와 전체 MIMIC-IV 결과는 아직 없습니다. 자세한 내용은 [docs/REVIEW.md](docs/REVIEW.md) 0절.
+
+데모 데이터 재생성:
+
+```bash
+python scripts/fhir_demo_to_csv.py --out data/mimic-iv-demo-csv   # PhysioNet 공개 S3에서 FHIR 판 내려받아 변환
+# 노트북: ROOT=data/mimic-iv-demo-csv, DATA_SOURCE='mimic-iv-demo' 로 실행
+```
+
 ## 구성
 
 | 경로 | 내용 |
@@ -16,6 +29,8 @@ MIMIC-IV ICU 환자의 ALT·ALP·총빌리루빈을 한 시간 단위로 재생�
 | `scripts/export_site_data.py` | 노트북 출력 → `site/data/*.json` (데이터 출처 검사 포함) |
 | `scripts/check_public_data.py` | 공개 전 자격 인증 데이터 노출 검사 (CI) |
 | `scripts/make_synthetic_site_data.py` | 실제 실행 전 화면 확인용 합성 데이터 |
+| `scripts/fhir_demo_to_csv.py` | MIMIC-IV Demo FHIR 판 → 노트북 CSV 형식 변환 |
+| `kcd_liver/rule_agent.py` | Agent 1 규칙 기반 기준 모델 (LLM 비교군) |
 | `site/index.html` | 정적 시연 페이지 (외부 라이브러리 없음, 오프라인 실행 가능) |
 
 ## 실행

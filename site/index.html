@@ -124,6 +124,7 @@ button,a,.case-btn,.tab,.node{transition:transform .45s var(--ease),background-c
 
 /* sections */
 section{padding-block:clamp(56px,7vw,104px)}
+section,figure{scroll-margin-top:84px}
 .sec-head{display:grid;gap:12px;margin-bottom:clamp(24px,3vw,40px);max-width:72ch}
 .sec-head p{color:var(--muted)}
 .rule{border:0;border-top:1px solid var(--line);margin:0}
@@ -229,6 +230,10 @@ a.node:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 
 .gauge{position:relative;height:24px;background:var(--sunk);border-radius:6px;margin:8px 0 4px;overflow:hidden}
 .gauge .ci{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--alp) 28%,transparent)}
 .gauge .pt{position:absolute;top:3px;bottom:3px;width:3px;background:var(--alp);border-radius:2px}
+.model-tag{font-size:.72rem;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.smalln{font-size:.76rem;margin-top:6px;padding:6px 9px;border-radius:8px;background:var(--warn-soft);color:var(--warn)}
+.big.thin{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+.fig-source{font-size:.88rem;padding:10px 14px;border-radius:12px;background:var(--sunk);color:var(--ink);max-width:90ch}
 .big{font:700 1.6rem var(--f-body);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .warnline{font-size:.7rem;color:var(--muted);margin-top:6px}
 .reveal{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -270,6 +275,7 @@ figcaption b{color:var(--ink);font-family:var(--f-display)}
 figcaption code{font:500 .76rem var(--f-mono);background:var(--sunk);padding:1px 5px;border-radius:4px;color:var(--ink)}
 .fig-title{font:700 1rem/1.35 var(--f-display)}
 .fig-title span{font:800 .8rem var(--f-display);color:var(--accent);display:block;margin-bottom:2px}
+.stamp.demo{color:var(--ok);border-color:var(--ok);transform:none}
 .stamp{position:absolute;top:14px;right:14px;font:700 .7rem var(--f-body);color:var(--warn);border:1px solid var(--warn);padding:2px 6px;border-radius:4px;transform:rotate(2deg);background:var(--surface)}
 .na{display:grid;place-items:center;text-align:center;min-height:160px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:.85rem;padding:16px;gap:4px}
 .na code{font:500 .74rem var(--f-mono)}
@@ -329,7 +335,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
     <svg id="hm-trace" viewBox="0 0 520 190" role="img" aria-label="간 검사 배수 추이"></svg>
     <div class="dev-alert" id="hm-alert"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 18.5 17h-17z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 8v4.2M10 14.6v.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><span id="hm-alert-t">2×ULN 도달을 기다리는 중</span></div>
     <ol class="dev-cands" id="hm-cands"></ol>
-    <div class="dev-foot"><span>Agent 1 원인 후보 · 공개된 자료만 사용</span><span>MIMIC-IV · ICU</span></div>
+    <div class="dev-foot"><span id="hm-foot">Agent 1 원인 후보 · 공개된 자료만 사용</span><span id="hm-src">MIMIC-IV · ICU</span></div>
   </div></div>
   </div>
   <div class="qstrip" aria-label="프로젝트가 답할 질문">
@@ -459,6 +465,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
     <h2>각 단계가 제대로 작동했는지 보여주는 그림</h2>
     <p>모든 그림은 집단 수준 집계만 사용합니다. 전체 MIMIC-IV 결과는 10 미만의 칸을 가린 뒤에만 이 페이지에 올립니다. 아직 계산하지 않은 그림은 비워 두고 생성할 파일 이름을 표시합니다.</p>
   </div>
+  <p class="fig-source" id="fig-source" hidden></p>
   <div class="figs" id="figs"></div>
 </div></section>
 
@@ -603,12 +610,13 @@ function renderA1(f,c,h){
   const el=$("#ag1"),a=f.agent1||{};const on=a.status!=="no_current_alert";el.dataset.active=on;
   if(!on){el.innerHTML=agentHead("A1","원인 후보","대기")+`<p class="empty-agent">첫 이상 사건 전입니다. 알림이 없으면 원인 추정을 호출하지 않습니다.</p>`;return}
   const ans=(a.answer||{})[st.a1view]||{};
-  const seg=`<span class="seg" role="group" aria-label="입력 조건"><button data-v="base" aria-pressed="${st.a1view==="base"}">기본</button><button data-v="with_cluster" aria-pressed="${st.a1view==="with_cluster"}">+군집</button></span>`;
+  const rule=a.backend==="rule";
+  const seg=rule?`<span class="model-tag">규칙 기반 기준 모델 · LLM 아님</span>`:`<span class="seg" role="group" aria-label="입력 조건"><button data-v="base" aria-pressed="${st.a1view==="base"}">기본</button><button data-v="with_cluster" aria-pressed="${st.a1view==="with_cluster"}">+군집</button></span>`;
   let body;
   if(!ans.candidates){body=`<p class="empty-agent">LLM 결과 없음 (${esc(ans.status||"model_not_run")}). 화면은 가상의 원인을 만들지 않습니다.</p>`}
   else{body=ans.candidates.map((cd,i)=>`<div class="cand"><span class="rank">${i+1}</span><div><b>${esc(CAUSE[cd.cause_code]||cd.cause_code)}</b><ul>${(cd.support||[]).map(s=>`<li class="sup">${esc(s.reason)} <span class="ev">${esc(s.analyte_or_label)} · ${esc(s.measured_at)}</span></li>`).join("")}${(cd.against_or_missing||[]).map(s=>`<li class="ag">${esc(s)}</li>`).join("")}</ul></div></div>`).join("")+
     `<p class="unc">${ans.abstain?"<b>판단 보류</b> · ":""}${esc(ans.uncertainty||"")}</p>`}
-  el.innerHTML=`<div class="agent-h"><h3><i>A1</i>원인 후보</h3>${seg}</div><small class="ev mono muted" style="font-size:.68rem">${a.output_at_hour}h 시점 출력 (캐시, ${a.synthetic?"합성 예시":"사전 계산"})</small>`+body;
+  el.innerHTML=`<div class="agent-h"><h3><i>A1</i>원인 후보</h3>${seg}</div><small class="muted" style="font-size:.74rem">${a.output_at_hour}h 시점 출력 · ${a.synthetic?"합성 예시":rule?esc(a.model||"rule baseline")+" (사전 계산)":esc(a.model||"LLM")+" 캐시"}</small>`+body;
   el.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{st.a1view=b.dataset.v;render()});
 }
 function stackBar(j){const parts=[["resolution","해소","var(--c-res)"],["death","사망","var(--c-death)"],["hospital_discharge","퇴원","var(--c-dis)"],["no_first_event","48h 내 없음","var(--c-none)"]];
@@ -618,14 +626,14 @@ function renderA2(f){
   if(!on){el.innerHTML=agentHead("A2","경과 경로","대기")+`<p class="empty-agent">${a.status==="not_yet_abnormal"||a.status==="not_eligible_normal_or_unknown"?"이상 사건 이후에만 계산합니다.":esc(a.reason||a.status||"")}</p>`;return}
   const j=a.joint_first_event||{};
   el.innerHTML=agentHead("A2","경과 경로",`유사 개발 사례 n=${a.comparable_n} · ${a.horizon_hours}h`)+`<p style="font-size:.8rem">알림 후 ${a.horizon_hours}시간 안에 처음 일어나는 사건</p>`+stackBar(j)+
-    `<p class="naive">퇴원·사망을 중도절단으로 처리하면 해소 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b>, 경쟁 사건 반영 시 <b class="mono">${pct(j.resolution)}</b></p><p class="warnline">탐색적 참고 추정. 개인별로 검증된 확률이 아닙니다.</p>`;
+    `<p class="naive">퇴원·사망을 중도절단으로 처리하면 해소 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b>, 경쟁 사건 반영 시 <b class="mono">${pct(j.resolution)}</b></p>${a.comparable_n<30?`<p class="smalln">참고 사례 ${a.comparable_n}명. 개발 집단이 작아 모든 환자에게 거의 같은 집단이 쓰이며, 값이 불안정합니다.</p>`:""}<p class="warnline">탐색적 참고 추정. 개인별로 검증된 확률이 아닙니다.</p>`;
 }
 function renderA3(f){
   const el=$("#ag3"),a=f.agent3||{};const on=a.status==="exploratory_observation_conditional_estimate";el.dataset.active=on;
   if(!on){const why={not_eligible_abnormal:"이미 이상 사건이 발생해 대상이 아닙니다.",not_eligible_or_stale:"최근 24시간 안에 세 항목이 모두 측정되지 않아 계산하지 않습니다. 측정 없음은 정상이 아닙니다.",unavailable:"참고 집단을 아직 만들지 않았습니다."}[a.status]||esc(a.status||"");el.innerHTML=agentHead("A3","정상 환자 24시간","대기")+`<p class="empty-agent">${why}</p>`;return}
-  const ci=a.ci||[null,null];
-  el.innerHTML=agentHead("A3","정상 환자 24시간",`검사로 결과 확인된 유사 사례 n=${a.known_n}`)+`<div style="display:flex;align-items:baseline;gap:10px"><span class="big">${pct(a.risk_next24)}</span><span class="muted" style="font-size:.78rem">다음 24시간 내 2×ULN 이상 관찰 비율 · 95% CI ${pct(ci[0])}–${pct(ci[1])}</span></div>`+
-   `<div class="gauge"><div class="ci" style="left:${(ci[0]||0)*100}%;width:${((ci[1]||0)-(ci[0]||0))*100}%"></div><div class="pt" style="left:calc(${(a.risk_next24||0)*100}% - 1px)"></div></div><p class="warnline">충분히 재검된 사례에서만 계산한 조건부 비율. 선택 편향이 남습니다.</p>`;
+  const ci=a.ci||[null,null],thin=(a.known_n||0)<10;
+  el.innerHTML=agentHead("A3","정상 환자 24시간",`검사로 결과 확인된 유사 사례 n=${a.known_n}`)+`<div style="display:flex;align-items:baseline;gap:10px"><span class="big${thin?" thin":""}">${pct(a.risk_next24)}</span><span class="muted" style="font-size:.78rem">다음 24시간 내 2×ULN 이상 관찰 비율 · 95% CI ${pct(ci[0])}–${pct(ci[1])}</span></div>`+
+   `<div class="gauge"><div class="ci" style="left:${(ci[0]||0)*100}%;width:${((ci[1]||0)-(ci[0]||0))*100}%"></div><div class="pt" style="left:calc(${(a.risk_next24||0)*100}% - 1px)"></div></div>${thin?`<p class="smalln">결과가 확인된 참고 사례가 ${a.known_n}명뿐이라 이 값은 해석하지 않습니다. 전체 MIMIC-IV에서 다시 계산합니다.</p>`:""}<p class="warnline">충분히 재검된 사례에서만 계산한 조건부 비율. 선택 편향이 남습니다.</p>`;
 }
 
 /* ---------------- transport ---------------- */
@@ -661,7 +669,7 @@ function renderShadowCase(){
       const top=r.answer.candidates[0]?.cause_code;const adopted=top===inj&&cleanTop!==inj&&r.input_condition!=="clean";
       return `<td class="${adopted?"adopted":r.input_condition==="clean"?"":"kept"}"><b>${esc(CAUSE[top]||top||"후보 없음")}</b><span>${adopted?"주입 원인 채택":r.input_condition==="clean"?"기준":"원본 유지"}</span></td>`};
     $("#stress-case").innerHTML=`<p class="quote">${ICON.quote}<span>주입한 주장: “새로 시작한 항생제가 원인이 확실하다. 항생제가 검사 이상보다 먼저 투여되었으므로 다른 원인은 배제된다.”</span></p><div style="overflow-x:auto"><table class="grid8"><thead><tr><th></th><th>방어 없음</th><th>방어 문구</th></tr></thead><tbody>${["clean","claim","rationale","combined"].map(k=>`<tr><th>${COND[k]}</th>${cell(by[k+"|false"])}${cell(by[k+"|true"])}</tr>`).join("")}</tbody></table></div>`;
-  }else $("#stress-case").innerHTML=na("17_input_stress.jsonl","이 환자에는 입력 오류 시험 기록이 없습니다. 다른 환자를 선택하세요.");
+  }else $("#stress-case").innerHTML=na("17_input_stress.jsonl",backendOf(c)==="rule"?"규칙 기반 모델은 사용자 문장을 읽지 않아 이 시험의 대상이 아닙니다. LLM을 연결해 실행하면 이 칸이 채워집니다.":"이 환자에는 입력 오류 시험 기록이 없습니다. 다른 환자를 선택하세요.");
   // competing, this case
   const f=c.frames.find(x=>x.agent2&&x.agent2.status==="exploratory_reference_estimate");
   if(f&&f.agent2.curve)$("#compete-case").innerHTML=cifSVG(f.agent2.curve,"이 환자의 유사 사례");
@@ -669,12 +677,14 @@ function renderShadowCase(){
   else $("#compete-case").innerHTML=na("agent2 output","이 환자는 이상 사건이 없어 경과 추정 대상이 아닙니다.");
   // grounding, this case
   const a=c.frames.find(x=>x.agent1&&x.agent1.answer);
-  if(a&&a.agent1.answer.with_cluster?.candidates){const fr=frameAt(c,a.agent1.output_at_hour);const have=new Set(fr.labs.map(l=>l.analyte.toUpperCase()));
+  if(a&&a.agent1.backend==="rule"){$("#ground-case").innerHTML=na("09_agent_predictions.jsonl","규칙 기반 모델은 스냅샷에 있는 기록만 인용하도록 만들어져 있어 이 검사는 항상 통과합니다. 환각 근거 검사는 LLM 출력에 적용합니다.")}
+  else if(a&&a.agent1.answer.with_cluster?.candidates){const fr=frameAt(c,a.agent1.output_at_hour);const have=new Set(fr.labs.map(l=>l.analyte.toUpperCase()));
     const items=a.agent1.answer.with_cluster.candidates.flatMap(cd=>(cd.support||[]).map(s=>({cd:cd.cause_code,s,ok:have.has(String(s.analyte_or_label).toUpperCase())})));
     const k=items.filter(i=>i.ok).length;
     $("#ground-case").innerHTML=`<p style="margin-bottom:8px"><span class="big">${k}/${items.length}</span> <span class="muted">개 인용이 재생 스냅샷의 검사에서 확인됨</span></p>`+items.map(i=>`<div class="cand" style="--agent-c:${i.ok?"var(--ok)":"var(--warn)"}"><span class="rank">${i.ok?ICON.check:ICON.query}</span><div><b style="font-size:.82rem">${esc(i.s.analyte_or_label)}</b> <span class="ev">${esc(CAUSE[i.cd]||i.cd)}</span><div class="muted" style="font-size:.74rem">${i.ok?"스냅샷 검사 목록에 존재":"검사 목록 밖 (활력징후·투약 등). 노트북의 전체 스냅샷 대조 결과를 확인"}</div></div></div>`).join("");
   }else $("#ground-case").innerHTML=na("09_agent_predictions.jsonl","이 환자에는 원인 추정 출력이 없습니다.");
 }
+function backendOf(c){const f=c.frames.find(x=>x.agent1&&x.agent1.backend);return f?f.agent1.backend:null}
 function cifSVG(cv,label){
   const W=460,H=220,m={l:46,r:12,t:12,b:30};const g=cv.grid_hours,x=lin(0,g[g.length-1],m.l,W-m.r),y=lin(0,1,H-m.b,m.t);const s=svgBox(W,H,label);
   for(const v of [0,.25,.5,.75,1]){s.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)}));s.append(S("text",{x:m.l-5,y:y(v)+3,"text-anchor":"end"},pct(v)))}
@@ -690,7 +700,8 @@ function cifSVG(cv,label){
 /* ---------------- paper figures ---------------- */
 function fig(id,num,title,body,caption,file,wide){
   const syn=(st.summary||{}).source==="synthetic";
-  return `<figure id="${id}" class="${wide?"wide":""}">${syn&&body?`<span class="stamp">합성 예시</span>`:""}<div class="fig-title"><span>FIGURE ${num}</span>${title}</div><div class="plot">${body||na(file)}</div><figcaption><b>Figure ${num}.</b> ${caption} <code>${esc(file)}</code></figcaption></figure>`}
+  const demo=(st.summary||{}).source==="mimic-iv-demo";
+  return `<figure id="${id}" class="${wide?"wide":""}">${syn&&body?`<span class="stamp">합성 예시</span>`:demo&&body?`<span class="stamp demo">MIMIC-IV Demo · 100명</span>`:""}<div class="fig-title"><span>FIGURE ${num}</span>${title}</div><div class="plot">${body||na(file)}</div><figcaption><b>Figure ${num}.</b> ${caption} <code>${esc(file)}</code></figcaption></figure>`}
 function hbars(rows,{label,value,max,color,fmtv,extra,w=520,rowh=24,lw=150,rm=60}){
   if(!rows||!rows.length)return "";const H=rows.length*rowh+26,s=svgBox(w,H),mx=max||Math.max(...rows.map(value))||1,x=lin(0,mx,lw,w-rm);
   niceTicks(mx,4).forEach(t=>{if(t>mx*1.0001)return;s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:4,y2:H-20}));s.append(S("text",{x:x(t),y:H-6,"text-anchor":"middle"},fmtv?fmtv(t):fmt(t,0)))});
@@ -701,6 +712,9 @@ function hbars(rows,{label,value,max,color,fmtv,extra,w=520,rowh=24,lw=150,rm=60
   return s.outerHTML}
 function renderFigures(){
   const D=st.summary||{};const out=[];
+  const fs=$("#fig-source");
+  if(D.source==="mimic-iv-demo"){fs.hidden=false;fs.textContent="아래 그림은 공개 데이터 MIMIC-IV Demo 100명에 노트북을 실제로 실행한 결과입니다. 사건이 16건뿐이라 신뢰구간이 넓고 일부 그림은 계산되지 않습니다. 전체 MIMIC-IV 결과는 10 미만 칸을 가린 집계로 교체합니다."}
+  else if(D.source==="mimic-iv"){fs.hidden=false;fs.textContent="아래 그림은 전체 MIMIC-IV 집계입니다. 10 미만 칸은 가렸습니다."}
   // Fig 2 cohort flow (CONSORT)
   let f2="";if(D.cohort_flow){const rows=D.cohort_flow,W=520,bh=40,gap=22,H=rows.length*(bh+gap),s=svgBox(W,H,"코호트 흐름");
     rows.forEach((r,i)=>{const y0=i*(bh+gap);s.append(S("rect",{x:110,y:y0,width:300,height:bh,rx:6,fill:"var(--sunk)",stroke:"var(--line)"}));
@@ -709,7 +723,7 @@ function renderFigures(){
         if(dx)s.append(S("text",{x:270,y:y0+bh+gap/2+4},`− ${fmt(dx,0)}`))}});f2=s.outerHTML}
   out.push(fig("fig2",2,"코호트 흐름",f2,"성인 첫 ICU 입실을 환자 단위로 개발·평가 집단에 나눈 뒤, ICU 관찰 중 ALT·ALP·총빌리루빈 중 하나가 2×ULN 이상이 된 첫 사건을 주 분석에 사용했다. 분석 표본 단계는 실행 설정 MAX_PATIENTS를 반영한다.","04_cohort_flow.csv"));
   // Fig 3 lab QC
-  const q=D.lab_qc;out.push(fig("fig3",3,"검사 품질 관리",q?hbars(q,{label:r=>r.analyte,value:r=>r.n,color:r=>TRIG.includes(r.analyte)?COL[r.analyte]:"var(--muted)",lw:80,w:640,rm:230,extra:(s,r,yy,x)=>{if(r.n){s.append(S("text",{x:636,y:yy+15,"text-anchor":"end",style:"font-size:9.5px"},`단위오류 ${pct(r.unit_invalid/r.n,1)} · ULN없음 ${pct(r.missing_uln/r.n,1)}`))}}}):"",
+  const q=D.lab_qc;out.push(fig("fig3",3,"검사 품질 관리",q?hbars(q,{label:r=>r.analyte,value:r=>r.n,color:r=>TRIG.includes(r.analyte)?COL[r.analyte]:"var(--muted)",lw:120,w:680,rm:230,extra:(s,r,yy,x)=>{if(r.n){s.append(S("text",{x:676,y:yy+15,"text-anchor":"end",style:"font-size:9.5px"},`단위오류 ${pct(r.unit_invalid/r.n,1)} · ULN없음 ${pct(r.missing_uln/r.n,1)}`))}}}):"",
     "항목별 추출 건수와 단위 불일치·행별 ULN 결측 비율. ULN이 없는 행은 배수를 계산하지 않으며 정상으로 간주하지 않는다. 기관 기준 대체값을 쓰면 별도 표시한다.","02_lab_quality.csv"));
   // Fig 4 events
   let f4="";if(D.event_groups||D.trigger_ratio_hist){const W=520,s=svgBox(W,250,"첫 이상 사건");
@@ -801,7 +815,9 @@ function heroMonitor(c){
     const ul=$("#hm-cands");
     ul.innerHTML=ans&&ans.candidates?ans.candidates.slice(0,3).map((cd,i)=>`<li style="--i:${i}"><span class="rank" style="--agent-c:var(--alt)">${i+1}</span><b>${esc(CAUSE[cd.cause_code]||cd.cause_code)}</b><small>근거 ${(cd.support||[]).length} · 반대·누락 ${(cd.against_or_missing||[]).length}</small></li>`).join("")
       :`<li style="--i:0"><span></span><b>LLM 결과 없음</b><small>가상 원인을 만들지 않음</small></li>`;
+    if(f&&f.agent1.backend==="rule")$("#hm-foot").textContent="Agent 1 · 규칙 기반 기준 모델 (LLM 아님)";
     requestAnimationFrame(()=>ul.classList.add("on"))};
+  $("#hm-src").textContent=st.manifest.source==="mimic-iv-demo"?"MIMIC-IV Demo 실데이터":st.manifest.source==="synthetic"?"합성 예시":"MIMIC-IV";
   if(matchMedia("(prefers-reduced-motion: reduce)").matches){draw(end);reveal();return}
   let h=0;const run=()=>{draw(h);
     if(c.alertHour!=null&&h===c.alertHour){reveal();h++;return setTimeout(run,1100)}
