@@ -5,6 +5,7 @@ MIMIC-IV ICU 환자의 ALT·ALP·총빌리루빈을 한 시간 단위로 재생�
 - **시연 페이지**: GitHub Pages (`site/`). 저장소 Settings → Pages → Source: GitHub Actions 설정 후 `main`에 병합하면 배포됩니다.
 - **검토 문서**: [docs/REVIEW.md](docs/REVIEW.md) (계획 검토, 수정 내역, 발표 전략, 오늘 밤 실행 순서)
 - **실행 순서**: [docs/RUNBOOK.md](docs/RUNBOOK.md) (전체 MIMIC-IV 모델 개발 → 결과 표 → 사이트·발표 자료 교체)
+- **한 번에 실행**: `notebooks/KCD_RUN_ALL.ipynb` 하나를 기관 PC에서 끝까지 실행하면 돌려줄 `kcd_return_package_*.zip`이 만들어집니다 (모델·환자 단위 파일 제외)
 
 ## 현재 상태
 

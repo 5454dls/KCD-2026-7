@@ -62,3 +62,26 @@ class DevelopV2Tests(unittest.TestCase):
         total = f(X.to_numpy())[0] - f(B.to_numpy()).mean()
         self.assertAlmostEqual(phi.sum(), total, places=9)  # efficiency: contributions add up exactly
         self.assertAlmostEqual(phi[0][groups.index("background")], 0.0, places=12)  # unused feature gets zero
+
+
+class PatternTests(unittest.TestCase):
+    def test_r_pattern_categories(self):
+        from kcd_liver.pattern import r_pattern
+        self.assertEqual(r_pattern(10, 1), "hepatocellular")
+        self.assertEqual(r_pattern(2.5, 3), "cholestatic")
+        self.assertEqual(r_pattern(6, 2), "mixed")
+        self.assertEqual(r_pattern(1, 1, 3), "isolated_bilirubin")
+        self.assertEqual(r_pattern(None, None), "unclassifiable")
+
+    def test_gmm_check_reports_stability(self):
+        import numpy as np
+        from kcd_liver.pattern import gmm_explore
+        rng = np.random.default_rng(0)
+        df = pd.DataFrame({"ALT_ratio": np.r_[rng.lognormal(3, .2, 60), rng.lognormal(0, .2, 60)],
+                           "ALP_ratio": np.r_[rng.lognormal(0, .2, 60), rng.lognormal(1.5, .2, 60)]})
+        out, lab = gmm_explore(df, ["ALT_ratio", "ALP_ratio"], ks=range(2, 5), n_boot=10)
+        self.assertEqual(out["k_selected"], 2)
+        self.assertTrue(out["used"])
+        small, none = gmm_explore(df.head(10), ["ALT_ratio"])
+        self.assertEqual(small["status"], "insufficient")
+        self.assertIsNone(none)

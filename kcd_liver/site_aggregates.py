@@ -20,7 +20,7 @@ from .evaluation import adoption_table, wilson
 TRIGGERS = ["ALT", "ALP", "TBIL"]
 RATIO_BINS = [2, 3, 5, 10, 20, 50, math.inf]
 COUNT_KEYS = {"n", "k", "count", "n_patients_flagged", "unit_invalid", "missing_uln", "adopted",
-              "errors", "abstained", "n_known", "n_all", "at_risk", "events"}
+              "errors", "abstained", "n_known", "n_all", "at_risk", "events", "sizes"}
 
 
 def _records(df: pd.DataFrame | None) -> list[dict] | None:
@@ -127,7 +127,7 @@ def suppress(obj, min_cell: int | None):
 
 def build_site_aggregates(*, source: str, flow: pd.DataFrame | None = None, qc: pd.DataFrame | None = None,
                           events: pd.DataFrame | None = None, features: pd.DataFrame | None = None,
-                          cluster_cols: list[str] | None = None, outcomes: pd.DataFrame | None = None,
+                          cluster_cols: list[str] | None = None, clustering_check: dict | None = None, outcomes: pd.DataFrame | None = None,
                           risk_reference: pd.DataFrame | None = None, cause_validation: pd.DataFrame | None = None,
                           paired_test: Mapping | None = None, grounding: pd.DataFrame | None = None,
                           stress_rows: list[Mapping] | None = None, injected_cause: str = "drug_related",
@@ -147,14 +147,18 @@ def build_site_aggregates(*, source: str, flow: pd.DataFrame | None = None, qc: 
         hist = e.groupby(["trigger_analyte", "bin"], observed=False).size().rename("count").reset_index()
         hist["bin"] = hist["bin"].map(lambda b: f"{b.left:g}-{b.right:g}" if math.isfinite(b.right) else f"≥{b.left:g}")
         agg["trigger_ratio_hist"] = _records(hist.rename(columns={"trigger_analyte": "analyte"}))
-    if features is not None and len(features) and "cluster" in features and (features.cluster >= 0).any():
+    key = "liver_pattern" if features is not None and "liver_pattern" in features else "cluster"
+    if features is not None and len(features) and key in features and (key == "liver_pattern" or (features.cluster >= 0).any()):
         cols = [c for c in (cluster_cols or []) if c in features]
-        dev = features[features.split.eq("development") & features.cluster.ge(0)]
-        prof = dev.groupby("cluster")[cols].median()
-        prof.insert(0, "n", dev.groupby("cluster").size())
+        dev = features[features.split.eq("development")]
+        dev = dev[dev.cluster.ge(0)] if key == "cluster" else dev[dev.liver_pattern.ne("unclassifiable")]
+        prof = dev.groupby(key)[cols].median()
+        prof.insert(0, "n", dev.groupby(key).size())
         z = (prof[cols] - prof[cols].mean()) / prof[cols].std(ddof=0).replace(0, np.nan)
-        agg["cluster_profile"] = {"features": cols, "rows": _records(prof.reset_index()),
-                                  "z": _records(z.reset_index())}
+        agg["cluster_profile"] = {"features": cols, "grouping": key, "rows": _records(prof.reset_index().rename(columns={key: "cluster"})),
+                                  "z": _records(z.reset_index().rename(columns={key: "cluster"}))}
+    if clustering_check:
+        agg["clustering_check"] = {k: v for k, v in clustering_check.items()}
     if outcomes is not None and len(outcomes):
         agg["outcome_paths"] = _records(outcomes.observed_path.value_counts().rename_axis("path").rename("n").reset_index())
         agg["first_event_48h"] = _records(outcomes.first_event_48h.value_counts().rename_axis("event").rename("n").reset_index())

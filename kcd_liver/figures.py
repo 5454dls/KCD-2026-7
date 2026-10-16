@@ -114,6 +114,9 @@ def fig4_events(agg, axes):
         _na(b, "trigger_ratio")
 
 
+PATTERN_KO = {"hepatocellular": "간세포형", "mixed": "혼합형", "cholestatic": "담즙정체형", "isolated_bilirubin": "빌리루빈 단독"}
+
+
 def fig5_clusters(agg, ax):
     cp = agg.get("cluster_profile")
     if not cp or not cp.get("rows"):
@@ -126,10 +129,12 @@ def fig5_clusters(agg, ax):
             v = r.get(f)
             ax.text(j, i, "–" if v is None else f"{v:.1f}", ha="center", va="center", fontsize=8)
     ax.set_xticks(range(len(feats)), [f.replace("_ratio", "").replace("_slope24", "\n기울기").replace("_delta24", "\nΔ") for f in feats], fontsize=7)
-    ax.set_yticks(range(len(cp["rows"])), [f"군집 {r['cluster']} (n={r['n'] if r['n'] is not None else '<10'})" for r in cp["rows"]])
+    ax.set_yticks(range(len(cp["rows"])), [(f"{PATTERN_KO.get(r['cluster'], r['cluster'])}" if cp.get("grouping") == "liver_pattern" else f"군집 {r['cluster']}") + f" (n={r['n'] if r['n'] is not None else '<10'})" for r in cp["rows"]])
     ax.grid(False)
-    plt.colorbar(im, ax=ax, fraction=.04, label="군집 간 z")
-    ax.set_title("Figure 5. 개발 집단 패턴 군집 (중앙값, 색=z)")
+    plt.colorbar(im, ax=ax, fraction=.04, label="패턴 간 z")
+    ck = agg.get("clustering_check") or {}
+    note = f" · GMM K={ck.get('k_selected')}, ARI {ck.get('ari_median', float('nan')):.2f}, {'사용' if ck.get('used') else '불안정, 미사용'}" if ck.get("status") == "ok" else ""
+    ax.set_title("Figure 5. 간 손상 패턴 (ACG R 비, 개발 집단 중앙값)" + note, fontsize=9)
 
 
 def fig6_validation(agg, ax):
@@ -141,7 +146,7 @@ def fig6_validation(agg, ax):
             continue
         c = PALETTE["ALT"] if r["condition"] == "cluster" else PALETTE["muted"]
         ax.errorbar(r["rate"], i, xerr=[[r["rate"] - r["ci_low"]], [r["ci_high"] - r["rate"]]], fmt="s", color=c, capsize=3)
-    ax.set_yticks(range(len(cv)), [f"{'Top-1' if r['metric'] == 'top1' else 'Top-3'} · {'+군집' if r['condition'] == 'cluster' else '기본'}  {r.get('k')}/{r.get('n')}" for r in cv])
+    ax.set_yticks(range(len(cv)), [f"{'Top-1' if r['metric'] == 'top1' else 'Top-3'} · {'+패턴' if r['condition'] == 'cluster' else '기본'}  {r.get('k')}/{r.get('n')}" for r in cv])
     ax.invert_yaxis()
     ax.set_xlim(0, 1)
     ax.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1))

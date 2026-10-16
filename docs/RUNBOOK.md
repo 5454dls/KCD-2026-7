@@ -1,6 +1,22 @@
-# 오늘 밤 실행 순서 (전체 MIMIC-IV 개발 → 결과 표 → 발표)
+# 실행 순서 (전체 MIMIC-IV 개발 → 결과 → 발표)
 
-전체 MIMIC-IV는 기관 PC에서만 실행합니다. 이 저장소에는 집계 결과(`results_full.json`)만 들어옵니다.
+전체 MIMIC-IV는 기관 PC에서만 실행합니다. 이 저장소에는 집계 결과만 들어옵니다.
+
+## 가장 쉬운 방법: 노트북 하나
+
+```powershell
+pip install pandas numpy scikit-learn matplotlib joblib nbformat nbclient ipykernel
+```
+
+`notebooks/KCD_RUN_ALL.ipynb`를 열고 첫 셀의 `MIMIC_ROOT`만 확인한 뒤 위에서부터 끝까지 실행합니다. 인터넷이 막힌 PC라면 FHIR 데모를 미리 받아 `DEMO_FHIR_DIR`에 그 `fhir` 폴더를 적습니다.
+
+끝나면 저장소 폴더에 `kcd_return_package_<날짜>.zip`이 생깁니다. 이 zip 하나를 대화에 올려주시면 사이트와 발표 자료 숫자를 교체합니다.
+
+- 들어가는 것: `results_full.json`(10 미만 칸 가림), 논문 표 CSV, 집계 그림, 공개 데모 환자 시연 JSON, `run_report.json`(단계별 성공/실패와 소요 시간)
+- 들어가지 않는 것: 학습된 모델(`run_all/models/*.joblib`), 전체 MIMIC-IV 환자 단위 파일, 실행된 노트북 사본
+- 한 단계가 실패해도 나머지와 압축은 진행되고, 실패 이유가 `run_report.json`에 적힙니다.
+
+아래 1~4는 같은 일을 손으로 나눠 하는 방법입니다.
 
 ## 0. 준비 (5분)
 

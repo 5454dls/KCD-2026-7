@@ -8,20 +8,39 @@ Rules:
 """
 from __future__ import annotations
 
+import fnmatch
 import json
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN = ["*.sqlite", "*.sqlite3", "*_private.csv", "*EVALUATION_ONLY*", "*.duckdb"]
+# gitignored local work folders: private files there never reach the repository
+LOCAL_ONLY = {".git", "run_all", "data", "models", "m4_data"}  # top-level only (site/data is checked)
+DEEP_LOCAL = {".git", "run_all", "kcd_liver_v2_outputs", "specialist_blinded_packets"}
+
+
+def committable_files() -> list[Path]:
+    """Files git could commit (tracked + untracked not ignored); without git, skip LOCAL_ONLY folders."""
+    try:
+        out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"], cwd=ROOT,
+                             capture_output=True, check=True).stdout.decode("utf-8")
+        return [Path(x) for x in out.split("\0") if x and (ROOT / x).exists()]
+    except (OSError, subprocess.CalledProcessError):
+        files = []
+        for p in ROOT.rglob("*"):
+            rel = p.relative_to(ROOT)
+            if p.is_file() and rel.parts[0] not in LOCAL_ONLY and not set(rel.parts) & DEEP_LOCAL:
+                files.append(rel)
+        return files
 
 
 def main() -> int:
     problems = []
-    for pattern in FORBIDDEN:
-        for p in ROOT.rglob(pattern):
-            if ".git" not in p.parts:
-                problems.append(f"forbidden file in repo tree: {p.relative_to(ROOT)}")
+    for rel in committable_files():
+        if any(fnmatch.fnmatch(rel.name, pattern) for pattern in FORBIDDEN):
+            problems.append(f"forbidden file in repo tree: {rel}")
     data = ROOT / "site" / "data"
     manifest = json.loads((data / "manifest.json").read_text(encoding="utf-8")) if (data / "manifest.json").exists() else {}
     cases = list((data / "cases").glob("*.json")) if (data / "cases").exists() else []

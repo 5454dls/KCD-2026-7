@@ -485,7 +485,7 @@ footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px soli
     <div class="stage">
       <div class="stage-h"><i>3</i>시점 고정</div>
       <div class="node guard"><b>공개 시각 = max(charttime, storetime)</b><small>그 시각까지 보고된 검사·투약·활력징후만 스냅샷에 포함</small></div>
-      <a class="node" href="#fig5"><b>패턴 군집 (개발 집단만)</b><small>배수·24시간 기울기·변화량, KMeans k=4</small><span class="fig">Fig 5<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="node" href="#fig5"><b>간 손상 패턴 (고정 범주)</b><small>ACG R 비 4범주 · 보조 GMM은 안정할 때만</small><span class="fig">Fig 5<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
       <div class="node guard"><b>평가 전용 금고</b><small>퇴원·사망·이후 검사는 에이전트가 접근 불가</small></div>
     </div>
     <div class="stage">
@@ -766,7 +766,7 @@ function renderA1(f,c,h){
   if(!on){el.innerHTML=agentHead("A1","원인 후보","대기")+`<p class="empty-agent">첫 이상 사건 전입니다. 알림이 없으면 원인 추정을 호출하지 않습니다.</p>`;return}
   const ans=(a.answer||{})[st.a1view]||{};
   const rule=a.backend==="rule";
-  const seg=rule?`<span class="model-tag">규칙 기반 기준 모델 · LLM 아님</span>`:`<span class="seg" role="group" aria-label="입력 조건"><button data-v="base" aria-pressed="${st.a1view==="base"}">기본</button><button data-v="with_cluster" aria-pressed="${st.a1view==="with_cluster"}">+군집</button></span>`;
+  const seg=rule?`<span class="model-tag">규칙 기반 기준 모델 · LLM 아님</span>`:`<span class="seg" role="group" aria-label="입력 조건"><button data-v="base" aria-pressed="${st.a1view==="base"}">기본</button><button data-v="with_cluster" aria-pressed="${st.a1view==="with_cluster"}">+패턴</button></span>`;
   let body;
   if(!ans.candidates){body=`<p class="empty-agent">LLM 결과 없음 (${esc(ans.status||"model_not_run")}). 화면은 가상의 원인을 만들지 않습니다.</p>`}
   else if(ans.flags){const order=["hypoxic_ischemic","sepsis_cholestasis","drug_related","biliary","congestive","baseline_liver","other_hepatic","nonhepatic"];
@@ -910,19 +910,19 @@ function renderFigures(){
     f4=s.outerHTML}
   out.push(fig("fig4",4,"첫 이상 사건의 구성과 크기",f4,"(a) 입실 24시간 내 기준 충족은 입실 초기 이상, 이후 첫 충족이면서 같은 항목 48시간 내 이전 값이 기준 미만이면 신규, 이전 값이 없으면 시점 불명. (b) 사건을 일으킨 항목의 ULN 배수. t0는 결과 공개 시각이며 실제 손상 시작 시각이 아니다.","05_events_private.csv → 집계",false));
   // Fig 5 cluster heatmap
-  let f5="";const cp=D.cluster_profile;if(cp&&cp.rows){const fs=cp.features,W=520,cw=Math.min(62,(W-110)/fs.length),rh=34,H=40+cp.rows.length*rh,s=svgBox(W,H,"군집 프로파일");
+  let f5="";const cp=D.cluster_profile;if(cp&&cp.rows){const fs=cp.features,W=520,cw=Math.min(62,(W-110)/fs.length),rh=34,H=40+cp.rows.length*rh,s=svgBox(W,H,"간 손상 패턴 프로파일");
     fs.forEach((c,j)=>s.append(S("text",{x:110+j*cw+cw/2,y:14,"text-anchor":"middle",style:"font-size:9px"},c.replace("_ratio","").replace("_slope24"," 기울기").replace("_delta24"," Δ"))));
-    cp.rows.forEach((r,i)=>{const z=cp.z[i]||{};s.append(S("text",{x:100,y:30+i*rh+rh/2,"text-anchor":"end",class:"ink"},`군집 ${r.cluster} · n=${r.n??"<10"}`));
+    cp.rows.forEach((r,i)=>{const z=cp.z[i]||{};s.append(S("text",{x:100,y:30+i*rh+rh/2,"text-anchor":"end",class:"ink"},`${cp.grouping==="liver_pattern"?({hepatocellular:"간세포형",mixed:"혼합형",cholestatic:"담즙정체형",isolated_bilirubin:"빌리루빈 단독"}[r.cluster]||r.cluster):"군집 "+r.cluster} · n=${r.n??"<10"}`));
       fs.forEach((c,j)=>{const v=z[c],a=v==null?0:Math.max(-2,Math.min(2,v));s.append(S("rect",{x:110+j*cw,y:22+i*rh,width:cw-3,height:rh-4,rx:4,fill:a>=0?"var(--accent)":"var(--alt)","fill-opacity":(.12+Math.abs(a)/2*.75).toFixed(2)}));
         s.append(S("text",{x:110+j*cw+cw/2,y:22+i*rh+rh/2+2,"text-anchor":"middle",class:"ink"},fmt(r[c],1)))})});f5=s.outerHTML}
-  out.push(fig("fig5",5,"개발 집단 전용 패턴 군집",f5,"t0 시점 배수·24시간 기울기·변화량의 군집별 중앙값(칸 안 숫자)과 군집 간 표준화 점수(색). 평가 환자는 고정된 모델로 할당만 했다. 군집은 원인 정답이 아니며 Agent 1에 참고 정보로만 제공된다.","08_features.csv → 집계"));
+  out.push(fig("fig5",5,"간 손상 패턴 (ACG R 비)",f5,"t0 시점 R 비로 정한 고정 범주(간세포형 R≥5, 담즙정체형 R≤2, 그 사이 혼합형, 효소 정상·빌리루빈 상승은 빌리루빈 단독)별 배수 중앙값(칸 안 숫자)과 범주 간 표준화 점수(색). 원인이 아니라 생화학 패턴이며 Agent 1에는 이 범주만 들어갑니다. 비지도 군집(log2 배수에 GMM, BIC로 K 선택, 부트스트랩 ARI)은 보조 분석이며 "+(D.clustering_check&&D.clustering_check.status==="ok"?`이번 실행은 K=${D.clustering_check.k_selected}, ARI 중앙값 ${fmt(D.clustering_check.ari_median,2)}로 ${D.clustering_check.used?"안정":"불안정해 사용하지 않음"}.`:"표본이 부족해 실행하지 않았습니다."));
   // Fig 6 validation forest + grounding
   let f6="";const cv=D.cause_validation;if(cv){const W=520,rows=cv,H=rows.length*30+60,s=svgBox(W,H,"원인 추정 검증"),x=lin(0,1,180,W-20);
     [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:8,y2:H-40}));s.append(S("text",{x:x(t),y:H-26,"text-anchor":"middle"},pct(t)))});
-    rows.forEach((r,i)=>{const yy=20+i*30,c=r.condition==="cluster"?"var(--alt)":"var(--muted)";s.append(S("text",{x:170,y:yy+4,"text-anchor":"end",class:"ink"},`${r.metric==="top1"?"Top-1":"Top-3"} · ${r.condition==="cluster"?"+군집":"기본"}  ${r.k??"–"}/${r.n??"–"}`));
+    rows.forEach((r,i)=>{const yy=20+i*30,c=r.condition==="cluster"?"var(--alt)":"var(--muted)";s.append(S("text",{x:170,y:yy+4,"text-anchor":"end",class:"ink"},`${r.metric==="top1"?"Top-1":"Top-3"} · ${r.condition==="cluster"?"+패턴":"기본"}  ${r.k??"–"}/${r.n??"–"}`));
       if(r.rate==null)return;s.append(S("line",{x1:x(r.ci_low),x2:x(r.ci_high),y1:yy,y2:yy,stroke:c,"stroke-width":2}));s.append(S("rect",{x:x(r.rate)-5,y:yy-5,width:10,height:10,fill:c}))});
-    const p=D.paired_test;if(p){s.append(S("text",{x:10,y:H-8,class:"ink"},`짝지은 McNemar (Top-1): 불일치 ${p.discordant}쌍 (기본만 ${p.base_only} · 군집만 ${p.new_only}), 정확 p = ${fmt(p.p_exact_two_sided,3)}`))}f6=s.outerHTML}
-  out.push(fig("fig6",6,"전문의 참조 대비 원인 후보 일치",f6,"단일 최우선 원인 판정이 가능한 평가 사례에서의 Top-1·Top-3 일치율과 95% Wilson CI. 같은 환자에 군집 정보만 추가했으므로 두 조건은 짝지은 자료이며 비교는 McNemar 정확 검정으로 한다. 실행 실패는 분모에서 빼지 않는다. 전문의 1인 판정은 참조 기준이며 확진이 아니다.","12_cause_validation.csv · 35_paired_mcnemar.csv",true));
+    const p=D.paired_test;if(p){s.append(S("text",{x:10,y:H-8,class:"ink"},`짝지은 McNemar (Top-1): 불일치 ${p.discordant}쌍 (기본만 ${p.base_only} · 패턴 추가만 ${p.new_only}), 정확 p = ${fmt(p.p_exact_two_sided,3)}`))}f6=s.outerHTML}
+  out.push(fig("fig6",6,"전문의 참조 대비 원인 후보 일치",f6,"단일 최우선 원인 판정이 가능한 평가 사례에서의 Top-1·Top-3 일치율과 95% Wilson CI. 같은 환자에 R 비 패턴 정보만 추가했으므로 두 조건은 짝지은 자료이며 비교는 McNemar 정확 검정으로 한다. 실행 실패는 분모에서 빼지 않는다. 전문의 1인 판정은 참조 기준이며 확진이 아니다.","12_cause_validation.csv · 35_paired_mcnemar.csv",true));
   // Fig 7 outcomes + CIF
   let f7="";if(D.cif_development||D.outcome_paths){let html="";
     if(D.outcome_paths)html+=hbars(D.outcome_paths,{label:r=>PATH[r.path]||r.path,value:r=>r.n,lw:150,color:r=>/death/.test(r.path)?"var(--c-death)":/resolved_then_hospital/.test(r.path)?"var(--c-res)":"var(--c-dis)"});
@@ -953,12 +953,12 @@ function renderFigures(){
   // cohort-level shadow cards
   $("#stress-cohort").innerHTML=f9||na("17_input_stress.jsonl");
   $("#compete-cohort").innerHTML=D.cif_development?cifSVG(D.cif_development,"개발 집단"):na("risk_reference (notebook)");
-  const g=D.grounding;$("#ground-cohort").innerHTML=g?hbars(g,{label:r=>`${r.condition==="cluster"?"+군집":"기본"} ${r.verified??"<10"}/${r.support_items??"<10"}`,value:r=>r.rate,max:1,fmtv:v=>pct(v,0),lw:130,color:()=>"var(--ok)"}):na("36_grounding_summary.csv");
+  const g=D.grounding;$("#ground-cohort").innerHTML=g?hbars(g,{label:r=>`${r.condition==="cluster"?"+패턴":"기본"} ${r.verified??"<10"}/${r.support_items??"<10"}`,value:r=>r.rate,max:1,fmtv:v=>pct(v,0),lw:130,color:()=>"var(--ok)"}):na("36_grounding_summary.csv");
   $("#alert-agg").innerHTML=D.alert_aggregation?hbars(D.alert_aggregation,{label:r=>r.comparison==="raw_abnormal_lab_records"?"기준 이상 검사 기록":"환자별 첫 사건 알림",value:r=>r.n,lw:150,color:r=>r.comparison==="raw_abnormal_lab_records"?"var(--muted)":"var(--accent)"}):na("18_alert_aggregation.csv");
   $("#alert-thr").innerHTML=D.threshold_sensitivity?hbars(D.threshold_sensitivity,{label:r=>`${r.cutoff_fold_uln}×ULN`,value:r=>r.n_patients_flagged,lw:90,color:r=>r.cutoff_fold_uln==2?"var(--crit)":"var(--muted)"}):na("33_threshold_sensitivity.csv");
 }
 function renderMeta(){const m=st.manifest,c=m.config||{};
-  const kv=[["데이터",m.source],["생성 시각",m.built_at],["코드 커밋",m.git_commit||"–"],["임계값",(c.threshold??"–")+"×ULN"],["난수 시드",c.seed??"–"],["군집 수",c.cluster_k??"–"],["LLM 실행",c.LLM_enabled==null?"–":c.LLM_enabled?"예":"아니오"],["M4 커밋",c.m4_reviewed_commit||"–"]];
+  const kv=[["데이터",m.source],["생성 시각",m.built_at],["코드 커밋",m.git_commit||"–"],["임계값",(c.threshold??"–")+"×ULN"],["난수 시드",c.seed??"–"],["보조 군집(GMM K)",c.cluster_k??"–"],["LLM 실행",c.LLM_enabled==null?"–":c.LLM_enabled?"예":"아니오"],["M4 커밋",c.m4_reviewed_commit||"–"]];
   $("#meta").innerHTML=kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}
 /* ---------------- run lanes: A3 hourly, A1/A2 at the alert ---------------- */
 function drawLanes(c,h){

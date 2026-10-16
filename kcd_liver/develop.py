@@ -129,8 +129,8 @@ def history_flags(cohort: pd.DataFrame, admissions: pd.DataFrame | None, diagnos
 # ------------------------------------------------------------------ features
 def _asof(rows: pd.DataFrame, ev: pd.DataFrame, time_col: str, take: list[str], prefix: str, at: str = "t") -> pd.DataFrame:
     if ev.empty:
-        for c in take:
-            rows[prefix + c] = np.nan
+        for c in take:  # an absent analyte: keep time columns datetime so age arithmetic still works
+            rows[prefix + c] = pd.NaT if c in ("charttime", "available_at") else np.nan
         return rows
     right = ev[["stay_id", time_col] + [c for c in take if c != time_col]].dropna(subset=[time_col]).sort_values(time_col)
     right = right.rename(columns={c: prefix + c for c in right.columns if c != "stay_id"})
