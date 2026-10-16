@@ -1,0 +1,39 @@
+{
+ "source": "synthetic",
+ "cases": [
+  {
+   "case_key": "Patient-01",
+   "max_hour": 96,
+   "group": "initial_abnormal",
+   "story": "입실 직후 쇼크, ALT 급상승 후 하강"
+  },
+  {
+   "case_key": "Patient-02",
+   "max_hour": 96,
+   "group": "incident",
+   "story": "정상으로 관찰되다 패혈증 경과 중 빌리루빈 상승"
+  },
+  {
+   "case_key": "Patient-03",
+   "max_hour": 96,
+   "group": "normal",
+   "story": "끝까지 기준 미만, 검사 공백 구간 존재"
+  },
+  {
+   "case_key": "Patient-04",
+   "max_hour": 96,
+   "group": "onset_unknown",
+   "story": "이전 간 검사 없이 첫 측정에서 이상, 항생제 투여 중"
+  }
+ ],
+ "summary_file": "summary.json",
+ "built_at": "2026-10-16T09:32:19+00:00",
+ "config": {
+  "threshold": 2.0,
+  "lookback_hours": 48,
+  "horizon_hours": 48,
+  "seed": 20261016,
+  "cluster_k": 4
+ },
+ "note": "합성 예시 데이터. 실제 MIMIC 결과나 LLM 출력이 아님."
+}

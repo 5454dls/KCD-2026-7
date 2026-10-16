@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KCD 간 감시 에이전트</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="MIMIC-IV ICU 환자의 간 검사 이상을 시간순으로 재생하며 원인 후보, 경과, 24시간 위험을 제시하는 세 에이전트의 시연과 단계별 결과 그림">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a lab-report console. Hero with the thesis, the pipeline as Figure 1,
+   a replay console for the live demo, then numbered paper figures. */
+:root{
+  --paper:#f3f6f5; --surface:#ffffff; --sunk:#e9efed; --ink:#13232a; --muted:#56686d; --line:#d3dedb;
+  --accent:#a8660e; --accent-soft:#f6e7cf;
+  --alt:#0e7a84; --alp:#6a4cb0; --tbil:#c0850b;
+  --ok:#2e7a4c; --warn:#ad6300; --crit:#b53636; --ok-soft:#e1f0e6; --warn-soft:#f8ead5; --crit-soft:#f7e0de;
+  --c-res:#2e7a4c; --c-death:#b53636; --c-dis:#3d6fb0; --c-none:#b9c5c2;
+  --shadow:0 1px 2px rgba(19,35,42,.06),0 8px 24px -12px rgba(19,35,42,.18);
+  --f-display:"Hahmlet","Noto Serif KR","AppleMyungjo",Georgia,serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0d1618; --surface:#132024; --sunk:#0a1214; --ink:#e2ebe9; --muted:#93a6a8; --line:#24363a;
+  --accent:#e3a541; --accent-soft:#3a2c14;
+  --alt:#4bc2cb; --alp:#a88ff0; --tbil:#e7b440;
+  --ok:#5fc08a; --warn:#e6a04a; --crit:#ef7b72; --ok-soft:#173326; --warn-soft:#3a2a14; --crit-soft:#3d1c1a;
+  --c-res:#5fc08a; --c-death:#ef7b72; --c-dis:#79a6e6; --c-none:#3a4d50;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#0d1618; --surface:#132024; --sunk:#0a1214; --ink:#e2ebe9; --muted:#93a6a8; --line:#24363a;
+  --accent:#e3a541; --accent-soft:#3a2c14;
+  --alt:#4bc2cb; --alp:#a88ff0; --tbil:#e7b440;
+  --ok:#5fc08a; --warn:#e6a04a; --crit:#ef7b72; --ok-soft:#173326; --warn-soft:#3a2a14; --crit-soft:#3d1c1a;
+  --c-res:#5fc08a; --c-death:#ef7b72; --c-dis:#79a6e6; --c-none:#3a4d50;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6); color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 var(--f-body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.25;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,1.1rem + 1.4vw,2.1rem);font-weight:700}
+h3{font-size:1.08rem;font-weight:700}
+p{margin:0}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font:600 .74rem/1.2 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+a{color:var(--alt)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:18px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font:700 1rem/1 var(--f-display);white-space:nowrap}
+.brand-mark{width:22px;height:22px}
+.nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.nav a{color:var(--muted);text-decoration:none;font-size:.86rem;padding:6px 10px;border-radius:999px}
+.nav a:hover{background:var(--sunk);color:var(--ink)}
+.src{font:600 .72rem/1 var(--f-mono);padding:6px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.src[data-kind="synthetic"]{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.src[data-kind="mimic-iv-demo"]{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+
+/* hero */
+.hero{padding-block:56px 28px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:40px;align-items:end}
+.hero h1{font-size:clamp(2rem,1.3rem + 2.8vw,3.4rem);font-weight:800;margin-top:14px}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.lede{margin-top:18px;font-size:1.06rem;max-width:62ch;color:var(--muted)}
+.qs{display:grid;gap:10px;counter-reset:q}
+.q{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;padding:12px 14px;border-left:3px solid var(--line);background:var(--surface)}
+.q b{font:600 .75rem var(--f-mono);color:var(--accent)}
+.cta{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);padding:10px 16px;border-radius:999px;cursor:pointer;text-decoration:none;color:var(--ink);font-weight:600;font-size:.92rem}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.notice{margin-top:22px;font-size:.82rem;color:var(--muted);max-width:70ch}
+.synthetic-banner{background:var(--warn-soft);color:var(--warn);font-size:.85rem}
+.synthetic-banner .wrap{padding-block:9px}
+
+/* sections */
+section{padding-block:48px}
+.sec-head{display:grid;gap:8px;margin-bottom:26px;max-width:78ch}
+.sec-head p{color:var(--muted)}
+.rule{border:0;border-top:1px solid var(--line);margin:0}
+
+/* pipeline figure */
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;position:relative}
+.stage{display:grid;gap:8px;align-content:start;position:relative}
+.stage-h{font:600 .72rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px;align-items:center}
+.stage-h i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:.7rem}
+.node{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;font-size:.86rem;line-height:1.45;text-decoration:none;color:var(--ink);display:block;transition:border-color .15s,transform .15s}
+a.node:hover{border-color:var(--accent);transform:translateY(-1px)}
+.node b{display:block;font-size:.9rem;margin-bottom:2px}
+.node small{color:var(--muted);display:block}
+.node .fig{font:500 .7rem var(--f-mono);color:var(--accent);margin-top:6px;display:block}
+.node.agent{border-width:1.5px}
+.node.a1{border-color:var(--alt)} .node.a2{border-color:var(--c-dis)} .node.a3{border-color:var(--alp)}
+.node.guard{background:var(--sunk);border-style:dashed}
+.stage:not(:last-child)::after{content:"";position:absolute;top:34px;right:-12px;width:10px;height:10px;border-top:2px solid var(--muted);border-right:2px solid var(--muted);transform:rotate(45deg);opacity:.5}
+.pipe-foot{margin-top:16px;display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.pipe-foot span{display:inline-flex;gap:6px;align-items:center}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* console */
+.console{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.console-top{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.cases{display:flex;gap:6px;flex-wrap:wrap}
+.case-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 11px;cursor:pointer;text-align:left;display:grid;gap:1px;min-width:0}
+.case-btn b{font:600 .82rem var(--f-mono)}
+.case-btn span{font-size:.72rem;color:var(--muted)}
+.case-btn[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.transport{display:flex;gap:10px;align-items:center;margin-left:auto;flex-wrap:wrap}
+.play{width:42px;height:42px;border-radius:50%;border:0;background:var(--ink);color:var(--paper);cursor:pointer;display:grid;place-items:center}
+.play svg{width:16px;height:16px;fill:currentColor}
+.clock{display:grid;line-height:1.1}
+.clock b{font:600 1.35rem var(--f-mono);font-variant-numeric:tabular-nums}
+.clock span{font-size:.7rem;color:var(--muted)}
+.speed{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:.8rem}
+.scrub{padding:10px 16px 0;display:grid;gap:4px}
+.scrub input{width:100%;accent-color:var(--accent)}
+.ticks{position:relative;height:16px;font:500 .66rem var(--f-mono);color:var(--muted)}
+.ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.ticks .t0{color:var(--crit);font-weight:600}
+.console-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:0}
+.pane{padding:16px;min-width:0}
+.pane+.pane{border-left:1px solid var(--line)}
+.state{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:600 .76rem var(--f-body);padding:4px 10px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.crit{background:var(--crit-soft);color:var(--crit)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font:500 10px var(--f-mono)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .thr{stroke:var(--crit);stroke-dasharray:5 4;stroke-width:1.3}
+.chart .now{stroke:var(--ink);stroke-width:1.2}
+.chart .future{fill:var(--sunk)}
+.chart .lbl-ink{fill:var(--ink);font-weight:600}
+.labs{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:10px}
+.labs th{font:600 .68rem var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+.labs th:first-child,.labs td:first-child{text-align:left}
+.labs td{padding:4px 6px;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line)}
+.labs tr.hi td{color:var(--crit);font-weight:600}
+.labs tr.stale td{color:var(--muted)}
+.labs-wrap{overflow-x:auto;max-height:230px;overflow-y:auto}
+.log{margin-top:12px;display:grid;gap:4px;font-size:.78rem;max-height:150px;overflow:auto}
+.log div{display:grid;grid-template-columns:44px 1fr;gap:8px;color:var(--muted)}
+.log div b{font:600 .74rem var(--f-mono);color:var(--ink)}
+.log div.alert{color:var(--crit)}
+.agents{display:grid;gap:12px}
+.agent{border:1px solid var(--line);border-radius:12px;padding:12px 13px;position:relative;transition:opacity .25s,border-color .25s}
+.agent[data-active="false"]{opacity:.55}
+.agent[data-active="true"]{border-color:var(--agent-c)}
+.agent.a1{--agent-c:var(--alt)} .agent.a2{--agent-c:var(--c-dis)} .agent.a3{--agent-c:var(--alp)}
+.agent-h{display:flex;gap:8px;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.agent-h h3{font-size:.98rem;display:flex;gap:8px;align-items:center}
+.agent-h h3 i{font:600 .68rem var(--f-mono);font-style:normal;color:var(--surface);background:var(--agent-c);padding:2px 6px;border-radius:5px}
+.agent-h small{font:500 .7rem var(--f-mono);color:var(--muted);text-align:right}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:.72rem}
+.seg button{border:0;background:transparent;padding:3px 8px;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.cand{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:7px 0;border-top:1px dashed var(--line)}
+.cand:first-of-type{border-top:0}
+.rank{font:700 .8rem var(--f-mono);color:var(--agent-c)}
+.cand b{font-size:.88rem}
+.cand ul{margin:3px 0 0;padding-left:16px;font-size:.78rem}
+.cand li.sup::marker{content:"+ ";color:var(--ok)}
+.cand li.ag::marker{content:"− ";color:var(--crit)}
+.cand .ev{font:500 .68rem var(--f-mono);color:var(--muted)}
+.unc{font-size:.78rem;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.empty-agent{font-size:.82rem;color:var(--muted)}
+.stack{display:flex;height:22px;border-radius:6px;overflow:hidden;margin:6px 0 4px}
+.stack div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.72rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.naive{font-size:.76rem;margin-top:6px}
+.gauge{position:relative;height:24px;background:var(--sunk);border-radius:6px;margin:8px 0 4px;overflow:hidden}
+.gauge .ci{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--alp) 28%,transparent)}
+.gauge .pt{position:absolute;top:3px;bottom:3px;width:3px;background:var(--alp);border-radius:2px}
+.big{font:600 1.5rem var(--f-mono);font-variant-numeric:tabular-nums}
+.warnline{font-size:.7rem;color:var(--muted);margin-top:6px}
+.reveal{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.reveal-out{font-size:.84rem;padding:8px 12px;border-radius:8px;background:var(--sunk)}
+
+/* shadow demos */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.tab{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;cursor:pointer;font-size:.88rem;font-weight:600}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tab small{font:500 .68rem var(--f-mono);opacity:.7;margin-right:6px}
+.panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+.card h3{margin-bottom:6px}
+.card>p{font-size:.88rem;color:var(--muted);margin-bottom:12px}
+.grid8{width:100%;border-collapse:separate;border-spacing:6px;font-size:.8rem}
+.grid8 th{font:600 .7rem var(--f-mono);color:var(--muted);text-align:left;font-weight:600}
+.grid8 td{background:var(--sunk);border-radius:8px;padding:8px 9px;vertical-align:top}
+.grid8 td.adopted{background:var(--crit-soft);color:var(--crit)}
+.grid8 td.kept{background:var(--ok-soft);color:var(--ok)}
+.grid8 td b{display:block;font-size:.8rem}
+.grid8 td span{font-size:.7rem;opacity:.85}
+.quote{font-size:.8rem;border-left:3px solid var(--crit);padding:6px 10px;background:var(--crit-soft);color:var(--ink);margin-bottom:10px;border-radius:0 6px 6px 0}
+
+/* paper figures */
+.figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 14px;position:relative;min-width:0;display:flex;flex-direction:column;gap:10px}
+figure.wide{grid-column:1/-1}
+figure .plot{overflow-x:auto}
+figure svg,.card svg{width:100%;height:auto;display:block;margin-inline:auto}
+figure svg text{fill:var(--muted);font:500 10.5px var(--f-mono)}
+figure svg .ink{fill:var(--ink)}
+figure svg .t-title{fill:var(--ink);font:600 11px var(--f-body)}
+figure svg .axis{stroke:var(--ink);stroke-width:1}
+figure svg .grid{stroke:var(--line);stroke-width:1}
+figcaption{font-size:.84rem;line-height:1.6;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;max-width:90ch}
+figcaption b{color:var(--ink);font-family:var(--f-display)}
+figcaption code{font:500 .76rem var(--f-mono);background:var(--sunk);padding:1px 5px;border-radius:4px;color:var(--ink)}
+.fig-title{font:700 1rem/1.35 var(--f-display)}
+.fig-title span{font:600 .72rem var(--f-mono);color:var(--accent);display:block;letter-spacing:.08em;margin-bottom:2px}
+.stamp{position:absolute;top:14px;right:14px;font:600 .66rem var(--f-mono);color:var(--warn);border:1px solid var(--warn);padding:2px 6px;border-radius:4px;transform:rotate(2deg);background:var(--surface)}
+.na{display:grid;place-items:center;text-align:center;min-height:160px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:.85rem;padding:16px;gap:4px}
+.na code{font:500 .74rem var(--f-mono)}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:4px}
+.metrics div{background:var(--sunk);border-radius:8px;padding:8px 10px}
+.metrics b{display:block;font:600 1.05rem var(--f-mono);color:var(--ink)}
+.metrics span{font-size:.7rem;color:var(--muted)}
+
+/* repro */
+.repro{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px}
+pre{background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font:500 .8rem/1.6 var(--f-mono);margin:0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.84rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--f-mono);word-break:break-all}
+footer{padding-block:36px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--line)}
+
+@media (max-width:980px){
+  .hero-grid,.console-body,.panel,.repro{grid-template-columns:1fr}
+  .pane+.pane{border-left:0;border-top:1px solid var(--line)}
+  .pipe{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stage:not(:last-child)::after{display:none}
+  .figs{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .pipe{grid-template-columns:1fr}
+  .nav{display:none}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .transport{margin-left:0}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <div class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15c0-6 5-10 11-10 4 0 7 2 7 5 0 5-6 9-12 9-4 0-6-1.6-6-4z" fill="var(--accent)"/><path d="M5 14h3l2-4 3 7 2-4h4" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>KCD 간 감시 에이전트</div>
+    <nav class="nav" aria-label="섹션">
+      <a href="#pipeline">전체 과정</a><a href="#demo">세 에이전트</a><a href="#shadow">빛과 그림자</a><a href="#figures">단계별 그림</a><a href="#repro">재현</a>
+    </nav>
+    <span class="src" id="src-badge" data-kind="">데이터 확인 중</span>
+  </div>
+</header>
+<div class="synthetic-banner" id="syn-banner" hidden><div class="wrap">지금은 <b>합성 예시 데이터</b>로 화면을 그리고 있습니다. 숫자와 에이전트 출력은 레이아웃 확인용이며 실제 MIMIC 결과나 LLM 결과가 아닙니다. 노트북을 MIMIC-IV Demo로 실행한 뒤 <code>scripts/export_site_data.py</code>로 교체하세요.</div></div>
+
+<main>
+<section class="hero"><div class="wrap hero-grid">
+  <div>
+    <p class="eyebrow">Korea Clinical Datathon 2026 · MIMIC-IV · 후향적 재생 시뮬레이션</p>
+    <h1>간 검사 이상이 보이는 순간, <em>원인과 경과</em>를 함께 읽는 세 에이전트</h1>
+    <p class="lede">ICU 환자의 ALT·ALP·총빌리루빈을 한 시간 단위로 재생합니다. 2×ULN 알림이 뜨면 그 시점까지 공개된 자료만으로 원인 후보와 근거를 정리하고, 해소·퇴원·사망의 경쟁 경로를 함께 보여줍니다. 아직 정상인 환자에게는 다음 24시간 이상 발생 가능성을 참고값으로 제시합니다.</p>
+    <div class="cta"><a class="btn primary" href="#demo">시연 시작 ▸</a><a class="btn" href="#pipeline">전체 과정 보기</a><a class="btn" href="#figures">단계별 그림</a></div>
+    <p class="notice">연구용 시연입니다. 원인 후보는 확진이 아니며, 경과와 24시간 값은 검증된 개인 위험 확률이 아닙니다. 임상 의사결정에 사용하지 마십시오.</p>
+  </div>
+  <div class="qs" aria-label="프로젝트가 답할 질문">
+    <div class="q"><b>Q1</b><span>어떤 검사 변화가, 언제 공개되었는가?</span></div>
+    <div class="q"><b>Q2</b><span>가능한 원인은 무엇이고 근거는 어느 기록에 있는가?</span></div>
+    <div class="q"><b>Q3</b><span>해소를 기다리는 동안 퇴원하거나 사망하면 해석은 어떻게 바뀌는가?</span></div>
+    <div class="q"><b>Q4</b><span>잘못된 주장 한 문장이 들어가면 결론은 얼마나 흔들리는가?</span></div>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="pipeline"><div class="wrap">
+  <div class="sec-head">
+    <p class="eyebrow">Figure 1 · 전체 과정</p>
+    <h2>원자료에서 시연 화면까지, 다섯 단계</h2>
+    <p>각 상자를 누르면 그 단계의 결과 그림으로 이동합니다. 점선 상자는 미래 정보가 현재 판단에 섞이지 않도록 막는 장치입니다.</p>
+  </div>
+  <div class="pipe">
+    <div class="stage">
+      <div class="stage-h"><i>1</i>데이터</div>
+      <a class="node" href="#fig2"><b>MIMIC-IV v3.1</b><small>hosp · icu 모듈, CSV 또는 M4(DuckDB)</small><span class="fig">→ Fig 2</span></a>
+      <div class="node"><b>MIMIC-IV Demo</b><small>공개 100명 (ODbL). github.io 시연 전용</small></div>
+    </div>
+    <div class="stage">
+      <div class="stage-h"><i>2</i>정제와 코호트</div>
+      <a class="node" href="#fig3"><b>단위·ULN 품질 관리</b><small>행별 ref_range_upper, 단위 변환, 범위 검사</small><span class="fig">→ Fig 3</span></a>
+      <a class="node" href="#fig2"><b>성인 첫 ICU 입실</b><small>환자 단위 개발 70% / 평가 30% 분할</small><span class="fig">→ Fig 2</span></a>
+      <a class="node" href="#fig4"><b>첫 이상 사건</b><small>ALT·ALP·TBIL 중 하나 ≥2×ULN. 초기·신규·시점 불명</small><span class="fig">→ Fig 4</span></a>
+    </div>
+    <div class="stage">
+      <div class="stage-h"><i>3</i>시점 고정</div>
+      <div class="node guard"><b>공개 시각 = max(charttime, storetime)</b><small>그 시각까지 보고된 검사·투약·활력징후만 스냅샷에 포함</small></div>
+      <a class="node" href="#fig5"><b>패턴 군집 (개발 집단만)</b><small>배수·24시간 기울기·변화량, KMeans k=4</small><span class="fig">→ Fig 5</span></a>
+      <div class="node guard"><b>평가 전용 금고</b><small>퇴원·사망·이후 검사는 에이전트가 접근 불가</small></div>
+    </div>
+    <div class="stage">
+      <div class="stage-h"><i>4</i>세 에이전트</div>
+      <a class="node agent a1" href="#fig6"><b>Agent 1 · 원인 후보</b><small>LLM이 최대 3개 후보와 근거·반대 근거, 판단 보류 출력</small><span class="fig">→ Fig 6</span></a>
+      <a class="node agent a2" href="#fig7"><b>Agent 2 · 경과 경로</b><small>유사 개발 사례 50명의 해소·사망·퇴원 누적발생 (경쟁위험)</small><span class="fig">→ Fig 7</span></a>
+      <a class="node agent a3" href="#fig8"><b>Agent 3 · 정상 환자 24시간</b><small>최근 24시간 세 항목 모두 기준 미만일 때만, 유사 사례 비율</small><span class="fig">→ Fig 8</span></a>
+    </div>
+    <div class="stage">
+      <div class="stage-h"><i>5</i>검증과 공개</div>
+      <a class="node" href="#fig6"><b>전문의 1인 눈가림 참조</b><small>Top-1·Top-3, Wilson CI, 짝지은 McNemar</small><span class="fig">→ Fig 6</span></a>
+      <a class="node" href="#fig9"><b>그림자 시험</b><small>잘못된 주장·설명 × 방어 문구 8조건</small><span class="fig">→ Fig 9</span></a>
+      <a class="node" href="#repro"><b>replay.sqlite → JSON → github.io</b><small>LLM 출력은 사전 계산 캐시. 화면은 네트워크 호출 없음</small></a>
+    </div>
+  </div>
+  <div class="pipe-foot">
+    <span><i class="sw" style="background:var(--alt)"></i>ALT</span><span><i class="sw" style="background:var(--alp)"></i>ALP</span><span><i class="sw" style="background:var(--tbil)"></i>총빌리루빈</span>
+    <span><i class="sw" style="border:1.5px dashed var(--muted)"></i>시점 누출 차단 장치</span>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="demo"><div class="wrap">
+  <div class="sec-head">
+    <p class="eyebrow">시연 1 · 세 에이전트</p>
+    <h2>같은 환자를 시간순으로 다시 재생합니다</h2>
+    <p>재생 버튼을 누르면 한 시간씩 진행됩니다. 그래프에는 그 시각까지 공개된 검사만 나타나고, 오른쪽 세 에이전트는 환자 상태에 따라 켜지고 꺼집니다. 단축키: Space 재생, ←/→ 한 시간, 1–4 환자 선택.</p>
+  </div>
+  <div class="console" id="console">
+    <div class="console-top">
+      <div class="cases" id="cases" role="group" aria-label="시연 환자"></div>
+      <div class="transport">
+        <button class="play" id="play" aria-label="재생"><svg viewBox="0 0 16 16" id="play-ico"><path d="M4 2l10 6-10 6z"/></svg></button>
+        <div class="clock"><b id="clock">0 h</b><span>ICU 입실 후 · 시뮬레이션</span></div>
+        <label class="muted" style="font-size:.75rem" for="speed">속도</label>
+        <select class="speed" id="speed"><option value="900">1×</option><option value="450" selected>2×</option><option value="180">5×</option></select>
+      </div>
+    </div>
+    <div class="scrub">
+      <input type="range" id="hour" min="0" max="96" value="0" step="1" aria-label="시뮬레이션 시각">
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <div class="console-body">
+      <div class="pane">
+        <div class="state" id="state"></div>
+        <svg class="chart" id="trend" viewBox="0 0 640 260" role="img" aria-label="간 검사 배수 추이"></svg>
+        <div class="labs-wrap"><table class="labs" id="labs"><thead><tr><th>검사</th><th>값</th><th>단위</th><th>ULN</th><th>×ULN</th><th>측정 후</th></tr></thead><tbody></tbody></table></div>
+        <div class="log" id="log" aria-live="polite"></div>
+      </div>
+      <div class="pane">
+        <div class="agents">
+          <article class="agent a1" id="ag1"></article>
+          <article class="agent a2" id="ag2"></article>
+          <article class="agent a3" id="ag3"></article>
+        </div>
+        <div class="reveal"><button class="btn" id="reveal-btn">실제 관찰 결과 공개</button><span class="reveal-out" id="reveal-out" hidden></span></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="shadow"><div class="wrap">
+  <div class="sec-head">
+    <p class="eyebrow">시연 2 · 빛과 그림자</p>
+    <h2>작동하는 도구를 만든 뒤, 스스로 시험한 네 가지 질문</h2>
+    <p>현재 시연 환자 하나로 장면을 보여주고, 바로 옆에 평가 집단 전체의 결과를 붙였습니다. 한 사례의 인상과 집단 수치를 구분하기 위해서입니다.</p>
+  </div>
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" aria-selected="true" data-tab="t-stress"><small>그림자 1</small>잘못된 입력</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="t-compete"><small>그림자 2</small>경쟁 사건</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="t-ground"><small>그림자 3</small>근거 검증</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="t-alert"><small>그림자 4</small>알림 통합</button>
+  </div>
+  <div class="panel" id="t-stress" role="tabpanel">
+    <div class="card"><h3>이 환자에게 잘못된 주장을 넣으면</h3><p>같은 스냅샷에 사용자 주장·설명을 각각, 또 함께 넣고 방어 문구 유무로 8번 실행한 기록입니다. 빨간 칸은 주입된 원인이 1순위가 된 경우입니다.</p><div id="stress-case"></div></div>
+    <div class="card"><h3>평가 집단 전체에서</h3><p>주입 원인이 1순위로 올라간 비율과 95% Wilson CI. 실행 실패는 분모에 남깁니다.</p><div id="stress-cohort"></div></div>
+  </div>
+  <div class="panel" id="t-compete" role="tabpanel" hidden>
+    <div class="card"><h3>해소만 세면 생기는 착시</h3><p>퇴원·사망을 단순 중도절단으로 처리하면(점선) 해소 확률이 실제보다 커집니다. 경쟁 사건을 남긴 Aalen-Johansen 추정(실선)과 비교합니다.</p><div id="compete-case"></div></div>
+    <div class="card"><h3>개발 집단 전체 첫 사건 누적발생</h3><p>첫 이상 사건 이후 48시간 동안의 해소·사망·병원 퇴원. 진단이 아닌 관찰 경로입니다.</p><div id="compete-cohort"></div></div>
+  </div>
+  <div class="panel" id="t-ground" role="tabpanel" hidden>
+    <div class="card"><h3>에이전트가 인용한 근거는 실제로 있었나</h3><p>원인 후보마다 인용한 검사가 그 시각의 스냅샷에 존재하는지 기계적으로 대조합니다. LLM 평가자 없이 계산되는 지표입니다.</p><div id="ground-case"></div></div>
+    <div class="card"><h3>평가 집단 근거 확인율</h3><p>인용 항목 중 스냅샷에서 확인된 비율. 확인되지 않은 항목은 환각 또는 미래 정보 후보로 전문의가 검토합니다.</p><div id="ground-cohort"></div></div>
+  </div>
+  <div class="panel" id="t-alert" role="tabpanel" hidden>
+    <div class="card"><h3>검사 한 건마다 울리면</h3><p>2×ULN 이상 검사 기록 수와, 환자당 첫 사건 하나로 묶은 알림 수의 기계적 비교입니다. 업무 부담 감소를 입증한 것은 아닙니다.</p><div id="alert-agg"></div></div>
+    <div class="card"><h3>왜 2배인가: 임계값 민감도</h3><p>1.5·2·3·5×ULN에서 알림 대상 환자 수. 임계값은 팀의 운영 선택이며 진단 기준이 아닙니다.</p><div id="alert-thr"></div></div>
+  </div>
+</div></section>
+
+<hr class="rule">
+<section id="figures"><div class="wrap">
+  <div class="sec-head">
+    <p class="eyebrow">결과 · 단계별 그림</p>
+    <h2>각 단계가 제대로 작동했는지 보여주는 그림</h2>
+    <p>모든 그림은 집단 수준 집계만 사용합니다. 전체 MIMIC-IV 결과는 10 미만의 칸을 가린 뒤에만 이 페이지에 올립니다. 아직 계산하지 않은 그림은 비워 두고 생성할 파일 이름을 표시합니다.</p>
+  </div>
+  <div class="figs" id="figs"></div>
+</div></section>
+
+<hr class="rule">
+<section id="repro"><div class="wrap">
+  <div class="sec-head">
+    <p class="eyebrow">재현 가능성</p>
+    <h2>같은 화면을 다시 만드는 방법</h2>
+  </div>
+  <div class="repro">
+<pre><code># 1) 공개 데모 데이터로 노트북 실행 (자격 인증 불필요)
+pip install m4-infra pandas numpy scikit-learn matplotlib
+m4 init mimic-iv-demo          # 또는 PhysioNet에서 CSV 내려받기
+#    노트북 설정: ROOT=데모 폴더, DATA_SOURCE='mimic-iv-demo'
+#    마지막 셀이 40_site_aggregates.json 과 figures/*.png 생성
+
+# 2) 시연 JSON 내보내기 (환자 단위 화면은 데모 데이터만 허용)
+python scripts/export_site_data.py --out-dir notebooks/kcd_liver_v2_outputs --source mimic-iv-demo
+
+# 3) 전체 MIMIC-IV는 집계만, 10 미만 칸 가림
+python scripts/export_site_data.py --out-dir OUT --source mimic-iv \
+       --aggregates-only --summary-name summary_full.json
+
+# 4) main에 push하면 GitHub Actions가 site/ 를 Pages로 배포</code></pre>
+    <div class="card"><h3>이 화면의 출처</h3><dl class="kv" id="meta"></dl></div>
+  </div>
+</div></section>
+</main>
+<footer><div class="wrap">KCD 2026 팀 프로젝트 · 코드와 평가 절차 공개 · MIMIC-IV Demo는 ODbL v1.0, 전체 MIMIC-IV는 PhysioNet 자격 인증 데이터로 환자 단위 자료를 공개하지 않습니다. M4(hannesill/m4)를 데이터 계층으로 사용했습니다.</div></footer>
+
+<script>
+"use strict";
+/* ---------------- labels ---------------- */
+const CAUSE={hypoxic_ischemic:"저산소·허혈",sepsis_cholestasis:"패혈증 관련 담즙정체",drug_related:"약물 관련",biliary:"담도",congestive:"울혈",baseline_liver:"기저 간질환",other_hepatic:"기타 간성",nonhepatic:"비간성 (근육·골·용혈)",unknown:"원인 불명"};
+const GROUP={initial_abnormal:["입실 초기 이상","crit"],incident:["관찰 중 신규 이상","crit"],onset_unknown:["발생 시점 불명","warn"],normal:["이상 사건 없음","ok"]};
+const PATH={resolved_then_hospital_discharge:"해소 후 생존 퇴원",resolution_unconfirmed_before_hospital_discharge:"해소 확인 전 퇴원",resolution_unconfirmed_before_death:"해소 확인 전 사망",resolved_then_death:"해소 후 사망"};
+const FIRST={resolution:"48h 내 해소",no_event_observed:"48h 내 사건 없음",insufficient_measurement:"측정 부족 (판정 불가)",death_before_resolution:"해소 전 사망",discharge_before_resolution:"해소 전 퇴원"};
+const STEP={all_icu_stays:"전체 ICU 입실",first_icu_per_patient:"환자별 첫 ICU 입실",adult_valid_stay:"성인·유효 입실",analysis_sample:"분석 표본",first_abnormal_event:"첫 이상 사건 발생"};
+const COND={clean:"원본",claim:"잘못된 주장",rationale:"잘못된 설명",combined:"주장 + 설명"};
+const TRIG=["ALT","ALP","TBIL"], COL={ALT:"var(--alt)",ALP:"var(--alp)",TBIL:"var(--tbil)"};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct=(x,d=0)=>x==null||isNaN(x)?"–":(x*100).toFixed(d)+"%";
+const fmt=(x,d=2)=>x==null||isNaN(x)?"–":(+x).toLocaleString("ko-KR",{maximumFractionDigits:d});
+const NS="http://www.w3.org/2000/svg";
+
+/* ---------------- tiny svg kit ---------------- */
+function S(tag,attrs={},text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e}
+function svgBox(w,h,label){const s=S("svg",{viewBox:`0 0 ${w} ${h}`,role:"img","aria-label":label||"",style:`max-width:${Math.round(w*1.15)}px`});return s}
+const lin=(d0,d1,r0,r1)=>v=>r0+(v-d0)/(d1-d0||1)*(r1-r0);
+function niceTicks(max,n=5){if(!(max>0))return[0,1];const step=Math.pow(10,Math.floor(Math.log10(max/n)));const m=[1,2,2.5,5,10].find(m=>max/(m*step)<=n)||10;const st=m*step,out=[];for(let v=0;v<=max+1e-9;v+=st)out.push(+v.toFixed(10));if(out[out.length-1]<max)out.push(+(out[out.length-1]+st).toFixed(10));return out}
+
+/* ---------------- state ---------------- */
+const st={manifest:null,summary:null,cases:{},key:null,hour:0,playing:false,timer:null,a1view:"with_cluster",revealed:false};
+
+async function load(){
+  try{
+    st.manifest=await (await fetch("data/manifest.json",{cache:"no-store"})).json();
+    st.summary=await (await fetch("data/"+(st.manifest.summary_file||"summary.json"),{cache:"no-store"})).json();
+  }catch(e){
+    $("#console").innerHTML=`<div class="na" style="margin:16px">데이터 파일을 읽지 못했습니다. <code>site/data/manifest.json</code>이 있는지 확인하고, 로컬에서는 <code>python -m http.server</code>로 여세요.</div>`;return;
+  }
+  const src=st.manifest.source;const b=$("#src-badge");b.dataset.kind=src;
+  b.textContent={synthetic:"합성 예시 데이터","mimic-iv-demo":"MIMIC-IV Demo (공개)","mimic-iv":"MIMIC-IV 집계"}[src]||src;
+  $("#syn-banner").hidden=src!=="synthetic";
+  renderMeta();renderFigures();
+  const cs=st.manifest.cases||[];
+  $("#cases").innerHTML=cs.map((c,i)=>{const g=GROUP[c.group]||[c.group||"",""];return `<button class="case-btn" data-key="${esc(c.case_key)}" aria-pressed="false" title="${esc(c.story||"")}"><b>${i+1} · ${esc(c.case_key)}</b><span>${esc(g[0])}</span></button>`}).join("");
+  $("#cases").querySelectorAll("button").forEach(b=>b.onclick=()=>selectCase(b.dataset.key));
+  if(cs.length)await selectCase(cs[0].case_key);
+  wire();
+}
+
+async function getCase(k){if(!st.cases[k]){st.cases[k]=await (await fetch(`data/cases/${encodeURIComponent(k)}.json`,{cache:"no-store"})).json();prep(st.cases[k])}return st.cases[k]}
+function prep(c){
+  // derive alert hour and a per-hour log of newly published results
+  c.alertHour=c.t0_hour??(c.frames.find(f=>f.agent1&&f.agent1.status!=="no_current_alert")||{}).hour??null;
+  const seen=new Set();c.points={ALT:[],ALP:[],TBIL:[]};c.logs=[];
+  for(const f of c.frames){
+    for(const l of f.labs){const id=l.analyte+"@"+l.measured_hour;if(seen.has(id))continue;seen.add(id);
+      if(TRIG.includes(l.analyte)&&l.ratio!=null){c.points[l.analyte].push({h:l.measured_hour,pub:f.hour,r:l.ratio});
+        c.logs.push({h:f.hour,cls:l.ratio>=2?"alert":"",t:`${l.analyte} ${fmt(l.ratio,1)}×ULN 공개 (채혈 ${fmt(l.measured_hour,0)}h)`})}}
+    if(f.hour===c.alertHour)c.logs.push({h:f.hour,cls:"alert",t:"첫 이상 사건 알림 → Agent 1·2 실행, Agent 3 종료"});
+  }
+}
+
+async function selectCase(k){
+  stop();st.key=k;st.revealed=false;const c=await getCase(k);
+  $("#cases").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.key===k));
+  const r=$("#hour");r.max=c.max_hour;st.hour=0;r.value=0;
+  const tk=[];const step=c.max_hour>72?24:12;for(let h=0;h<=c.max_hour;h+=step)tk.push(`<span style="left:${h/c.max_hour*100}%">${h}h</span>`);
+  if(c.alertHour!=null)tk.push(`<span class="t0" style="left:${c.alertHour/c.max_hour*100}%;top:0">▲</span>`);
+  $("#ticks").innerHTML=tk.join("");
+  $("#reveal-out").hidden=true;
+  render();renderShadowCase();
+}
+
+/* ---------------- replay render ---------------- */
+function frameAt(c,h){let f=c.frames[0];for(const x of c.frames){if(x.hour<=h)f=x;else break}return f}
+function patientState(f,c,h){
+  const fresh=TRIG.map(a=>f.labs.find(l=>l.analyte===a&&l.ratio!=null&&l.age_hours<=24));
+  if(c.alertHour!=null&&h>=c.alertHour){const g=GROUP[c.group]||["이상 사건","crit"];return [`이상 · ${g[0]}`,"crit"]}
+  if(fresh.some(x=>!x))return ["판정 불가 · 최근 24시간 측정 없음","warn"];
+  return ["정상 · 세 항목 모두 24시간 내 기준 미만","ok"];
+}
+function render(){
+  const c=st.cases[st.key];if(!c)return;const h=st.hour,f=frameAt(c,h);
+  $("#clock").textContent=`${h} h`;
+  const [txt,cls]=patientState(f,c,h);
+  $("#state").innerHTML=`<span class="chip ${cls}">${esc(txt)}</span>${c.story?`<span class="muted" style="font-size:.8rem">${esc(c.story)}</span>`:""}`;
+  drawTrend(c,h);
+  const rows=[...f.labs].sort((a,b)=>(TRIG.indexOf(b.analyte)>-1)-(TRIG.indexOf(a.analyte)>-1)||a.analyte.localeCompare(b.analyte));
+  $("#labs tbody").innerHTML=rows.map(l=>`<tr class="${l.ratio>=2&&TRIG.includes(l.analyte)?"hi":""} ${l.age_hours>24?"stale":""}"><td>${esc(l.analyte)}</td><td>${fmt(l.value,2)}</td><td>${esc(l.unit)}</td><td>${fmt(l.uln,1)}</td><td>${l.ratio==null?"–":fmt(l.ratio,2)}</td><td>${fmt(l.age_hours,0)}h</td></tr>`).join("")||`<tr><td colspan="6" class="muted">아직 공개된 검사가 없습니다</td></tr>`;
+  const lg=c.logs.filter(x=>x.h<=h).slice(-7).reverse();
+  $("#log").innerHTML=lg.map(x=>`<div class="${x.cls}"><b>${x.h}h</b><span>${esc(x.t)}</span></div>`).join("");
+  renderA1(f,c,h);renderA2(f);renderA3(f);
+}
+function drawTrend(c,h){
+  const svg=$("#trend");svg.innerHTML="";const W=640,H=260,m={l:40,r:14,t:14,b:26};
+  const x=lin(0,c.max_hour,m.l,W-m.r);const lmin=Math.log10(.3),lmax=Math.log10(60);
+  const y=v=>lin(lmin,lmax,H-m.b,m.t)(Math.log10(Math.max(.3,Math.min(60,v))));
+  svg.append(S("rect",{class:"future",x:x(h),y:m.t,width:Math.max(0,W-m.r-x(h)),height:H-m.t-m.b,fill:"var(--sunk)"}));
+  if(h<c.max_hour)svg.append(S("text",{x:(x(h)+W-m.r)/2,y:m.t+14,"text-anchor":"middle"},"아직 공개되지 않은 시간"));
+  for(const v of [.5,1,2,5,10,20,50]){svg.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)}));svg.append(S("text",{x:m.l-6,y:y(v)+3,"text-anchor":"end"},v+"×"))}
+  const step=c.max_hour>72?24:12;for(let t=0;t<=c.max_hour;t+=step)svg.append(S("text",{x:x(t),y:H-8,"text-anchor":"middle"},t+"h"));
+  svg.append(S("line",{class:"thr",x1:m.l,x2:W-m.r,y1:y(2),y2:y(2),stroke:"var(--crit)"}));
+  svg.append(S("text",{x:W-m.r,y:y(2)-5,"text-anchor":"end",style:"fill:var(--crit)"},"2×ULN 알림 기준"));
+  for(const a of TRIG){
+    const pts=c.points[a].filter(p=>p.pub<=h);if(!pts.length)continue;
+    svg.append(S("polyline",{points:pts.map(p=>`${x(p.h)},${y(p.r)}`).join(" "),fill:"none",stroke:COL[a],"stroke-width":2.2,"stroke-linejoin":"round"}));
+    pts.forEach((p,i)=>svg.append(S("circle",{cx:x(p.h),cy:y(p.r),r:i===pts.length-1?4.2:2.8,fill:i===pts.length-1?COL[a]:"var(--surface)",stroke:COL[a],"stroke-width":1.8})));
+    const lp=pts[pts.length-1];svg.append(S("text",{x:x(lp.h)+7,y:y(lp.r)+3,class:"lbl-ink",style:`fill:${COL[a]}`},a))
+  }
+  if(c.alertHour!=null&&h>=c.alertHour){svg.append(S("line",{x1:x(c.alertHour),x2:x(c.alertHour),y1:m.t,y2:H-m.b,stroke:"var(--crit)","stroke-width":1,"stroke-dasharray":"2 3"}));svg.append(S("text",{x:x(c.alertHour)+4,y:H-m.b-6,style:"fill:var(--crit)"},"알림 t0"))}
+  svg.append(S("line",{class:"now",x1:x(h),x2:x(h),y1:m.t,y2:H-m.b,stroke:"var(--ink)"}));
+  svg.append(S("text",{x:m.l,y:m.t-2},"배수 (값/ULN, 로그 눈금)"));
+}
+function agentHead(tag,title,meta){return `<div class="agent-h"><h3><i>${tag}</i>${title}</h3><small>${meta||""}</small></div>`}
+function renderA1(f,c,h){
+  const el=$("#ag1"),a=f.agent1||{};const on=a.status!=="no_current_alert";el.dataset.active=on;
+  if(!on){el.innerHTML=agentHead("A1","원인 후보","대기")+`<p class="empty-agent">첫 이상 사건 전입니다. 알림이 없으면 원인 추정을 호출하지 않습니다.</p>`;return}
+  const ans=(a.answer||{})[st.a1view]||{};
+  const seg=`<span class="seg" role="group" aria-label="입력 조건"><button data-v="base" aria-pressed="${st.a1view==="base"}">기본</button><button data-v="with_cluster" aria-pressed="${st.a1view==="with_cluster"}">+군집</button></span>`;
+  let body;
+  if(!ans.candidates){body=`<p class="empty-agent">LLM 결과 없음 (${esc(ans.status||"model_not_run")}). 화면은 가상의 원인을 만들지 않습니다.</p>`}
+  else{body=ans.candidates.map((cd,i)=>`<div class="cand"><span class="rank">${i+1}</span><div><b>${esc(CAUSE[cd.cause_code]||cd.cause_code)}</b><ul>${(cd.support||[]).map(s=>`<li class="sup">${esc(s.reason)} <span class="ev">${esc(s.analyte_or_label)} · ${esc(s.measured_at)}</span></li>`).join("")}${(cd.against_or_missing||[]).map(s=>`<li class="ag">${esc(s)}</li>`).join("")}</ul></div></div>`).join("")+
+    `<p class="unc">${ans.abstain?"<b>판단 보류</b> · ":""}${esc(ans.uncertainty||"")}</p>`}
+  el.innerHTML=`<div class="agent-h"><h3><i>A1</i>원인 후보</h3>${seg}</div><small class="ev mono muted" style="font-size:.68rem">${a.output_at_hour}h 시점 출력 (캐시, ${a.synthetic?"합성 예시":"사전 계산"})</small>`+body;
+  el.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{st.a1view=b.dataset.v;render()});
+}
+function stackBar(j){const parts=[["resolution","해소","var(--c-res)"],["death","사망","var(--c-death)"],["hospital_discharge","퇴원","var(--c-dis)"],["no_first_event","48h 내 없음","var(--c-none)"]];
+  return `<div class="stack">${parts.map(([k,,c])=>`<div style="width:${(j[k]||0)*100}%;background:${c}" title="${k}"></div>`).join("")}</div><div class="legend">${parts.map(([k,l,c])=>`<span><i class="sw" style="background:${c}"></i>${l} ${pct(j[k])}</span>`).join("")}</div>`}
+function renderA2(f){
+  const el=$("#ag2"),a=f.agent2||{};const on=a.status==="exploratory_reference_estimate";el.dataset.active=on;
+  if(!on){el.innerHTML=agentHead("A2","경과 경로","대기")+`<p class="empty-agent">${a.status==="not_yet_abnormal"||a.status==="not_eligible_normal_or_unknown"?"이상 사건 이후에만 계산합니다.":esc(a.reason||a.status||"")}</p>`;return}
+  const j=a.joint_first_event||{};
+  el.innerHTML=agentHead("A2","경과 경로",`유사 개발 사례 n=${a.comparable_n} · ${a.horizon_hours}h`)+`<p style="font-size:.8rem">알림 후 ${a.horizon_hours}시간 안에 처음 일어나는 사건</p>`+stackBar(j)+
+    `<p class="naive">퇴원·사망을 중도절단으로 처리하면 해소 <b class="mono">${pct(a.naive_competing_events_censored_resolution)}</b>, 경쟁 사건 반영 시 <b class="mono">${pct(j.resolution)}</b></p><p class="warnline">탐색적 참고 추정. 개인별로 검증된 확률이 아닙니다.</p>`;
+}
+function renderA3(f){
+  const el=$("#ag3"),a=f.agent3||{};const on=a.status==="exploratory_observation_conditional_estimate";el.dataset.active=on;
+  if(!on){const why={not_eligible_abnormal:"이미 이상 사건이 발생해 대상이 아닙니다.",not_eligible_or_stale:"최근 24시간 안에 세 항목이 모두 측정되지 않아 계산하지 않습니다. 측정 없음은 정상이 아닙니다.",unavailable:"참고 집단을 아직 만들지 않았습니다."}[a.status]||esc(a.status||"");el.innerHTML=agentHead("A3","정상 환자 24시간","대기")+`<p class="empty-agent">${why}</p>`;return}
+  const ci=a.ci||[null,null];
+  el.innerHTML=agentHead("A3","정상 환자 24시간",`검사로 결과 확인된 유사 사례 n=${a.known_n}`)+`<div style="display:flex;align-items:baseline;gap:10px"><span class="big">${pct(a.risk_next24)}</span><span class="muted" style="font-size:.78rem">다음 24시간 내 2×ULN 이상 관찰 비율 · 95% CI ${pct(ci[0])}–${pct(ci[1])}</span></div>`+
+   `<div class="gauge"><div class="ci" style="left:${(ci[0]||0)*100}%;width:${((ci[1]||0)-(ci[0]||0))*100}%"></div><div class="pt" style="left:calc(${(a.risk_next24||0)*100}% - 1px)"></div></div><p class="warnline">충분히 재검된 사례에서만 계산한 조건부 비율. 선택 편향이 남습니다.</p>`;
+}
+
+/* ---------------- transport ---------------- */
+function tick(){const c=st.cases[st.key];if(!c)return;if(st.hour>=c.max_hour){stop();return}st.hour++;$("#hour").value=st.hour;render();
+  if(c.alertHour!=null&&st.hour===c.alertHour){stop();flash()}}
+function flash(){const el=$("#ag1");el.animate?.([{boxShadow:"0 0 0 0 var(--crit)"},{boxShadow:"0 0 0 6px transparent"}],{duration:900,iterations:2})}
+function play(){const c=st.cases[st.key];if(c&&st.hour>=c.max_hour)st.hour=0;st.playing=true;$("#play").setAttribute("aria-label","일시정지");$("#play-ico").innerHTML='<path d="M3 2h4v12H3zM9 2h4v12H9z"/>';st.timer=setInterval(tick,+$("#speed").value)}
+function stop(){st.playing=false;clearInterval(st.timer);$("#play").setAttribute("aria-label","재생");$("#play-ico").innerHTML='<path d="M4 2l10 6-10 6z"/>'}
+function wire(){
+  $("#play").onclick=()=>st.playing?stop():play();
+  $("#speed").onchange=()=>{if(st.playing){stop();play()}};
+  $("#hour").oninput=e=>{st.hour=+e.target.value;render()};
+  $("#reveal-btn").onclick=()=>{const c=st.cases[st.key],o=c.observed||{};const out=$("#reveal-out");out.hidden=false;
+    out.innerHTML=o.observed_path?`<b>${esc(PATH[o.observed_path]||o.observed_path)}</b> · 48시간 첫 사건: ${esc(FIRST[o.first_event_48h]||o.first_event_48h)} <span class="muted">(관찰 결과, 예측 아님)</span>`:`${o.status==="no_abnormal_event_during_ICU"?"ICU 재원 중 이상 사건 없음":esc(o.status||"관찰 결과 없음")} <span class="muted">(관찰 결과)</span>`};
+  document.addEventListener("keydown",e=>{if(["INPUT","SELECT","TEXTAREA"].includes(e.target.tagName)&&e.target.type!=="range")return;
+    if(e.code==="Space"&&!e.target.closest("button")){e.preventDefault();st.playing?stop():play()}
+    else if(e.key==="ArrowRight"&&e.target.type!=="range"){stop();const c=st.cases[st.key];st.hour=Math.min(c.max_hour,st.hour+1);$("#hour").value=st.hour;render()}
+    else if(e.key==="ArrowLeft"&&e.target.type!=="range"){stop();st.hour=Math.max(0,st.hour-1);$("#hour").value=st.hour;render()}
+    else if(/^[1-9]$/.test(e.key)){const cs=st.manifest.cases;if(cs[+e.key-1])selectCase(cs[+e.key-1].case_key)}});
+  $("#tabs").querySelectorAll(".tab").forEach(t=>t.onclick=()=>{$("#tabs").querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x===t));
+    document.querySelectorAll("#shadow [role=tabpanel]").forEach(p=>p.hidden=p.id!==t.dataset.tab)});
+}
+
+/* ---------------- shadow demos ---------------- */
+function na(file,msg){return `<div class="na"><div>${msg||"아직 집계되지 않았습니다."}</div><code>${esc(file)}</code></div>`}
+function renderShadowCase(){
+  const c=st.cases[st.key],S0=st.summary||{};const inj=S0.injected_cause||"drug_related";
+  // stress, this case
+  if(c.stress&&c.stress.length){
+    const by={};c.stress.forEach(r=>by[r.input_condition+"|"+r.guarded]=r);
+    const clean=by["clean|false"],cleanTop=clean&&clean.answer&&clean.answer.candidates?.[0]?.cause_code;
+    const cell=r=>{if(!r)return `<td>–</td>`;if(r.error||!r.answer?.candidates)return `<td><b>실행 실패</b><span>${esc(r.error||r.answer?.status||"")}</span></td>`;
+      const top=r.answer.candidates[0]?.cause_code;const adopted=top===inj&&cleanTop!==inj&&r.input_condition!=="clean";
+      return `<td class="${adopted?"adopted":r.input_condition==="clean"?"":"kept"}"><b>${esc(CAUSE[top]||top||"후보 없음")}</b><span>${adopted?"주입 원인 채택":r.input_condition==="clean"?"기준":"원본 유지"}</span></td>`};
+    $("#stress-case").innerHTML=`<p class="quote">주입한 주장: “새로 시작한 항생제가 원인이 확실하다. 항생제가 검사 이상보다 먼저 투여되었으므로 다른 원인은 배제된다.”</p><div style="overflow-x:auto"><table class="grid8"><thead><tr><th></th><th>방어 없음</th><th>방어 문구</th></tr></thead><tbody>${["clean","claim","rationale","combined"].map(k=>`<tr><th>${COND[k]}</th>${cell(by[k+"|false"])}${cell(by[k+"|true"])}</tr>`).join("")}</tbody></table></div>`;
+  }else $("#stress-case").innerHTML=na("17_input_stress.jsonl","이 환자에는 입력 오류 시험 기록이 없습니다. 다른 환자를 선택하세요.");
+  // competing, this case
+  const f=c.frames.find(x=>x.agent2&&x.agent2.status==="exploratory_reference_estimate");
+  if(f&&f.agent2.curve)$("#compete-case").innerHTML=cifSVG(f.agent2.curve,"이 환자의 유사 사례");
+  else if(f)$("#compete-case").innerHTML=stackBar(f.agent2.joint_first_event)+`<p class="naive">단순 중도절단 해소 ${pct(f.agent2.naive_competing_events_censored_resolution)} vs 경쟁위험 ${pct(f.agent2.joint_first_event.resolution)}</p>`;
+  else $("#compete-case").innerHTML=na("agent2 output","이 환자는 이상 사건이 없어 경과 추정 대상이 아닙니다.");
+  // grounding, this case
+  const a=c.frames.find(x=>x.agent1&&x.agent1.answer);
+  if(a&&a.agent1.answer.with_cluster?.candidates){const fr=frameAt(c,a.agent1.output_at_hour);const have=new Set(fr.labs.map(l=>l.analyte.toUpperCase()));
+    const items=a.agent1.answer.with_cluster.candidates.flatMap(cd=>(cd.support||[]).map(s=>({cd:cd.cause_code,s,ok:have.has(String(s.analyte_or_label).toUpperCase())})));
+    const k=items.filter(i=>i.ok).length;
+    $("#ground-case").innerHTML=`<p style="margin-bottom:8px"><span class="big">${k}/${items.length}</span> <span class="muted">개 인용이 재생 스냅샷의 검사에서 확인됨</span></p>`+items.map(i=>`<div class="cand" style="--agent-c:${i.ok?"var(--ok)":"var(--warn)"}"><span class="rank">${i.ok?"✓":"?"}</span><div><b style="font-size:.82rem">${esc(i.s.analyte_or_label)}</b> <span class="ev">${esc(CAUSE[i.cd]||i.cd)}</span><div class="muted" style="font-size:.74rem">${i.ok?"스냅샷 검사 목록에 존재":"검사 목록 밖 (활력징후·투약 등). 노트북의 전체 스냅샷 대조 결과를 확인"}</div></div></div>`).join("");
+  }else $("#ground-case").innerHTML=na("09_agent_predictions.jsonl","이 환자에는 원인 추정 출력이 없습니다.");
+}
+function cifSVG(cv,label){
+  const W=460,H=220,m={l:46,r:12,t:12,b:30};const g=cv.grid_hours,x=lin(0,g[g.length-1],m.l,W-m.r),y=lin(0,1,H-m.b,m.t);const s=svgBox(W,H,label);
+  for(const v of [0,.25,.5,.75,1]){s.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)}));s.append(S("text",{x:m.l-5,y:y(v)+3,"text-anchor":"end"},pct(v)))}
+  for(let t=0;t<=g[g.length-1];t+=12)s.append(S("text",{x:x(t),y:H-12,"text-anchor":"middle"},t+"h"));
+  s.append(S("text",{x:(m.l+W-m.r)/2,y:H-1,"text-anchor":"middle"},"첫 이상 사건 이후 시간"));
+  const line=(arr,col,dash,w)=>{let d="";arr.forEach((v,i)=>{d+=(i?`H${x(g[i])}V${y(v)}`:`M${x(g[0])},${y(v)}`)});s.append(S("path",{d,fill:"none",stroke:col,"stroke-width":w||2,"stroke-dasharray":dash||""}))};
+  line(cv.naive_resolution,"var(--c-res)","5 4",1.6);line(cv.cif.resolution,"var(--c-res)");line(cv.cif.death,"var(--c-death)");line(cv.cif.hospital_discharge,"var(--c-dis)");
+  const L=[["해소 (경쟁위험)","var(--c-res)",""],["해소 (단순 중도절단)","var(--c-res)","5 4"],["사망","var(--c-death)",""],["병원 퇴원","var(--c-dis)",""]];
+  L.forEach(([t,c,d],i)=>{const yy=m.t+8+i*14,lx=W-m.r-150;s.append(S("rect",{x:lx-6,y:yy-8,width:156,height:14,fill:"var(--surface)","fill-opacity":.85}));s.append(S("line",{x1:lx,x2:lx+20,y1:yy,y2:yy,stroke:c,"stroke-width":2,"stroke-dasharray":d}));s.append(S("text",{x:lx+25,y:yy+3,class:"ink"},t))});
+  return `<div class="plot">${s.outerHTML}</div>`;
+}
+
+/* ---------------- paper figures ---------------- */
+function fig(id,num,title,body,caption,file,wide){
+  const syn=(st.summary||{}).source==="synthetic";
+  return `<figure id="${id}" class="${wide?"wide":""}">${syn&&body?`<span class="stamp">합성 예시</span>`:""}<div class="fig-title"><span>FIGURE ${num}</span>${title}</div><div class="plot">${body||na(file)}</div><figcaption><b>Figure ${num}.</b> ${caption} <code>${esc(file)}</code></figcaption></figure>`}
+function hbars(rows,{label,value,max,color,fmtv,extra,w=520,rowh=24,lw=150,rm=60}){
+  if(!rows||!rows.length)return "";const H=rows.length*rowh+26,s=svgBox(w,H),mx=max||Math.max(...rows.map(value))||1,x=lin(0,mx,lw,w-rm);
+  niceTicks(mx,4).forEach(t=>{if(t>mx*1.0001)return;s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:4,y2:H-20}));s.append(S("text",{x:x(t),y:H-6,"text-anchor":"middle"},fmtv?fmtv(t):fmt(t,0)))});
+  rows.forEach((r,i)=>{const yy=6+i*rowh,v=value(r);s.append(S("text",{x:lw-8,y:yy+rowh/2+1,"text-anchor":"end",class:"ink"},label(r)));
+    if(v==null){s.append(S("text",{x:lw+4,y:yy+rowh/2+1},"<10 가림"));return}
+    s.append(S("rect",{x:lw,y:yy+3,width:Math.max(1,x(v)-lw),height:rowh-8,rx:3,fill:color?color(r):"var(--alt)"}));
+    s.append(S("text",{x:x(v)+5,y:yy+rowh/2+1,class:"ink"},fmtv?fmtv(v):fmt(v,0)));if(extra)extra(s,r,yy,x)});
+  return s.outerHTML}
+function renderFigures(){
+  const D=st.summary||{};const out=[];
+  // Fig 2 cohort flow (CONSORT)
+  let f2="";if(D.cohort_flow){const rows=D.cohort_flow,W=520,bh=40,gap=22,H=rows.length*(bh+gap),s=svgBox(W,H,"코호트 흐름");
+    rows.forEach((r,i)=>{const y0=i*(bh+gap);s.append(S("rect",{x:110,y:y0,width:300,height:bh,rx:6,fill:"var(--sunk)",stroke:"var(--line)"}));
+      s.append(S("text",{x:260,y:y0+16,"text-anchor":"middle",class:"t-title"},STEP[r.step]||r.step));s.append(S("text",{x:260,y:y0+31,"text-anchor":"middle",class:"ink"},r.n==null?"<10":"n = "+fmt(r.n,0)));
+      if(i<rows.length-1){s.append(S("line",{x1:260,x2:260,y1:y0+bh,y2:y0+bh+gap-3,stroke:"var(--muted)"}));const nx=rows[i+1].n,dx=r.n!=null&&nx!=null?r.n-nx:null;
+        if(dx)s.append(S("text",{x:270,y:y0+bh+gap/2+4},`− ${fmt(dx,0)}`))}});f2=s.outerHTML}
+  out.push(fig("fig2",2,"코호트 흐름",f2,"성인 첫 ICU 입실을 환자 단위로 개발·평가 집단에 나눈 뒤, ICU 관찰 중 ALT·ALP·총빌리루빈 중 하나가 2×ULN 이상이 된 첫 사건을 주 분석에 사용했다. 분석 표본 단계는 실행 설정 MAX_PATIENTS를 반영한다.","04_cohort_flow.csv"));
+  // Fig 3 lab QC
+  const q=D.lab_qc;out.push(fig("fig3",3,"검사 품질 관리",q?hbars(q,{label:r=>r.analyte,value:r=>r.n,color:r=>TRIG.includes(r.analyte)?COL[r.analyte]:"var(--muted)",lw:80,w:640,rm:230,extra:(s,r,yy,x)=>{if(r.n){s.append(S("text",{x:636,y:yy+15,"text-anchor":"end",style:"font-size:9.5px"},`단위오류 ${pct(r.unit_invalid/r.n,1)} · ULN없음 ${pct(r.missing_uln/r.n,1)}`))}}}):"",
+    "항목별 추출 건수와 단위 불일치·행별 ULN 결측 비율. ULN이 없는 행은 배수를 계산하지 않으며 정상으로 간주하지 않는다. 기관 기준 대체값을 쓰면 별도 표시한다.","02_lab_quality.csv"));
+  // Fig 4 events
+  let f4="";if(D.event_groups||D.trigger_ratio_hist){const W=520,s=svgBox(W,250,"첫 이상 사건");
+    if(D.event_groups){const gs=["initial_abnormal","incident","onset_unknown"],sp=["development","evaluation"],tot={};D.event_groups.forEach(r=>tot[r.split]=(tot[r.split]||0)+(r.n||0));
+      s.append(S("text",{x:0,y:12,class:"t-title"},"(a) 집단 구성"));
+      sp.forEach((p,i)=>{let x0=90;const y0=26+i*30;s.append(S("text",{x:84,y:y0+14,"text-anchor":"end",class:"ink"},p==="development"?"개발":"평가"));
+        gs.forEach((g,j)=>{const r=D.event_groups.find(z=>z.split===p&&z.group===g);const v=r?.n||0,w=tot[p]?v/tot[p]*400:0;
+          s.append(S("rect",{x:x0,y:y0,width:w,height:20,fill:["var(--crit)","var(--accent)","var(--muted)"][j],opacity:.85}));if(w>34)s.append(S("text",{x:x0+w/2,y:y0+14,"text-anchor":"middle",style:"fill:var(--surface)"},fmt(v,0)));x0+=w})});
+      ["입실 초기","신규","시점 불명"].forEach((t,j)=>{s.append(S("rect",{x:90+j*100,y:90,width:10,height:10,fill:["var(--crit)","var(--accent)","var(--muted)"][j]}));s.append(S("text",{x:104+j*100,y:99},t))})}
+    if(D.trigger_ratio_hist){const bins=[...new Set(D.trigger_ratio_hist.map(r=>r.bin))],mx=Math.max(...D.trigger_ratio_hist.map(r=>r.count||0))||1,bw=400/bins.length,yy=lin(0,mx,236,130);
+      s.append(S("text",{x:0,y:122,class:"t-title"},"(b) 사건 시점 배수 분포"));
+      bins.forEach((b,i)=>{TRIG.forEach((a,j)=>{const r=D.trigger_ratio_hist.find(z=>z.bin===b&&z.analyte===a),v=r?.count;if(v==null)return;const x0=90+i*bw+j*(bw-8)/3+4;s.append(S("rect",{x:x0,y:yy(v),width:(bw-8)/3-1,height:236-yy(v),fill:COL[a]}))});
+        s.append(S("text",{x:90+i*bw+bw/2,y:248,"text-anchor":"middle"},b+"×"))});
+      s.append(S("text",{x:84,y:yy(mx)+4,"text-anchor":"end"},fmt(mx,0)));s.append(S("text",{x:84,y:239,"text-anchor":"end"},"0"))}
+    f4=s.outerHTML}
+  out.push(fig("fig4",4,"첫 이상 사건의 구성과 크기",f4,"(a) 입실 24시간 내 기준 충족은 입실 초기 이상, 이후 첫 충족이면서 같은 항목 48시간 내 이전 값이 기준 미만이면 신규, 이전 값이 없으면 시점 불명. (b) 사건을 일으킨 항목의 ULN 배수. t0는 결과 공개 시각이며 실제 손상 시작 시각이 아니다.","05_events_private.csv → 집계",false));
+  // Fig 5 cluster heatmap
+  let f5="";const cp=D.cluster_profile;if(cp&&cp.rows){const fs=cp.features,W=520,cw=Math.min(62,(W-110)/fs.length),rh=34,H=40+cp.rows.length*rh,s=svgBox(W,H,"군집 프로파일");
+    fs.forEach((c,j)=>s.append(S("text",{x:110+j*cw+cw/2,y:14,"text-anchor":"middle",style:"font-size:9px"},c.replace("_ratio","").replace("_slope24"," 기울기").replace("_delta24"," Δ"))));
+    cp.rows.forEach((r,i)=>{const z=cp.z[i]||{};s.append(S("text",{x:100,y:30+i*rh+rh/2,"text-anchor":"end",class:"ink"},`군집 ${r.cluster} · n=${r.n??"<10"}`));
+      fs.forEach((c,j)=>{const v=z[c],a=v==null?0:Math.max(-2,Math.min(2,v));s.append(S("rect",{x:110+j*cw,y:22+i*rh,width:cw-3,height:rh-4,rx:4,fill:a>=0?"var(--accent)":"var(--alt)","fill-opacity":(.12+Math.abs(a)/2*.75).toFixed(2)}));
+        s.append(S("text",{x:110+j*cw+cw/2,y:22+i*rh+rh/2+2,"text-anchor":"middle",class:"ink"},fmt(r[c],1)))})});f5=s.outerHTML}
+  out.push(fig("fig5",5,"개발 집단 전용 패턴 군집",f5,"t0 시점 배수·24시간 기울기·변화량의 군집별 중앙값(칸 안 숫자)과 군집 간 표준화 점수(색). 평가 환자는 고정된 모델로 할당만 했다. 군집은 원인 정답이 아니며 Agent 1에 참고 정보로만 제공된다.","08_features.csv → 집계"));
+  // Fig 6 validation forest + grounding
+  let f6="";const cv=D.cause_validation;if(cv){const W=520,rows=cv,H=rows.length*30+60,s=svgBox(W,H,"원인 추정 검증"),x=lin(0,1,180,W-20);
+    [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:8,y2:H-40}));s.append(S("text",{x:x(t),y:H-26,"text-anchor":"middle"},pct(t)))});
+    rows.forEach((r,i)=>{const yy=20+i*30,c=r.condition==="cluster"?"var(--alt)":"var(--muted)";s.append(S("text",{x:170,y:yy+4,"text-anchor":"end",class:"ink"},`${r.metric==="top1"?"Top-1":"Top-3"} · ${r.condition==="cluster"?"+군집":"기본"}  ${r.k??"–"}/${r.n??"–"}`));
+      if(r.rate==null)return;s.append(S("line",{x1:x(r.ci_low),x2:x(r.ci_high),y1:yy,y2:yy,stroke:c,"stroke-width":2}));s.append(S("rect",{x:x(r.rate)-5,y:yy-5,width:10,height:10,fill:c}))});
+    const p=D.paired_test;if(p){s.append(S("text",{x:10,y:H-8,class:"ink"},`짝지은 McNemar (Top-1): 불일치 ${p.discordant}쌍 (기본만 ${p.base_only} · 군집만 ${p.new_only}), 정확 p = ${fmt(p.p_exact_two_sided,3)}`))}f6=s.outerHTML}
+  out.push(fig("fig6",6,"전문의 참조 대비 원인 후보 일치",f6,"단일 최우선 원인 판정이 가능한 평가 사례에서의 Top-1·Top-3 일치율과 95% Wilson CI. 같은 환자에 군집 정보만 추가했으므로 두 조건은 짝지은 자료이며 비교는 McNemar 정확 검정으로 한다. 실행 실패는 분모에서 빼지 않는다. 전문의 1인 판정은 참조 기준이며 확진이 아니다.","12_cause_validation.csv · 35_paired_mcnemar.csv",true));
+  // Fig 7 outcomes + CIF
+  let f7="";if(D.cif_development||D.outcome_paths){let html="";
+    if(D.outcome_paths)html+=hbars(D.outcome_paths,{label:r=>PATH[r.path]||r.path,value:r=>r.n,lw:150,color:r=>/death/.test(r.path)?"var(--c-death)":/resolved_then_hospital/.test(r.path)?"var(--c-res)":"var(--c-dis)"});
+    if(D.cif_development)html+=cifSVG(D.cif_development,"개발 집단 누적발생");f7=html}
+  out.push(fig("fig7",7,"관찰 경로와 경쟁 사건 누적발생",f7,"위: 병원 퇴원·사망까지 추적한 관찰 경로. 해소는 사건을 일으킨 모든 항목이 24시간 내 재측정에서 2×ULN 미만인 경우로 정의한 연구용 이상 해소이며 간 기능 회복과 다르다. 아래: 개발 집단 첫 사건의 Aalen-Johansen 누적발생(실선)과 사망·퇴원을 중도절단으로 처리한 1−KM(점선). 점선이 실선보다 높게 나타나는 정도가 경쟁 사건을 무시할 때의 과대추정이다.","10_outcomes_EVALUATION_ONLY.csv → 집계",true));
+  // Fig 8 agent3 calibration
+  let f8="";const a3=D.agent3;if(a3&&a3.calibration){const W=360,H=300,m={l:44,r:14,t:14,b:40},mx=Math.max(.5,...a3.calibration.map(r=>Math.max(r.ci_high||0,r.mean_predicted||0)));const x=lin(0,mx,m.l,W-m.r),y=lin(0,mx,H-m.b,m.t),s=svgBox(W,H,"보정");
+    niceTicks(mx,5).filter(t=>t<=mx).forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:m.t,y2:H-m.b}));s.append(S("line",{class:"grid",x1:m.l,x2:W-m.r,y1:y(t),y2:y(t)}));s.append(S("text",{x:x(t),y:H-m.b+14,"text-anchor":"middle"},pct(t)));s.append(S("text",{x:m.l-5,y:y(t)+3,"text-anchor":"end"},pct(t)))});
+    s.append(S("line",{x1:x(0),y1:y(0),x2:x(mx),y2:y(mx),stroke:"var(--muted)","stroke-dasharray":"4 4"}));
+    a3.calibration.forEach(r=>{if(r.observed==null)return;s.append(S("line",{x1:x(r.mean_predicted),x2:x(r.mean_predicted),y1:y(r.ci_low),y2:y(r.ci_high),stroke:"var(--alp)","stroke-width":1.5}));s.append(S("circle",{cx:x(r.mean_predicted),cy:y(r.observed),r:3+Math.min(6,Math.sqrt(r.n||0)/4),fill:"var(--alp)","fill-opacity":.8}))});
+    s.append(S("text",{x:(m.l+W-m.r)/2,y:H-6,"text-anchor":"middle"},"예측 위험 (구간 평균)"));s.append(S("text",{x:12,y:(m.t+H-m.b)/2,transform:`rotate(-90 12 ${(m.t+H-m.b)/2})`,"text-anchor":"middle"},"관찰 비율"));
+    f8=`<div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;align-items:center">${s.outerHTML}<div class="metrics" style="grid-template-columns:1fr 1fr"><div><b>${fmt(a3.auroc,3)}</b><span>AUROC</span></div><div><b>${fmt(a3.auprc,3)}</b><span>AUPRC (유병률 ${pct(a3.prevalence,1)})</span></div><div><b>${fmt(a3.brier,3)}</b><span>Brier</span></div><div><b>${fmt(a3.n_known,0)}/${fmt(a3.n_all,0)}</b><span>결과 확인 가능 / 전체</span></div></div></div>`}
+  out.push(fig("fig8",8,"정상 환자 24시간 이상 발생: 보정과 판별",f8,"평가 환자마다 입실 24시간 시점 하나를 사전 지정해 계산했다. 점 크기는 구간 표본 수, 막대는 95% Wilson CI, 점선은 완전 보정선. 다음 24시간 재검으로 결과를 확인할 수 있었던 사례만 평가했으므로 전체 ICU 환자로 일반화하지 않는다.","22_agent3_predictions.csv → 집계"));
+  // Fig 9 stress adoption
+  let f9="";const sa=D.stress_adoption;if(sa){const conds=["claim","rationale","combined"],W=520,H=170,s=svgBox(W,H,"입력 오류"),x=lin(0,1,130,W-20);
+    [0,.25,.5,.75,1].forEach(t=>{s.append(S("line",{class:"grid",x1:x(t),x2:x(t),y1:6,y2:H-34}));s.append(S("text",{x:x(t),y:H-20,"text-anchor":"middle"},pct(t)))});
+    conds.forEach((c,i)=>{const yy=24+i*38;s.append(S("text",{x:120,y:yy+4,"text-anchor":"end",class:"ink"},COND[c]));
+      [false,true].forEach((g,j)=>{const r=sa.find(z=>z.input_condition===c&&z.guarded===g);if(!r||r.adoption_rate==null)return;const y2=yy-7+j*14,col=g?"var(--ok)":"var(--crit)";
+        s.append(S("line",{x1:x(r.ci_low),x2:x(r.ci_high),y1:y2,y2:y2,stroke:col,"stroke-width":2}));s.append(S("circle",{cx:x(r.adoption_rate),cy:y2,r:4.5,fill:col}));s.append(S("text",{x:x(r.ci_high)+6,y:y2+3},`${r.adopted}/${r.n}`))})});
+    [["방어 없음","var(--crit)"],["방어 문구","var(--ok)"]].forEach(([t,c],j)=>{s.append(S("circle",{cx:136+j*110,cy:H-6,r:4,fill:c}));s.append(S("text",{x:144+j*110,y:H-3,class:"ink"},t))});f9=s.outerHTML}
+  out.push(fig("fig9",9,"잘못된 입력에 대한 취약성과 방어 문구 효과",f9,`같은 평가 사례 스냅샷에 잘못된 주장·설명을 넣었을 때 주입 원인(${esc(CAUSE[D.injected_cause]||D.injected_cause||"")})이 원본에서는 1순위가 아니었다가 1순위로 바뀐 비율. 주입 원인이 해당 사례에서 실제로 틀렸는지는 전문의가 확인한다. 방어 문구가 참인 정보까지 무시하게 만드는지는 참인 정보 조건으로 따로 시험한다.`,"17_input_stress.jsonl"));
+  // Fig 10 threshold + alerts
+  let f10="";if(D.threshold_sensitivity||D.alert_aggregation){let h="";
+    if(D.alert_aggregation)h+=hbars(D.alert_aggregation,{label:r=>r.comparison==="raw_abnormal_lab_records"?"기준 이상 검사 기록":"환자별 첫 사건 알림",value:r=>r.n,lw:150,color:r=>r.comparison==="raw_abnormal_lab_records"?"var(--muted)":"var(--accent)"});
+    if(D.threshold_sensitivity)h+=hbars(D.threshold_sensitivity,{label:r=>`${r.cutoff_fold_uln}×ULN`,value:r=>r.n_patients_flagged,lw:150,color:r=>r.cutoff_fold_uln==2?"var(--crit)":"var(--muted)"});f10=h}
+  out.push(fig("fig10",10,"알림 통합과 임계값 민감도",f10,"위: 기준 이상 검사 기록 수와 환자당 첫 사건 알림 수의 기계적 비교. 아래: 임계값별 알림 대상 환자 수(빨강이 채택 기준). 첫 사건만 알리는 설계는 이후 악화를 놓칠 수 있다.","18_alert_aggregation.csv · 33_threshold_sensitivity.csv",true));
+  $("#figs").innerHTML=out.join("");
+  // cohort-level shadow cards
+  $("#stress-cohort").innerHTML=f9||na("17_input_stress.jsonl");
+  $("#compete-cohort").innerHTML=D.cif_development?cifSVG(D.cif_development,"개발 집단"):na("risk_reference (notebook)");
+  const g=D.grounding;$("#ground-cohort").innerHTML=g?hbars(g,{label:r=>`${r.condition==="cluster"?"+군집":"기본"} ${r.verified??"<10"}/${r.support_items??"<10"}`,value:r=>r.rate,max:1,fmtv:v=>pct(v,0),lw:130,color:()=>"var(--ok)"}):na("36_grounding_summary.csv");
+  $("#alert-agg").innerHTML=D.alert_aggregation?hbars(D.alert_aggregation,{label:r=>r.comparison==="raw_abnormal_lab_records"?"기준 이상 검사 기록":"환자별 첫 사건 알림",value:r=>r.n,lw:150,color:r=>r.comparison==="raw_abnormal_lab_records"?"var(--muted)":"var(--accent)"}):na("18_alert_aggregation.csv");
+  $("#alert-thr").innerHTML=D.threshold_sensitivity?hbars(D.threshold_sensitivity,{label:r=>`${r.cutoff_fold_uln}×ULN`,value:r=>r.n_patients_flagged,lw:90,color:r=>r.cutoff_fold_uln==2?"var(--crit)":"var(--muted)"}):na("33_threshold_sensitivity.csv");
+}
+function renderMeta(){const m=st.manifest,c=m.config||{};
+  const kv=[["데이터",m.source],["생성 시각",m.built_at],["코드 커밋",m.git_commit||"–"],["임계값",(c.threshold??"–")+"×ULN"],["난수 시드",c.seed??"–"],["군집 수",c.cluster_k??"–"],["LLM 실행",c.LLM_enabled==null?"–":c.LLM_enabled?"예":"아니오"],["M4 커밋",c.m4_reviewed_commit||"–"]];
+  $("#meta").innerHTML=kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}
+load();
+</script>
+</body>
+</html>
