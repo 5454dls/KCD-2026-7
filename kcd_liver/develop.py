@@ -45,6 +45,9 @@ RATIO_FEATS = ["ALT", "AST", "ALP", "TBIL"]
 VALUE_FEATS = ["INR", "ALBUMIN", "LACTATE", "CREAT", "BUN", "PLATELET", "WBC", "SODIUM", "GLUCOSE", "BICARB", "HEMOGLOBIN"]
 VITALS = ["MAP", "HR", "RR", "SPO2", "TEMP_C"]
 PRESSORS = "norepinephrine|epinephrine|vasopressin|phenylephrine|dopamine"
+# Agent 3 target (team decision): any of ALT/ALP/TBIL >= 5x ULN within 24 h; eligibility stays all three < 2x
+A3_TARGET = 5.0
+THRESHOLDS = [2.0, 3.0, 4.0, 5.0]
 HISTORY = ["history_liver", "history_viral_hepatitis", "history_heart_failure", "history_ckd", "history_diabetes", "history_cancer"]
 A2_CLASSES = ["resolution", "death_before_resolution", "discharge_before_resolution", "no_event_observed"]
 SEED = 20261016
@@ -78,7 +81,7 @@ def load_private(out_dir: Path) -> dict:
     out_dir = Path(out_dir)
     rd = lambda n, **k: pd.read_csv(out_dir / n, low_memory=False, **k)
     cohort = rd("01_cohort_private.csv")
-    for c in ["intime", "outtime", "admittime", "dischtime", "deathtime", "monitor_end", "obs_end"]:
+    for c in ["intime", "outtime", "admittime", "dischtime", "deathtime", "dod", "monitor_end", "obs_end"]:
         if c in cohort:
             cohort[c] = pd.to_datetime(cohort[c], errors="coerce")
     lab = rd("03_labs_private.csv", usecols=lambda c: c in {"stay_id", "analyte", "value", "ratio", "charttime", "available_at", "valid_value"})
@@ -259,12 +262,16 @@ def agent3_landmarks(cohort, lab, events, step_hours=1, time_col="available_at")
     return L
 
 
-def agent3_labels(L: pd.DataFrame, lab: pd.DataFrame, horizon=24, end_window=6) -> pd.Series:
-    """abnormal_observed / no_abnormality_observed / terminal / insufficient_measurement (notebook semantics)."""
+def agent3_labels(L: pd.DataFrame, lab: pd.DataFrame, horizon=24, end_window=6, threshold=None) -> pd.Series:
+    """abnormal_observed / no_abnormality_observed / terminal / insufficient_measurement (notebook semantics).
+
+    threshold: x ULN that counts as the predicted abnormality (any of ALT/ALP/TBIL). Default A3_TARGET (team: 5x).
+    """
+    threshold = A3_TARGET if threshold is None else threshold
     t = pd.to_datetime(L.t)
     h = t + pd.Timedelta(hours=horizon)
     obs_end = pd.to_datetime(L.obs_end)
-    ab = lab[lab.analyte.isin(TRIGGERS) & (lab.ratio >= 2)][["stay_id", "available_at"]].dropna().sort_values("available_at")
+    ab = lab[lab.analyte.isin(TRIGGERS) & (lab.ratio >= threshold)][["stay_id", "available_at"]].dropna().sort_values("available_at")
     Q = pd.DataFrame({"stay_id": L.stay_id.values, "t": t.values, "_i": np.arange(len(L))}).sort_values("t")
     m = pd.merge_asof(Q, ab.rename(columns={"available_at": "next_ab"}), left_on="t", right_on="next_ab", by="stay_id",
                       direction="forward", allow_exact_matches=False).sort_values("_i")
@@ -295,6 +302,40 @@ def agent2_follow(events: pd.DataFrame, outcomes: pd.DataFrame, horizon=48) -> p
 
 
 # ------------------------------------------------------------------ models
+def threshold_table(cohort: pd.DataFrame, lab: pd.DataFrame, thresholds=None) -> list[dict]:
+    """First event at 2/3/4/5x ULN (any of ALT/ALP/TBIL) during ICU monitoring, with recovery (all three < 2x,
+    measured within 24 h, before ICU discharge) and death within 1 year (MIMIC-IV deathtime or dod)."""
+    thresholds = THRESHOLDS if thresholds is None else thresholds
+    c = cohort.set_index("stay_id")
+    trig = lab[lab.analyte.isin(TRIGGERS) & lab.ratio.notna()].sort_values("charttime")
+    by = {k: g for k, g in trig.groupby("stay_id")}
+    out = []
+    for k in thresholds:
+        n = rec = died = 0
+        for s_, g in by.items():
+            if s_ not in c.index:
+                continue
+            r = c.loc[s_]
+            hit = g[(g.ratio >= k) & (g.available_at >= r.intime) & (g.available_at <= r.monitor_end)]
+            if hit.empty:
+                continue
+            t0 = hit.available_at.min()
+            n += 1
+            after = g[(g.charttime > t0) & (g.available_at <= r.monitor_end)]
+            last = {}
+            for row in after.itertuples():
+                last[row.analyte] = (row.charttime, row.ratio)
+                if len(last) == len(TRIGGERS) and all(row.charttime - tt <= pd.Timedelta(hours=24) and v < 2 for tt, v in last.values()):
+                    rec += 1
+                    break
+            year = t0 + pd.Timedelta(days=365)
+            dt, dod = r.get("deathtime"), r.get("dod")
+            died += bool((pd.notna(dt) and pd.Timestamp(dt) <= year) or (pd.notna(dod) and pd.Timestamp(dod) <= year.normalize()))
+        out.append({"threshold_x_uln": k, "patients_with_event": n, "recovered_before_icu_discharge": rec, "died_within_1y": died,
+                    "recovered_rate": rec / n if n else None, "died_1y_rate": died / n if n else None})
+    return out
+
+
 def _models(kind="binary"):
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.impute import SimpleImputer
@@ -597,6 +638,7 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
             "no_trigger_measured_share": float(nn.no_trigger_at_all.mean()) if len(nn) else None,
             "patients": int(L.subject_id.nunique())}
     perf3 = {"models": [], "curves": {}}
+    best = None
     if len(known) and known.y.nunique() == 2 and known.split.eq("evaluation").any():
         log(f"agent3: features for {len(known):,} known landmarks")
         X = build_features(known[["stay_id", "t"]], lab, context, cohort, hist)
@@ -653,6 +695,31 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
             joblib.dump({"model": fitted["그래디언트 부스팅"], "features": cols, "kind": "agent3_gbm", "seed": SEED,
                          "trained_on": source, "built_at": R["meta"]["built_at"]}, Path(model_dir) / "agent3_gbm.joblib")
     R["agent3_performance"] = perf3
+    R["agent3_target"] = {"threshold_x_uln": A3_TARGET, "definition": "any of ALT/ALP/TBIL >= threshold within 24 h, from hours when all three < 2x"}
+    # sensitivity: the same model trained for 2/3/4/5x targets (fixed hyperparameters from the main grid search)
+    if len(known) and best is not None:
+        rows3 = []
+        for k in THRESHOLDS:
+            lk = agent3_labels(elig, lab, threshold=k)
+            Kk = elig.assign(label=lk.values)
+            Kk = Kk[Kk.label.isin(["abnormal_observed", "no_abnormality_observed"])]
+            yk = Kk.label.eq("abnormal_observed").astype(int).to_numpy()
+            trk = Kk.split.eq("development").to_numpy()
+            row = {"threshold_x_uln": k, "rows": int(len(Kk)), "events": int(yk.sum()), "prevalence": float(yk.mean()) if len(yk) else None,
+                   "patients": int(Kk.subject_id.nunique())}
+            if len(np.unique(yk[trk])) == 2 and len(np.unique(yk[~trk])) == 2:
+                log(f"agent3: target {k:g}x ULN")
+                Xk = build_features(Kk[["stay_id", "t"]], lab, context, cohort, hist)[cols].astype(float)
+                mk = gbm(*best).fit(Xk[trk], yk[trk])
+                pk = mk.predict_proba(Xk[~trk])[:, 1]
+                row.update(binary_metrics(yk[~trk], pk, Kk.subject_id.to_numpy()[~trk], max(20, boot // 4)))
+                if model_dir:
+                    import joblib
+                    joblib.dump({"model": mk, "features": cols, "kind": f"agent3_gbm_{k:g}x", "seed": SEED, "trained_on": source},
+                                Path(model_dir) / f"agent3_gbm_{k:g}x.joblib")
+            rows3.append(row)
+        R["agent3_by_threshold"] = rows3
+    R["event_thresholds"] = threshold_table(cohort, lab)
 
     # ---------------- Agent 2: at the first alert
     perf2 = {"models": []}
@@ -719,7 +786,8 @@ def develop(out_dir, admissions=None, diagnoses=None, exclude_subjects=None, sou
 
 NOT_COUNTS = {"seed", "landmark_step_hours", "max_leaf_nodes", "n_features", "cutoff_fold_uln", "min_cell_suppression",
               # settings and ranks, not patient counts
-              "horizon_h", "horizon_hours", "horizons", "step_hours", "hour", "rank", "k_selected", "n_clusters", "n_boot", "stable_threshold"}
+              "horizon_h", "horizon_hours", "horizons", "step_hours", "hour", "rank", "k_selected", "n_clusters", "n_boot", "stable_threshold",
+              "threshold_x_uln"}
 
 
 def _suppress_counts(o, min_cell, key=None):
@@ -778,8 +846,8 @@ FEATURE_GROUPS = {
 TRAJ_ANALYTES = ["ALT", "AST", "ALP", "TBIL"]
 TRAJ_HORIZONS = [6, 12, 18, 24]
 TRAJ_QUANTILES = [0.1, 0.5, 0.9]
-PROGNOSIS = ["resolved_then_icu_discharge", "resolved_then_death",
-             "resolution_unconfirmed_before_icu_discharge", "resolution_unconfirmed_before_death"]
+PROGNOSIS = ["recovered_alive_1y", "recovered_died_1y",
+             "unrecovered_alive_1y", "unrecovered_died_1y"]
 
 
 def group_of(col: str) -> str:

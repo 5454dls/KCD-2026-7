@@ -103,7 +103,7 @@ CASES = [
                 cand("drug_related", [], ["t0 이전 48시간 내 간독성 약물 투여 기록 없음"])],
      "uncertainty": "허혈성 간손상 패턴과 시간 관계가 일치. 영상·노트 부재로 울혈 기여는 배제 불가.",
      "agent2_mix": {"resolution": .58, "death": .12, "icu_discharge": .08, "censor": .22},
-     "observed": {"observed_path": "resolved_then_icu_discharge", "first_event_48h": "no_event_observed"},
+     "observed": {"observed_path": "recovered_alive_1y", "first_event_48h": "no_event_observed"},
      "stress": True},
     {"key": "Patient-02", "group": "incident", "max_hour": 96, "t0": 53,
      "story": "정상으로 관찰되다 패혈증 경과 중 빌리루빈 상승",
@@ -119,7 +119,7 @@ CASES = [
                 cand("drug_related", [], ["t0 전 투약 기록 없음"])],
      "uncertainty": "담즙정체 우세 패턴. 담도 원인 감별을 위한 영상 정보 부족.",
      "agent2_mix": {"resolution": .22, "death": .30, "icu_discharge": .10, "censor": .38},
-     "observed": {"observed_path": "resolution_unconfirmed_before_death", "first_event_48h": "death_before_resolution"},
+     "observed": {"observed_path": "unrecovered_died_1y", "first_event_48h": "death_before_resolution"},
      "agent3_curve": [(0, .04), (24, .07), (36, .15), (44, .27), (50, .38)]},
     {"key": "Patient-03", "group": "normal", "max_hour": 96, "t0": None,
      "story": "끝까지 기준 미만, 검사 공백 구간 존재",
@@ -138,7 +138,7 @@ CASES = [
                 cand("unknown", [], ["기저치 부재로 신규 손상 여부 판단 불가"])],
      "uncertainty": "발생 시점 불명 사례. 약물 관련 가능성은 시간 관계만으로 제시.",
      "agent2_mix": {"resolution": .30, "death": .05, "icu_discharge": .25, "censor": .40},
-     "observed": {"observed_path": "resolution_unconfirmed_before_icu_discharge", "first_event_48h": "discharge_before_resolution"}},
+     "observed": {"observed_path": "unrecovered_alive_1y", "first_event_48h": "discharge_before_resolution"}},
 ]
 
 
@@ -204,8 +204,8 @@ def build_summary():
     cols = ["ALT_ratio", "ALP_ratio", "TBIL_ratio", "ALT_slope24", "ALP_slope24", "TBIL_slope24"]
     feats = pd.DataFrame([np.array(centers[k]) * RNG.lognormal(0, .25, 6) for k in cl], columns=cols)
     feats["cluster"], feats["split"], feats["case_id"] = cl, split, events.case_id
-    paths = RNG.choice(["resolved_then_icu_discharge", "resolution_unconfirmed_before_icu_discharge",
-                        "resolution_unconfirmed_before_death", "resolved_then_death"], n_ev, p=[.41, .33, .19, .07])
+    paths = RNG.choice(["recovered_alive_1y", "unrecovered_alive_1y",
+                        "unrecovered_died_1y", "recovered_died_1y"], n_ev, p=[.41, .33, .19, .07])
     first = RNG.choice(["resolution", "no_event_observed", "insufficient_measurement", "death_before_resolution",
                         "discharge_before_resolution"], n_ev, p=[.31, .14, .29, .12, .14])
     outcomes = pd.DataFrame({"observed_path": paths, "first_event_48h": first})
