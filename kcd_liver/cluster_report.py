@@ -125,7 +125,7 @@ def added_value(dev, ev, target, n_boot=500, seed=0):
             "cluster_added_to_severity": diff("pattern_severity_cluster", "pattern_severity")}
 
 
-def run(features, outcomes, extra=None, exclude_cases=(), min_cell=10, seed=20261016, n_boot=30, ks=range(2, 13), log=print):
+def run(features, outcomes, extra=None, exclude_cases=(), min_cell=10, seed=20261016, n_boot=30, ks=range(2, 13), lca_ks=range(2, 9), log=print):
     """features: 08_features.csv (one row per first event); outcomes: 10_outcomes_EVALUATION_ONLY.csv; extra: case_id + more columns."""
     f = features[~features.case_id.isin(set(exclude_cases))].copy()
     if extra is not None and len(extra):
@@ -176,7 +176,25 @@ def run(features, outcomes, extra=None, exclude_cases=(), min_cell=10, seed=2026
     log("cluster characterisation over all curated variables")
     char = characterize(dev, min_cell)
     causes = cause_table(pd.concat([dev, ev]), min_cell)
-    return {"causes": causes, "characterization": char, "method": "GaussianMixture on log2 x ULN of ALT, AST, ALP, TBIL (R left out: log R = log ALT - log ALP)",
+    lca = None
+    if lca_ks:
+        from .phenotype_lca import run_lca
+        log("clinical phenotypes: latent class analysis")
+        L, cdv, cev = run_lca(dev, ev, min_cell=min_cell, seed=seed, ks=lca_ks, n_boot=max(10, n_boot // 2), log=log)
+        dl, el = dev.assign(cluster=cdv), ev.assign(cluster=cev)
+        lres = {}
+        for name, d in [("development", dl), ("evaluation", el)]:
+            m = d.merge(oc, on="case_id", how="inner")
+            m["recovered"] = m.observed_path.str.startswith("recovered").astype(int)
+            lres[name] = {"by_cluster": outcome_table(m.cluster, m, min_cell), "frame": m}
+        dm2, em2 = lres["development"].pop("frame"), lres["evaluation"].pop("frame")
+        da2, ea2 = dm2[~dm2.observed_path.str.startswith("unassessable")], em2[~em2.observed_path.str.startswith("unassessable")]
+        L.update(outcomes=lres, added_value={"icu_death": added_value(dm2, em2, "died_icu", seed=seed), "recovered": added_value(da2, ea2, "recovered", seed=seed)},
+                 causes=cause_table(pd.concat([dl, el]), min_cell),
+                 crosstab_gmm=[{"class": int(a), "cluster": int(b), "n": int(v) if v >= min_cell else None}
+                               for (a, b), v in pd.crosstab(dl.cluster, dev.cluster).stack().items()])
+        lca = L
+    return {"lca": lca, "causes": causes, "characterization": char, "method": "GaussianMixture on log2 x ULN of ALT, AST, ALP, TBIL (R left out: log R = log ALT - log ALP)",
             "features": feats, "n_dev": int(len(dev)), "n_eval": int(len(ev)), "min_cell_suppression": min_cell,
             "grid": grid, "selected": pick, "profiles": profiles, "outcomes": res, "added_value": av,
             "density_alt_alp": dens, "ellipses_alt_alp": _ellipses(gmm, prep, feats, relabel)}
@@ -381,7 +399,7 @@ def fig_map(R, ax):
 
 def fig_outcomes(R, ax, split="evaluation"):
     rows = R["outcomes"][split]["by_cluster"]
-    names = {p["cluster"]: f"C{p['cluster']} {p['name']}" for p in R["profiles"]}
+    names = {p["cluster"]: f"{R.get('prefix', 'C')}{p['cluster']} {p['name']}" for p in R["profiles"]}
     y = np.arange(len(rows))[::-1]
     for yy, r in zip(y, rows):
         for key, col, off in [("icu_death", DIED, .15), ("recovered", REC, -.15)]:
@@ -462,7 +480,7 @@ def fig_causes(R, ax):
             t = "–" if not r else ("<10" if r["share"] is None else f"{r['share'] * 100:.0f}")
             ax.text(j, i, t, ha="center", va="center", fontsize=7, color="white" if (r and r["share"] and r["share"] > .35) else INK)
     ax.set_xticks(range(len(cols)), [CAUSE_KO[c] for c, _ in cols], rotation=60, ha="right", fontsize=8)
-    names = {p["cluster"]: f"C{p['cluster']} {p['name']}" for p in R["profiles"]}
+    names = {p["cluster"]: f"{R.get('prefix', 'C')}{p['cluster']} {p['name']}" for p in R["profiles"]}
     ax.set_yticks(range(len(ks)), [names[k] for k in ks])
     if len(srcs) == 2:
         ax.axvline(len(CAUSE_ORDER) - .5, color=INK, lw=2)
@@ -472,6 +490,51 @@ def fig_causes(R, ax):
     ax.set_title("G. 군집별 원인 10개 해당 비율 (%)", pad=30)
     cb = ax.figure.colorbar(im, ax=ax, fraction=.025, pad=.01)
     cb.set_label("해당 비율")
+
+
+def _lca_view(R):
+    L = R["lca"]
+    return {"profiles": [{"cluster": p["class"], "name": p["name"], "n_dev": p["n_dev"]} for p in L["profiles"]],
+            "outcomes": L["outcomes"], "added_value": L["added_value"], "causes": L["causes"]}
+
+
+def fig_lca_selection(R, ax):
+    G = R["lca"]["grid"]
+    k = [g["k"] for g in G]
+    ax.plot(k, [g["bic"] for g in G], color=REC, lw=2)
+    for g in G:
+        ax.scatter(g["k"], g["bic"], s=40, zorder=3, color=REC if g["ari_median"] >= .75 else "white", edgecolor=REC, linewidth=1.5)
+        ax.text(g["k"], g["bic"], f"  ARI {g['ari_median']:.2f}\n  최소 {g['smallest_share']:.0%}", fontsize=7, color=MUTED, va="center")
+    s = R["lca"]["selected"]
+    ax.scatter(s["k"], s["bic"], s=180, marker="*", color=INK, zorder=4, label=f"선택: K={s['k']} · 분리도 {R['lca']['entropy']:.2f}")
+    ax.set_xlabel("잠재 계층 수 K")
+    ax.set_ylabel("BIC (낮을수록 좋음)")
+    ax.legend(frameon=False, fontsize=8)
+    ax.set_title("H. 임상 표현형(LCA) 계층 수 선택: 채운 점 = 안정")
+
+
+def fig_lca_profiles(R, ax):
+    P = R["lca"]["profiles"]
+    keep = [("간 패턴", "간세포형"), ("간 패턴", "담즙정체형"), ("간 패턴", "빌리루빈 단독"), ("최고 상승 (×ULN)", "≥20"), ("AST/ALT", "≥2"),
+            ("총빌리루빈 (×ULN)", "≥5"), ("쇼크", "승압제"), ("쇼크", "저혈압"), ("젖산 (mmol/L)", "≥4"), ("젖산 (mmol/L)", "미측정"),
+            ("크레아티닌 (mg/dL)", "≥3"), ("INR", "≥2.5"), ("혈소판 (×10³/µL)", "<50"), ("백혈구 (×10³/µL)", ">12"), ("최고 체온 (°C)", "≥38.3"),
+            ("LDH (×ULN)", "≥5"), ("이전 간질환", "예"), ("이전 심부전", "예"), ("사건 시점", "입실 초기")]
+    look = [{(r["indicator"], r["level"]): r for r in p["items"]} for p in P]
+    keep = [k for k in keep if any(k in l for l in look)]
+    M = np.array([[l.get(k, {}).get("prob", np.nan) for l in look] for k in keep])
+    im = ax.imshow(M, cmap="Blues", vmin=0, vmax=1, aspect="auto")
+    for i, k in enumerate(keep):
+        ov = next((l[k]["overall"] for l in look if k in l), None)
+        for j in range(len(P)):
+            if not np.isnan(M[i, j]):
+                ax.text(j, i, f"{M[i, j] * 100:.0f}", ha="center", va="center", fontsize=7.5, color="white" if M[i, j] > .55 else INK)
+        if ov is not None:
+            ax.text(len(P) - .4, i, f"전체 {ov * 100:.0f}%", va="center", fontsize=7, color=MUTED)
+    ax.set_yticks(range(len(keep)), [f"{a.split(' (')[0]} {b}" for a, b in keep])
+    ax.set_xticks(range(len(P)), [f"P{p['class']}\n{p['name']}\n(n={p['n_dev'] or '<10'})" for p in P], fontsize=7.5)
+    ax.set_xlim(-.5, len(P) + .6)
+    ax.grid(False)
+    ax.set_title("I. 임상 표현형별 특징 확률 (%, 개발 집단)")
 
 
 def render(R, out_dir):
@@ -492,6 +555,19 @@ def render(R, out_dir):
         fig.savefig(p)
         plt.close(fig)
         files.append(p)
+    if R.get("lca"):
+        V = {**_lca_view(R), "prefix": "P", "min_cell_suppression": R["min_cell_suppression"], "n_dev": R["n_dev"], "n_eval": R["n_eval"]}
+        for name, fn, size, src in [("c8_lca_selection", fig_lca_selection, (6.5, 3.8), R), ("c9_lca_profiles", fig_lca_profiles, (1.7 * len(R["lca"]["profiles"]) + 4, 7.5), R),
+                                    ("c10_lca_outcomes", fig_outcomes, (7.5, .5 * len(V["profiles"]) + 1.4), V), ("c11_lca_added_value", fig_added, (5.5, 3.6), V),
+                                    ("c12_lca_causes", fig_causes, (13, .55 * len(V["profiles"]) + 3), V)]:
+            fig, ax = plt.subplots(figsize=size)
+            fn(src, ax)
+            if fn in (fig_outcomes, fig_added, fig_causes):
+                ax.set_title(ax.get_title().replace("군집", "임상 표현형").replace("D.", "J.").replace("E.", "K.").replace("G.", "L."), loc="left")
+            p = out / f"{name}.png"
+            fig.savefig(p)
+            plt.close(fig)
+            files.append(p)
     return files
 
 

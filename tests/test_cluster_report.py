@@ -30,7 +30,7 @@ class ClusterReportTest(unittest.TestCase):
         f, o = synthetic()
         extra = pd.DataFrame({"case_id": f.case_id, "group": np.where(f.index % 2, "incident", "initial_abnormal"),
                               "flag_hypoxic_hepatitis": (f.ALT_ratio > 8).astype(float), "icd_hypoxic_hepatitis": (f.ALT_ratio > 12).astype(float)})
-        R = cr.run(f, o, extra=extra, n_boot=3, ks=range(2, 5), log=lambda *_: None)
+        R = cr.run(f, o, extra=extra, n_boot=3, ks=range(2, 5), lca_ks=range(2, 4), log=lambda *_: None)
         self.assertTrue(any(r["variable"] == "LACTATE_latest" for r in R["characterization"]["variables"]))
         self.assertEqual(len(R["profiles"]), R["selected"]["k"])
         self.assertIn("R_ratio", cr.PROFILE)
@@ -38,17 +38,18 @@ class ClusterReportTest(unittest.TestCase):
         self.assertIsNotNone(R["added_value"]["icu_death"])
         self.assertIn("cluster_added_to_severity", R["added_value"]["icu_death"])
         self.assertEqual({r["source"] for r in R["causes"]["rows"]}, {"rule", "icd"})
+        self.assertIn("replication", R["lca"])
 
     def test_zero_values_still_logged(self):
         f, o = synthetic()
         f.loc[0, "ALT_ratio"] = 0.0
-        R = cr.run(f, o, n_boot=2, ks=range(2, 4), log=lambda *_: None)
+        R = cr.run(f, o, n_boot=2, ks=range(2, 4), lca_ks=range(2, 4), log=lambda *_: None)
         self.assertLess(max(e["mean"][0] for e in R["ellipses_alt_alp"]), 10)
         for r in R["outcomes"]["evaluation"]["by_cluster"]:
             v = r["icu_death"]
             self.assertTrue(v["k"] is None or v["k"] >= 10)
         with tempfile.TemporaryDirectory() as d:
-            self.assertEqual(len(cr.render(R, d)), 7)
+            self.assertEqual(len(cr.render(R, d)), 12)
 
 
 if __name__ == "__main__":
