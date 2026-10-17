@@ -9,9 +9,10 @@ from .pattern import r_pattern
 MISSING = "미측정"
 
 
-def _band(x, cuts, labels):
+def _band(x, cuts, labels, missing_level=True):
+    """missing_level=False: not measured stays missing and is skipped in the likelihood (routine tests)."""
     x = pd.to_numeric(x, errors="coerce")
-    out = pd.Series(MISSING, index=x.index, dtype=object)
+    out = pd.Series(MISSING if missing_level else np.nan, index=x.index, dtype=object)
     ok = x.notna()
     out[ok] = pd.cut(x[ok], [-np.inf, *cuts, np.inf], labels=labels, right=False).astype(str)
     return out
@@ -22,7 +23,7 @@ def _flag(x, unknown=None):
     out = pd.Series("아니오", index=x.index, dtype=object)
     out[x.fillna(0) > 0] = "예"
     if unknown is not None:
-        out[unknown] = "기록 없음"
+        out[unknown] = np.nan
     return out
 
 
@@ -36,19 +37,19 @@ def indicators(f: pd.DataFrame) -> pd.DataFrame:
     shock = pd.Series("없음", index=f.index, dtype=object)
     shock[pd.to_numeric(g("MAP_min24"), errors="coerce") < 65] = "저혈압"
     shock[pd.to_numeric(g("pressor_record6"), errors="coerce").fillna(0) > 0] = "승압제"
-    temp = _band(g("TEMP_C_max24"), [36, 38.3], ["<36", "36-38.3", "≥38.3"])
+    temp = _band(g("TEMP_C_max24"), [36, 38.3], ["<36", "36-38.3", "≥38.3"], False)
     X = pd.DataFrame({
         "간 패턴": pat.map({"hepatocellular": "간세포형", "mixed": "혼합형", "cholestatic": "담즙정체형",
                           "isolated_bilirubin": "빌리루빈 단독"}).fillna("분류 불가"),
         "최고 상승 (×ULN)": _band(peak, [5, 10, 20], ["2-5", "5-10", "10-20", "≥20"]),
-        "AST/ALT": _band(ast_alt, [1, 2], ["<1", "1-2", "≥2"]),
-        "총빌리루빈 (×ULN)": _band(g("TBIL_ratio"), [1, 2, 5], ["<1", "1-2", "2-5", "≥5"]),
+        "AST/ALT": _band(ast_alt, [1, 2], ["<1", "1-2", "≥2"], False),
+        "총빌리루빈 (×ULN)": _band(g("TBIL_ratio"), [1, 2, 5], ["<1", "1-2", "2-5", "≥5"], False),
         "쇼크": shock,
         "젖산 (mmol/L)": _band(g("LACTATE_latest"), [2, 4], ["<2", "2-4", "≥4"]),
-        "크레아티닌 (mg/dL)": _band(g("CREAT_latest"), [1.5, 3], ["<1.5", "1.5-3", "≥3"]),
-        "INR": _band(g("INR_latest"), [1.5, 2.5], ["<1.5", "1.5-2.5", "≥2.5"]),
-        "혈소판 (×10³/µL)": _band(g("PLATELET_latest"), [50, 150], ["<50", "50-150", "≥150"]),
-        "백혈구 (×10³/µL)": _band(g("WBC_latest"), [4, 12], ["<4", "4-12", ">12"]),
+        "크레아티닌 (mg/dL)": _band(g("CREAT_latest"), [1.5, 3], ["<1.5", "1.5-3", "≥3"], False),
+        "INR": _band(g("INR_latest"), [1.5, 2.5], ["<1.5", "1.5-2.5", "≥2.5"], False),
+        "혈소판 (×10³/µL)": _band(g("PLATELET_latest"), [50, 150], ["<50", "50-150", "≥150"], False),
+        "백혈구 (×10³/µL)": _band(g("WBC_latest"), [4, 12], ["<4", "4-12", ">12"], False),
         "최고 체온 (°C)": temp,
         "LDH (×ULN)": _band(g("LDH_ratio"), [2, 5], ["<2", "2-5", "≥5"]),
         "이전 간질환": _flag(g("history_liver"), hist_unknown),
@@ -66,11 +67,18 @@ class LCA:
         self.k, self.n_init, self.max_iter, self.tol, self.seed, self.alpha = k, n_init, max_iter, tol, seed, alpha
 
     def _encode(self, X):
-        return [np.searchsorted(self.levels_[c], X[c].astype(str).to_numpy()) for c in self.cols_]
+        out = []
+        for c in self.cols_:
+            lv, v = self.levels_[c], X[c]
+            s = np.array(["" if pd.isna(x) else str(x) for x in v], dtype=str)
+            lv = lv.astype(str)
+            idx = np.searchsorted(lv, s).clip(0, max(len(lv) - 1, 0))
+            out.append(np.where(v.notna().to_numpy() & (lv[idx] == s), idx, -1) if len(lv) else np.full(len(s), -1))
+        return out
 
     def fit(self, X: pd.DataFrame):
-        self.cols_ = list(X.columns)
-        self.levels_ = {c: np.array(sorted(X[c].astype(str).unique())) for c in self.cols_}
+        self.cols_ = [c for c in X.columns if X[c].notna().any() and X[c].dropna().astype(str).nunique() > 1]
+        self.levels_ = {c: np.array(sorted(X[c].dropna().astype(str).unique())) for c in self.cols_}
         codes = self._encode(X)
         n, rng, best = len(X), np.random.default_rng(self.seed), None
         for _ in range(self.n_init):
@@ -78,10 +86,10 @@ class LCA:
             ll_old = -np.inf
             for it in range(self.max_iter):
                 pi = R.mean(0)
-                theta = [(np.stack([np.bincount(cd, weights=R[:, j], minlength=len(self.levels_[c])) for j in range(self.k)]) + self.alpha)
+                theta = [(np.stack([np.bincount(cd[cd >= 0], weights=R[cd >= 0, j], minlength=len(self.levels_[c])) for j in range(self.k)]) + self.alpha)
                          for cd, c in zip(codes, self.cols_)]
                 theta = [t / t.sum(1, keepdims=True) for t in theta]
-                L = np.log(pi)[None, :] + sum(np.log(t[:, cd]).T for t, cd in zip(theta, codes))
+                L = np.log(pi)[None, :] + sum(np.where(cd[:, None] >= 0, np.log(t[:, cd.clip(0)]).T, 0.0) for t, cd in zip(theta, codes))
                 m = L.max(1, keepdims=True)
                 ll = float((m[:, 0] + np.log(np.exp(L - m).sum(1))).sum())
                 R = np.exp(L - m)
@@ -97,13 +105,7 @@ class LCA:
         return self
 
     def predict_proba(self, X):
-        codes = []
-        for c in self.cols_:
-            v = X[c].astype(str).to_numpy()
-            lv = self.levels_[c]
-            idx = np.searchsorted(lv, v).clip(0, len(lv) - 1)
-            idx = np.where(lv[idx] == v, idx, -1)
-            codes.append(idx)
+        codes = self._encode(X)
         L = np.log(self.pi_)[None, :] + sum(np.where(cd[:, None] >= 0, np.log(t[:, cd.clip(0)]).T, 0.0) for t, cd in zip(self.theta_, codes))
         L -= L.max(1, keepdims=True)
         P = np.exp(L)
@@ -178,7 +180,8 @@ def run_lca(dev_f, ev_f, min_cell=10, seed=20261016, ks=range(2, 9), n_boot=20, 
         for j, c in enumerate(m.cols_):
             for li, lev in enumerate(m.levels_[c]):
                 p = float(m.theta_[j][old, li])
-                overall = float((Xd[c].astype(str) == lev).mean())
+                obs = Xd[c].dropna().astype(str)
+                overall = float((obs == lev).mean()) if len(obs) else 0.0
                 rows.append({"indicator": c, "level": str(lev), "prob": p, "overall": overall})
         prof.append({"class": new, "n_dev": n_dev if n_dev >= min_cell else None, "n_eval": int((ce == new).sum()) if (ce == new).sum() >= min_cell else None,
                      "share": float(m.pi_[old]), "items": rows})
